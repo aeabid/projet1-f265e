@@ -209,3 +209,7 @@ td.cell.part { background: var(--good-soft); color: var(--good); font-size: .75r
 .mcell.out { opacity: .35; cursor: default; }
 .mcell:disabled:not(.out) { cursor: default; }
 .kpi b small { font-size: .8rem; }
+.lb-row { grid-template-columns: 2rem 3.6rem minmax(0, 1fr) 3.8rem; column-gap: .6rem; }
+.lb-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.lb-head span:nth-child(3) { text-align: start; }
+@media (max-width: 360px) { .lb-row { grid-template-columns: 1.7rem 3.2rem minmax(0, 1fr) 3.2rem; column-gap: .4rem; } }
