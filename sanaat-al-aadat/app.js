@@ -4,12 +4,21 @@
 const DAYS = ['إث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 const PERIODS = { week: 'هذا الأسبوع', month: 'هذا الشهر', all: 'منذ البداية' };
-const EDIT_DAYS = 7;
+const WINDOWS = { 1: 'اليوم فقط (24 ساعة حتى نصف الليل)', 2: 'اليوم وأمس (48 ساعة)', 3: 'آخر 3 أيام', 7: 'آخر أسبوع' };
+const COLORS = ['#61038d', '#20149a', '#ef207a', '#1f9d63', '#c26a00', '#0b7fa6', '#8a2be2', '#b0306a'];
+const avatarColor = (id) => COLORS[Number(id) % COLORS.length];
+
+// معرّف فيديو يوتيوب من أي شكل من أشكال الرابط
+function youtubeId(url) {
+  const m = String(url || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/))([\w-]{11})/);
+  return m ? m[1] : null;
+}
 
 const sb = supabase.createClient(window.APP_CONFIG.supabaseUrl, window.APP_CONFIG.supabaseKey);
 
 const S = {
   session: null, me: null, challenges: [], members: [], memberId: null, myLogs: new Set(), ranks: {}, overall: null, sel: {}, google: false,
+  rules: '', editDays: 2, video: {},
   tab: 'habits', week: 0, period: 'week', boardId: null, board: null,
   detailId: null, month: null, details: null, editing: null, pending: null, authMode: 'login',
 };
@@ -156,10 +165,14 @@ async function loadMembers() {
 }
 
 async function loadHabits() {
-  const [{ data: ch }, { data: logs }] = await Promise.all([
+  const [{ data: ch }, { data: logs }, { data: settings }] = await Promise.all([
     sb.from('challenges').select('*').order('sort').order('id'),
     S.memberId ? sb.from('habit_logs').select('challenge_id, day, item').eq('member_id', S.memberId) : Promise.resolve({ data: [] }),
+    sb.from('app_settings').select('key, value'),
   ]);
+  const set = Object.fromEntries((settings || []).map((x) => [x.key, x.value]));
+  S.rules = typeof set.rules === 'string' ? set.rules : '';
+  S.editDays = Math.max(1, Number(set.edit_days) || 2);
   S.challenges = ch || [];
   S.myLogs = new Set((logs || []).map((l) => key(l.challenge_id, l.day, l.item)));
   const list = openChallenges();
@@ -204,6 +217,7 @@ async function render() {
   const v = $('#view');
   if (S.tab === 'habits') v.innerHTML = renderHabits();
   else if (S.tab === 'board') v.innerHTML = await renderBoard();
+  else if (S.tab === 'rules') v.innerHTML = renderRules();
   else v.innerHTML = await renderAdmin();
   bind();
 }
@@ -236,7 +250,7 @@ function renderMembers() {
 
 const editable = (c, d) => {
   const now = today();
-  return d <= now && d >= c.start_date && (!c.end_date || d <= c.end_date) && (S.me.is_admin || diff(d, now) < EDIT_DAYS);
+  return d <= now && d >= c.start_date && (!c.end_date || d <= c.end_date) && (S.me.is_admin || diff(d, now) < S.editDays);
 };
 // اليوم المختار في مهمة بعناصر (اليوم افتراضيًا)
 const selDay = (c, week) => {
@@ -252,6 +266,28 @@ function itemsRow(c, d) {
       return `<button class="chip item ${on ? 'on' : ''}" type="button" data-ic="${c.id}" data-id="${d}" data-ii="${i}" aria-pressed="${on}" ${ok ? '' : 'disabled'}>${on ? '✔ ' : ''}${esc(t)}</button>`;
     })
     .join('')}</div>`;
+}
+
+function videoBlock(c) {
+  const id = youtubeId(c.video_url);
+  if (!id) return '';
+  if (!S.video[c.id]) return `<button class="btn ghost small video-btn" type="button" data-video="${c.id}">▶ مشاهدة الفيديو</button>`;
+  return `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0" title="${esc(c.title)}"
+      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>
+    <button class="link small" type="button" data-video="${c.id}">إخفاء الفيديو</button>`;
+}
+
+// القانون: يكتبه المشرف ويقرؤه الجميع
+function renderRules() {
+  const text = S.rules.trim();
+  return `<div class="card rules" style="display:grid;gap:.7rem">
+      <h2>📜 القانون</h2>
+      ${text ? `<div class="rules-text">${esc(text)}</div>` : `<p class="muted">${S.me.is_admin ? 'لم تكتب القانون بعد. اكتبه هنا ليراه كل المشاركين.' : 'لم يُكتب القانون بعد.'}</p>`}
+    </div>
+    ${S.me.is_admin ? `<form class="card" id="rules-form" style="display:grid;gap:.6rem">
+      <h3>تعديل القانون (المشرف)</h3>
+      <textarea id="rules-text" rows="10" maxlength="10000" placeholder="1. تُسجَّل الصلاة في وقتها.&#10;2. الصدق في التسجيل.&#10;3. …">${esc(S.rules)}</textarea>
+      <div class="row"><button class="btn" type="submit">حفظ القانون</button></div></form>` : ''}`;
 }
 
 function renderHabits() {
@@ -285,6 +321,7 @@ function renderHabits() {
             <button class="rank-link" type="button" data-board="${c.id}">🏆 ${r?.me && r.me.points ? `الترتيب ${r.me.rank}/${r.count}` : "الترتيب"}</button></div>
           <div class="stats muted">⭐ <b>${st.points}</b> نقطة &nbsp;|&nbsp; السلسلة: <b>${st.streak}</b> 🔥 &nbsp;|&nbsp; الإجمالي: <b>${st.percent}%</b></div>
           ${c.description ? `<p class="muted small" style="margin:0">${esc(c.description)}</p>` : ''}
+          ${videoBlock(c)}
           <div class="days">${week
             .map((d, i) => {
               const n = doneCount(c, d);
@@ -302,7 +339,7 @@ function renderHabits() {
         </section>`;
       })
       .join('')}
-    <p class="muted small">اضغط على دائرة اليوم لتسجيله منجزًا (أو لإلغائه). يمكن تسجيل آخر ${EDIT_DAYS} أيام.</p>`;
+    <p class="muted small">اضغط على دائرة اليوم لتسجيله منجزًا (أو لإلغائه). ${S.editDays === 1 ? 'يمكن تسجيل اليوم فقط (حتى نصف الليل).' : `يمكن تسجيل آخر ${S.editDays} أيام.`}</p>`;
 }
 
 async function renderBoard() {
@@ -321,17 +358,33 @@ async function renderBoard() {
       <div class="chips">${Object.entries(PERIODS).map(([k, t]) => `<button class="chip" type="button" data-period="${k}" aria-pressed="${k === S.period}">${t}</button>`).join('')}</div>
       <p class="muted small" style="margin:0">${c ? `أحسن المشاركين في «${esc(c.title)}»: حسب النقاط ثم الأيام الكاملة ثم السلسلة.` : 'مجموع النقاط في كل المهام: من جمع أكثر نقاط في الأول.'}</p>
     </div>
+    ${podium(rows)}
     <ol class="board">${rows
+      .slice(rows.filter((r) => r.points).length >= 3 ? 3 : 0)
       .map((r) => {
         const pct = rows[0]?.points ? Math.round((r.points / rows[0].points) * 100) : 0;
         return `<li class="${r.is_mine ? 'mine' : ''}">
           <span class="pos">${medal(r.rank, r.points)}</span>
-          <div style="min-width:0"><span class="name">${esc(r.name)}</span> ${r.is_mine ? '<span class="tag">حسابي</span>' : ''}
-            <div class="bar"><span style="width:${pct}%"></span></div></div>
+          <div style="min-width:0;display:flex;gap:.55rem;align-items:center"><span class="av sm" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span><div style="min-width:0;flex:1"><span class="name">${esc(r.name)}</span> ${r.is_mine ? '<span class="tag">حسابي</span>' : ''}
+            <div class="bar"><span style="width:${pct}%"></span></div></div></div>
           <div class="num"><b>${r.points}</b> <span class="small muted">نقطة</span><div class="small muted">${r.days} يوم · ${r.streak ? r.streak + ' 🔥' : '—'}</div></div>
         </li>`;
       })
       .join('')}</ol>`;
+}
+
+// منصّة الثلاثة الأوائل: الثاني، الأول، الثالث
+function podium(rows) {
+  const top = rows.filter((r) => r.points).slice(0, 3);
+  if (top.length < 3) return '';
+  const place = (r, cls) => `<div class="place ${cls} ${r.is_mine ? 'mine' : ''}">
+      <div class="crown">${cls === 'first' ? '👑' : ''}</div>
+      <span class="av" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>
+      <div class="pname">${esc(r.name)}</div>
+      <div class="ppts">${r.points} <span>نقطة</span></div>
+      <div class="step">${MEDALS[r.rank - 1] || r.rank}</div>
+    </div>`;
+  return `<div class="podium">${place(top[1], 'second')}${place(top[0], 'first')}${place(top[2], 'third')}</div>`;
 }
 
 function challengeForm(c) {
@@ -342,6 +395,7 @@ function challengeForm(c) {
       <label>العنوان<input id="f-title" maxlength="80" value="${esc(c.title || '')}" placeholder="صلاة الصبح في المسجد" required></label>
     </div>
     <label>الوصف (اختياري)<input id="f-desc" maxlength="300" value="${esc(c.description || '')}" placeholder="متى يُعتبر اليوم منجزًا؟"></label>
+    <label>رابط فيديو يوتيوب (اختياري)<input id="f-video" maxlength="300" dir="ltr" value="${esc(c.video_url || '')}" placeholder="https://www.youtube.com/watch?v=…"></label>
     <div class="grid2">
       <label>النقاط${(c.items || []).length ? ' لكل عنصر' : ' لكل يوم'}<input type="number" id="f-points" min="0" max="1000" value="${c.points ?? 1}" required></label>
       <label>العناصر (اختياري، كل عنصر في سطر)<textarea id="f-items" rows="3" placeholder="الصبح&#10;الظهر&#10;العصر&#10;المغرب&#10;العشاء">${esc((c.items || []).join('\n'))}</textarea></label>
@@ -394,7 +448,7 @@ async function renderAdmin() {
           <div class="kpi"><b>${rows.filter((r) => !r.points).length}</b><span class="small muted">لم يسجّل أبدًا</span></div>
           <div class="kpi"><b>${avg}%</b><span class="small muted">متوسط المواظبة</span></div>
         </div>
-        ${S.pending ? `<div class="confirm card"><span>${esc(S.pending.label)}</span>
+        ${S.pending && !S.pending.top ? `<div class="confirm card"><span>${esc(S.pending.label)}</span>
           <button class="btn small" type="button" id="p-yes">تأكيد</button><button class="btn ghost small" type="button" id="p-no">إلغاء</button></div>` : ''}
         <p class="muted small" style="margin:0">✔ = يوم منجز (مرّر على الخانة لترى وقت التسجيل). اضغط على خانة لتصحيح يوم لأي مشارك.</p>
       </div>
@@ -419,7 +473,17 @@ async function renderAdmin() {
           })
           .join('')}</tbody></table></div>`;
   }
-  return `<div class="card" style="display:grid;gap:.6rem">
+  const confirmTop = S.pending && S.pending.top ? `<div class="confirm card warnbox"><span>${esc(S.pending.label)}</span>
+      <button class="btn small" type="button" id="p-yes">تأكيد الحذف</button><button class="btn ghost small" type="button" id="p-no">إلغاء</button></div>` : '';
+  return `${confirmTop}
+    <form class="card" id="window-form" style="display:grid;gap:.6rem">
+      <h3>⏰ مدّة تعمير اليوم</h3>
+      <p class="muted small" style="margin:0">إلى متى يبقى بإمكان المشاركين تسجيل يوم ما؟ (المشرف يصحّح أي يوم في كل الحالات)</p>
+      <div class="row" style="flex-wrap:nowrap"><select id="edit-days" style="flex:1;min-width:0">${Object.entries(WINDOWS)
+        .map(([k, t]) => `<option value="${k}" ${Number(k) === S.editDays ? 'selected' : ''}>${t}</option>`)
+        .join('')}</select><button class="btn" type="submit">حفظ</button></div>
+    </form>
+    <div class="card" style="display:grid;gap:.6rem">
       <div class="row"><h2>التحديات</h2><button class="btn" type="button" id="add-c">+ تحدٍّ جديد</button></div>
       ${S.challenges
         .map(
@@ -537,10 +601,18 @@ function bind() {
     b.addEventListener('click', () => {
       const x = S.challenges.find((c) => c.id === Number(b.dataset.del));
       S.pending = {
+        top: true,
         label: `حذف «${x.title}» وكل الأيام المسجّلة فيه؟ (للإخفاء فقط: عدّل وألغِ «مفتوح»)`,
-        run: async () => { const { error } = await sb.from('challenges').delete().eq('id', x.id); if (error) toast(error.message, true); await loadHabits(); },
+        run: async () => {
+          const { data, error } = await sb.from('challenges').delete().eq('id', x.id).select('id');
+          if (error || !data?.length) toast('تعذّر الحذف.', true);
+          else toast('تم حذف «' + x.title + '»');
+          if (S.detailId === x.id) S.detailId = null;
+          await loadHabits();
+        },
       };
       render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     })
   );
   $('#f-cancel')?.addEventListener('click', () => { S.editing = null; render(); });
@@ -553,6 +625,8 @@ function bind() {
       items: $('#f-items').value.split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 10),
     };
     if (!row.items.length) row.items = null;
+    row.video_url = $('#f-video').value.trim() || null;
+    if (row.video_url && !youtubeId(row.video_url)) return toast('رابط يوتيوب غير صالح.', true);
     if (!row.title) return toast('العنوان إجباري.', true);
     if (row.end_date && row.end_date < row.start_date) return toast('تاريخ النهاية قبل البداية.', true);
     const { error } = S.editing.id
@@ -581,6 +655,26 @@ function bind() {
       render();
     })
   );
+  v.querySelectorAll('[data-video]').forEach((b) =>
+    b.addEventListener('click', () => { const id = Number(b.dataset.video); S.video[id] = !S.video[id]; render(); })
+  );
+  $('#rules-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = $('#rules-text').value.slice(0, 10000);
+    const { error } = await sb.from('app_settings').upsert({ key: 'rules', value, updated_at: new Date().toISOString() });
+    if (error) return toast('تعذّر الحفظ.', true);
+    S.rules = value;
+    toast('تم حفظ القانون');
+    render();
+  });
+  $('#window-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = Number($('#edit-days').value);
+    const { error } = await sb.from('app_settings').upsert({ key: 'edit_days', value, updated_at: new Date().toISOString() });
+    if (error) return toast('تعذّر الحفظ.', true);
+    S.editDays = value;
+    toast('تم الحفظ: ' + WINDOWS[value]);
+  });
   $('#p-yes')?.addEventListener('click', async () => { const p = S.pending; S.pending = null; await p.run(); render(); });
   $('#p-no')?.addEventListener('click', () => { S.pending = null; render(); });
 }

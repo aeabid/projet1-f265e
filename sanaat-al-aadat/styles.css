@@ -28,7 +28,8 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font); font-
 .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .7rem; }
 .top h1 { margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--bar-ink); }
 .top .who { font-size: .9rem; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.tabs { display: flex; gap: .3rem; padding-bottom: .6rem; }
+.tabs { display: flex; gap: .3rem; padding-bottom: .6rem; overflow-x: auto; scrollbar-width: none; }
+.tabs button { white-space: nowrap; flex: none; padding: .3rem .7rem; font-size: .92rem; }
 .tabs button { font: inherit; cursor: pointer; border: 0; background: transparent; color: rgba(255,255,255,.85); padding: .35rem .9rem; border-radius: 999px; }
 .tabs button[aria-selected="true"] { background: #fff; color: #61038d; font-weight: 700; }
 .tabs button:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
@@ -121,3 +122,31 @@ body { margin: 0; }
 .chip.item.on { background: var(--good); border-color: var(--good); color: #fff; }
 .chip:disabled { opacity: .45; cursor: default; }
 td.cell.part { background: var(--good-soft); color: var(--good); font-size: .75rem; }
+
+/* الفيديو */
+.video { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 10px; overflow: hidden; background: #000; }
+.video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-btn { justify-self: start; }
+/* القانون */
+.rules-text { white-space: pre-wrap; line-height: 1.9; font-size: 1.02rem; }
+.warnbox { border-color: var(--pink); }
+/* منصّة الترتيب */
+.podium {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: .5rem;
+  background: linear-gradient(160deg, #20149a 0%, #4a0b93 50%, #61038d 100%); border-radius: 16px; padding: 1.2rem .6rem 0; color: #fff;
+}
+.place { display: grid; justify-items: center; gap: .25rem; text-align: center; min-width: 0; }
+.place .crown { font-size: 1.5rem; height: 1.6rem; line-height: 1; }
+.place .pname { font-weight: 700; font-size: .95rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place .ppts { font-weight: 800; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.place .ppts span { font-size: .75rem; font-weight: 500; opacity: .8; }
+.place .step { width: 100%; border-radius: 12px 12px 0 0; display: grid; place-items: start center; padding-top: .5rem; font-size: 1.6rem; background: rgba(255,255,255,.16); }
+.place.first .step { height: 6.5rem; background: linear-gradient(180deg, #f6c84c, #d99a12); }
+.place.second .step { height: 4.6rem; background: linear-gradient(180deg, #e3e6ee, #a9b0c2); }
+.place.third .step { height: 3.4rem; background: linear-gradient(180deg, #f0b58a, #c4733a); }
+.place.mine .pname::after { content: ' (حسابي)'; font-weight: 500; font-size: .75rem; opacity: .85; }
+.av { width: 3.4rem; height: 3.4rem; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 1.3rem; border: 3px solid rgba(255,255,255,.85); box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.place.first .av { width: 4.2rem; height: 4.2rem; font-size: 1.6rem; border-color: #f6c84c; }
+.av.sm { width: 2.2rem; height: 2.2rem; font-size: .95rem; border-width: 2px; box-shadow: none; flex: none; }
+@media (prefers-reduced-motion: no-preference) { .place .av { animation: pop .5s ease-out both; } .place.first .av { animation-delay: .1s; } }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
