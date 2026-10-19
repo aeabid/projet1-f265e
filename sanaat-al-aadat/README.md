@@ -18,7 +18,7 @@
 ## إعداد الدخول بـ Google (مرة واحدة)
 
 1. في Google Cloud Console: APIs & Services ← Credentials ← Create OAuth client ID (Web application).
-   - Authorized redirect URI: `https://wunachimbqwjdkgguhzf.supabase.co/auth/v1/callback`
+   - Authorized redirect URI: `https://bviwupumpnczymsuklom.supabase.co/auth/v1/callback`
 2. في Supabase: Authentication ← Sign In / Providers ← Google: الصق Client ID و Client Secret وفعّله.
 3. في Supabase: Authentication ← URL Configuration:
    - Site URL: `https://sanaat-al-aadat.netlify.app`

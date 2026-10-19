@@ -137,3 +137,5 @@ insert into public.challenges (title, icon, sort) values
   ('ورد القرآن', '📖', 4),
   ('رياضة', '🏃', 5),
   ('الصبر', '🌱', 6);
+
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
