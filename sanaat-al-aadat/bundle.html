@@ -163,7 +163,7 @@ const EDIT_DAYS = 7;
 const sb = supabase.createClient(window.APP_CONFIG.supabaseUrl, window.APP_CONFIG.supabaseKey);
 
 const S = {
-  session: null, me: null, challenges: [], myLogs: new Set(), ranks: {},
+  session: null, me: null, challenges: [], members: [], memberId: null, myLogs: new Set(), ranks: {}, google: false,
   tab: 'habits', week: 0, period: 'week', boardId: null, board: null,
   detailId: null, month: null, details: null, editing: null, pending: null, authMode: 'login',
 };
@@ -182,6 +182,9 @@ const fmt = (s) => { const [, m, d] = s.split('-'); return `${d}/${m}`; };
 const medal = (r, done) => (done && r <= 3 ? MEDALS[r - 1] : r);
 const key = (cid, day) => `${cid}|${day}`;
 const openChallenges = () => S.challenges.filter((c) => c.active && c.start_date <= today());
+const member = () => S.members.find((m) => m.id === S.memberId);
+const store = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const recall = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 
 function toast(msg, err = false) {
   const t = $('#toast');
@@ -212,13 +215,13 @@ function renderAuth() {
       <p class="muted small" style="margin:0">صلاة الصبح في المسجد، ورد القرآن، الأذكار… سجّل أيامك وشاهد سلسلتك وترتيبك بين المشاركين.</p>
     </div>
     <div class="card" style="display:grid;gap:.8rem">
-      <button class="btn google" type="button" id="google">
+      ${S.google ? `<button class="btn google" type="button" id="google">
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
         الدخول بحساب Google</button>
-      <div class="or">أو بالإيميل</div>
+      <div class="or">أو بالإيميل</div>` : ''}
       ${reset ? '' : `<div class="seg"><button type="button" data-mode="login" aria-pressed="${!signup}">دخول</button><button type="button" data-mode="signup" aria-pressed="${signup}">حساب جديد</button></div>`}
       <form id="auth-form" novalidate>
-        ${signup ? '<label>الاسم (يظهر في الترتيب)<input id="a-name" maxlength="60" required autocomplete="name"></label>' : ''}
+        ${signup ? '<label>اسمك<input id="a-name" maxlength="60" required autocomplete="name"></label>' : ''}
         <label>الإيميل<input id="a-email" type="email" required autocomplete="email" dir="ltr"></label>
         ${reset ? '' : `<label>كلمة السر<input id="a-pass" type="password" minlength="6" required autocomplete="${signup ? 'new-password' : 'current-password'}" dir="ltr"></label>`}
         <p class="error" id="a-err" hidden></p>
@@ -228,7 +231,7 @@ function renderAuth() {
     </div>
   </div>`;
   document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { S.authMode = b.dataset.mode; renderAuth(); }));
-  $('#google').addEventListener('click', async () => {
+  $('#google')?.addEventListener('click', async () => {
     const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
     if (error) showErr(error);
   });
@@ -246,15 +249,17 @@ function renderAuth() {
       } else if (signup) {
         const name = $('#a-name').value.trim();
         if (!name) throw new Error('الاسم إجباري');
-        const { data, error } = await sb.auth.signUp({
-          email, password: $('#a-pass').value,
-          options: { data: { display_name: name }, emailRedirectTo: location.origin + location.pathname },
-        });
-        if (error) throw error;
-        if (!data.session) {
-          $('#view').innerHTML = `<div class="auth"><div class="card"><h3>تحقّق من بريدك 📩</h3>
-            <p class="muted">أرسلنا رسالة تأكيد إلى <b dir="ltr">${esc(email)}</b>. اضغط على الرابط فيها ثم ادخل.</p></div></div>`;
+        const password = $('#a-pass').value;
+        // الحساب يُنشأ مؤكَّدًا (دون رسالة)، ثم ندخل مباشرة
+        const { data, error } = await sb.functions.invoke('signup', { body: { email, password, name } });
+        if (error) {
+          let msg = 'تعذّر إنشاء الحساب';
+          try { msg = (await error.context.json()).error || msg; } catch {}
+          throw new Error(msg);
         }
+        if (!data?.ok) throw new Error('تعذّر إنشاء الحساب');
+        const { error: e2 } = await sb.auth.signInWithPassword({ email, password });
+        if (e2) throw e2;
       } else {
         const { error } = await sb.auth.signInWithPassword({ email, password: $('#a-pass').value });
         if (error) throw error;
@@ -295,10 +300,17 @@ async function loadMe() {
   S.me = data;
 }
 
+async function loadMembers() {
+  const { data } = await sb.from('members').select('id, name, joined_on').eq('account_id', S.me.id).order('id');
+  S.members = data || [];
+  if (!member()) S.memberId = Number(recall('member')) || null;
+  if (!member()) S.memberId = S.members[0]?.id ?? null;
+}
+
 async function loadHabits() {
   const [{ data: ch }, { data: logs }] = await Promise.all([
     sb.from('challenges').select('*').order('sort').order('id'),
-    sb.from('habit_logs').select('challenge_id, day').eq('user_id', S.me.id),
+    S.memberId ? sb.from('habit_logs').select('challenge_id, day').eq('member_id', S.memberId) : Promise.resolve({ data: [] }),
   ]);
   S.challenges = ch || [];
   S.myLogs = new Set((logs || []).map((l) => key(l.challenge_id, l.day)));
@@ -306,7 +318,7 @@ async function loadHabits() {
   S.ranks = {};
   openChallenges().forEach((c, i) => {
     const rows = ranked(boards[i].data || []);
-    S.ranks[c.id] = { me: rows.find((r) => r.is_me), count: rows.length };
+    S.ranks[c.id] = { me: rows.find((r) => r.member_id === S.memberId), count: rows.length };
   });
 }
 
@@ -323,7 +335,7 @@ function myStats(c) {
   let d = has(last) ? last : addDays(last, -1);
   while (d >= c.start_date && has(d)) { streak++; d = addDays(d, -1); }
   let done = 0;
-  let first = S.me.joined_on;
+  let first = member()?.joined_on || today();
   for (const k of S.myLogs) {
     const [cid, day] = k.split('|');
     if (Number(cid) === c.id && day >= c.start_date && day <= last) { done++; if (day < first) first = day; }
@@ -344,7 +356,34 @@ async function render() {
   bind();
 }
 
+function membersBar() {
+  if (!S.members.length) return '';
+  return `<div class="card row" style="padding:.6rem .8rem">
+    <div class="chips">${S.members
+      .map((m) => `<button class="chip" type="button" data-member="${m.id}" aria-pressed="${m.id === S.memberId}">👤 ${esc(m.name)}</button>`)
+      .join('')}</div>
+    <button class="link small" type="button" id="manage-members">+ إضافة / تعديل</button></div>`;
+}
+
+function renderMembers() {
+  const first = !S.members.length;
+  return `<form class="card" id="members-form" style="display:grid;gap:.7rem">
+    <h3>${first ? 'من سيشارك في التحديات؟' : 'المشاركون في حسابك'}</h3>
+    <p class="muted small" style="margin:0">أضف أبناءك (أو نفسك). كل مشارك له أيامه وترتيبه، وتسجّل له من هذا الحساب.</p>
+    ${S.members
+      .map((m) => `<div class="row" style="flex-wrap:nowrap"><input data-mname="${m.id}" maxlength="60" value="${esc(m.name)}" style="flex:1;min-width:0">
+        <button class="btn danger small" type="button" data-mdel="${m.id}">حذف</button></div>`)
+      .join('')}
+    <div class="row" style="flex-wrap:nowrap"><input id="new-member" maxlength="60" placeholder="اسم المشارك، مثال: سارة" style="flex:1;min-width:0">
+      <button class="btn ghost small" type="button" id="add-member">+ إضافة</button></div>
+    ${S.pending ? `<div class="confirm card"><span>${esc(S.pending.label)}</span>
+      <button class="btn small" type="button" id="p-yes">تأكيد</button><button class="btn ghost small" type="button" id="p-no">إلغاء</button></div>` : ''}
+    ${first ? '' : '<div class="row"><button class="btn" type="submit">حفظ الأسماء</button><button class="btn ghost" type="button" id="m-done">رجوع</button></div>'}
+  </form>`;
+}
+
 function renderHabits() {
+  if (S.editMembers || !S.members.length) return renderMembers();
   const list = openChallenges();
   const now = today();
   const start = addDays(weekStart(now), S.week * 7);
@@ -354,7 +393,7 @@ function renderHabits() {
       S.me.is_admin ? 'أضف أول تحدٍّ من تبويب «الإدارة».' : 'ستظهر هنا العادات عندما يضيفها المشرف.'
     }</p></div>`;
   }
-  return `<div class="weeknav">
+  return `${membersBar()}<div class="weeknav">
       <button class="btn ghost small" type="button" data-week="-1">→ الأسبوع السابق</button>
       <span class="small muted">${fmt(week[0])} — ${fmt(week[6])}</span>
       <button class="btn ghost small" type="button" data-week="1" ${S.week >= 0 ? 'disabled' : ''}>الأسبوع التالي ←</button>
@@ -397,9 +436,9 @@ async function renderBoard() {
     <ol class="board">${rows
       .map((r) => {
         const pct = r.total ? Math.min(100, Math.round((r.days / r.total) * 100)) : 0;
-        return `<li class="${r.is_me ? 'mine' : ''}">
+        return `<li class="${r.is_mine ? 'mine' : ''}">
           <span class="pos">${medal(r.rank, r.days)}</span>
-          <div style="min-width:0"><span class="name">${esc(r.display_name)}</span> ${r.is_me ? '<span class="tag">أنا</span>' : ''}
+          <div style="min-width:0"><span class="name">${esc(r.name)}</span> ${r.is_mine ? '<span class="tag">حسابي</span>' : ''}
             <div class="bar"><span style="width:${pct}%"></span></div></div>
           <div class="num"><b>${r.days}</b> <span class="small muted">يوم</span><div class="small muted">${r.streak ? r.streak + ' 🔥' : '—'} · ${pct}%</div></div>
         </li>`;
@@ -436,13 +475,14 @@ async function renderAdmin() {
     const [y, m] = month.split('-').map(Number);
     const days = Array.from({ length: new Date(y, m, 0).getDate() }, (_, i) => `${month}-${pad(i + 1)}`);
     const [{ data: people }, { data: logs }, { data: board }] = await Promise.all([
-      sb.from('profiles').select('id, display_name, joined_on').order('display_name'),
-      sb.from('habit_logs').select('user_id, day, created_at').eq('challenge_id', c.id).gte('day', days[0]).lte('day', days[days.length - 1]),
+      sb.from('members').select('id, name, profiles(display_name)'),
+      sb.from('habit_logs').select('member_id, day, created_at').eq('challenge_id', c.id).gte('day', days[0]).lte('day', days[days.length - 1]),
       sb.rpc('leaderboard', { p_challenge: c.id, p_period: 'all' }),
     ]);
     const rows = ranked(board || []);
     const byUser = {};
-    for (const l of logs || []) (byUser[l.user_id] ??= {})[l.day] = l.created_at;
+    for (const l of logs || []) (byUser[l.member_id] ??= {})[l.day] = l.created_at;
+    const account = Object.fromEntries((people || []).map((m) => [m.id, m.profiles?.display_name || '']));
     S.details = { c, people: people || [] };
     const avg = rows.length ? Math.round(rows.reduce((t, r) => t + (r.total ? r.days / r.total : 0), 0) / rows.length * 100) : 0;
     details = `<div class="card" style="display:grid;gap:.7rem">
@@ -465,13 +505,13 @@ async function renderAdmin() {
         <thead><tr><th class="name">الاسم</th>${days.map((d) => `<th class="${d === now ? 'today' : ''}">${Number(d.slice(8))}</th>`).join('')}<th>الشهر</th><th>الإجمالي</th><th>🔥</th></tr></thead>
         <tbody>${rows
           .map((r) => {
-            const mine = byUser[r.user_id] || {};
+            const mine = byUser[r.member_id] || {};
             const pct = r.total ? Math.round((r.days / r.total) * 100) : 0;
-            return `<tr><td class="name">${medal(r.rank, r.days)} ${esc(r.display_name)}</td>${days
+            return `<tr><td class="name">${medal(r.rank, r.days)} ${esc(r.name)}${account[r.member_id] && account[r.member_id] !== r.name ? ` <span class="small muted">(${esc(account[r.member_id])})</span>` : ''}</td>${days
               .map((d) => {
                 const out = d > now || d < c.start_date || (c.end_date && d > c.end_date);
                 const at = mine[d] ? new Date(mine[d]).toLocaleString('fr-TN', { timeZone: 'Africa/Tunis' }) : '';
-                return `<td class="cell ${mine[d] ? 'done' : ''} ${out ? 'out' : ''}" title="${at ? 'سُجّل في ' + esc(at) : fmt(d)}" ${out ? '' : `data-u="${r.user_id}" data-d="${d}" data-n="${esc(r.display_name)}"`}>${mine[d] ? '✔' : ''}</td>`;
+                return `<td class="cell ${mine[d] ? 'done' : ''} ${out ? 'out' : ''}" title="${at ? 'سُجّل في ' + esc(at) : fmt(d)}" ${out ? '' : `data-u="${r.member_id}" data-d="${d}" data-n="${esc(r.name)}"`}>${mine[d] ? '✔' : ''}</td>`;
               })
               .join('')}<td><b>${Object.keys(mine).length}</b></td><td>${r.days}/${r.total} · ${pct}%</td><td>${r.streak}</td></tr>`;
           })
@@ -494,10 +534,10 @@ async function renderAdmin() {
     ${details}`;
 }
 
-async function toggle(userId, cid, day, done) {
+async function toggle(memberId, cid, day, done) {
   const { error } = done
-    ? await sb.from('habit_logs').insert({ user_id: userId, challenge_id: cid, day })
-    : await sb.from('habit_logs').delete().match({ user_id: userId, challenge_id: cid, day });
+    ? await sb.from('habit_logs').insert({ member_id: Number(memberId), challenge_id: cid, day })
+    : await sb.from('habit_logs').delete().match({ member_id: Number(memberId), challenge_id: cid, day });
   if (error && error.code !== '23505') {
     toast(error.code === '42501' ? 'لا يمكن تسجيل هذا اليوم.' : 'تعذّر الحفظ، أعد المحاولة.', true);
     return false;
@@ -507,6 +547,54 @@ async function toggle(userId, cid, day, done) {
 
 function bind() {
   const v = $('#view');
+  v.querySelectorAll('[data-member]').forEach((b) =>
+    b.addEventListener('click', async () => { S.memberId = Number(b.dataset.member); store('member', String(S.memberId)); await loadHabits(); render(); })
+  );
+  $('#manage-members')?.addEventListener('click', () => { S.editMembers = true; render(); });
+  $('#m-done')?.addEventListener('click', () => { S.editMembers = false; S.pending = null; render(); });
+  $('#add-member')?.addEventListener('click', async () => {
+    const name = $('#new-member').value.trim();
+    if (!name) return toast('اكتب اسم المشارك.', true);
+    const { data, error } = await sb.from('members').insert({ account_id: S.me.id, name }).select('id').single();
+    if (error) return toast(error.code === '42501' ? 'وصلت إلى الحد الأقصى من المشاركين.' : 'تعذّر الإضافة.', true);
+    await loadMembers();
+    if (S.members.length === 1 || !S.memberId) S.memberId = data.id;
+    await loadHabits();
+    toast('تمت إضافة ' + name);
+    render();
+  });
+  $('#new-member')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#add-member').click(); } });
+  $('#members-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    for (const inp of v.querySelectorAll('[data-mname]')) {
+      const m = S.members.find((x) => x.id === Number(inp.dataset.mname));
+      const name = inp.value.trim();
+      if (m && name && name !== m.name) {
+        const { error } = await sb.from('members').update({ name }).eq('id', m.id);
+        if (error) return toast('تعذّر الحفظ.', true);
+      }
+    }
+    await loadMembers();
+    S.editMembers = false;
+    toast('تم الحفظ');
+    render();
+  });
+  v.querySelectorAll('[data-mdel]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const m = S.members.find((x) => x.id === Number(b.dataset.mdel));
+      S.pending = {
+        label: `حذف «${m.name}» وكل أيامه المسجّلة؟`,
+        run: async () => {
+          const { error } = await sb.from('members').delete().eq('id', m.id);
+          if (error) toast('تعذّر الحذف.', true);
+          if (S.memberId === m.id) S.memberId = null;
+          await loadMembers();
+          await loadHabits();
+        },
+      };
+      render();
+    })
+  );
   v.querySelectorAll('[data-week]').forEach((b) => b.addEventListener('click', () => { S.week += Number(b.dataset.week); render(); }));
   v.querySelectorAll('.day').forEach((b) =>
     b.addEventListener('click', async () => {
@@ -516,7 +604,7 @@ function bind() {
       const k = key(cid, b.dataset.d);
       done ? S.myLogs.add(k) : S.myLogs.delete(k);
       b.classList.toggle('done', done);
-      if (await toggle(S.me.id, cid, b.dataset.d, done)) {
+      if (await toggle(S.memberId, cid, b.dataset.d, done)) {
         if (done) toast('بارك الله فيك 👏');
       } else {
         done ? S.myLogs.delete(k) : S.myLogs.add(k);
@@ -612,9 +700,16 @@ async function start() {
   $('#logout').hidden = false;
   $('#who').textContent = S.me.display_name + ' ✎';
   $('#who').style.cursor = 'pointer';
+  await loadMembers();
   await loadHabits();
   render();
 }
+
+// الزر يظهر فقط إذا كان الدخول بـ Google مفعّلًا في Supabase
+fetch(window.APP_CONFIG.supabaseUrl + '/auth/v1/settings', { headers: { apikey: window.APP_CONFIG.supabaseKey } })
+  .then((r) => r.json())
+  .then((st) => { S.google = !!st?.external?.google; if (!S.session) renderAuth(); })
+  .catch(() => {});
 
 let started = null;
 sb.auth.onAuthStateChange((event, session) => {
