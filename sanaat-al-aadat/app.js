@@ -350,17 +350,23 @@ async function renderBoard() {
   const { data, error } = await sb.rpc('ranking', { p_challenge: c ? c.id : null, p_period: S.period });
   if (error) return `<div class="card error">${esc(error.message)}</div>`;
   const rows = ranked(data || []);
-  return `<div class="card" style="display:grid;gap:.7rem">
-      <div class="chips">
-        <button class="chip" type="button" data-board="0" aria-pressed="${!c}">🏆 الترتيب العام</button>
-        ${list.map((x) => `<button class="chip" type="button" data-board="${x.id}" aria-pressed="${x.id === S.boardId}">${esc(x.icon || '⭐')} ${esc(x.title)}</button>`).join('')}
+  const shown = Math.min(3, rows.filter((r) => r.points).length);
+  return `<div class="board-filters">
+      <div class="seg" role="group" aria-label="الفترة">${Object.entries(PERIODS)
+        .map(([k, t]) => `<button type="button" data-period="${k}" aria-pressed="${k === S.period}">${t}</button>`)
+        .join('')}</div>
+      <div class="scroller" role="group" aria-label="المهمة">
+        <button class="pill" type="button" data-board="0" aria-pressed="${!c}"><span>🏆</span>الكل</button>
+        ${list.map((x) => `<button class="pill" type="button" data-board="${x.id}" aria-pressed="${x.id === S.boardId}"><span>${esc(x.icon || '⭐')}</span>${esc(x.title)}</button>`).join('')}
       </div>
-      <div class="chips">${Object.entries(PERIODS).map(([k, t]) => `<button class="chip" type="button" data-period="${k}" aria-pressed="${k === S.period}">${t}</button>`).join('')}</div>
-      <p class="muted small" style="margin:0">${c ? `أحسن المشاركين في «${esc(c.title)}»: حسب النقاط ثم الأيام الكاملة ثم السلسلة.` : 'مجموع النقاط في كل المهام: من جمع أكثر نقاط في الأول.'}</p>
+    </div>
+    <div class="board-title">
+      <h2>${c ? `${esc(c.icon || '⭐')} أحسن المشاركين في ${esc(c.title)}` : '🏆 الترتيب العام'}</h2>
+      <span class="small muted">${PERIODS[S.period]} · ${rows.length} مشارك</span>
     </div>
     ${podium(rows)}
     <ol class="board">${rows
-      .slice(rows.filter((r) => r.points).length >= 3 ? 3 : 0)
+      .slice(shown)
       .map((r) => {
         const pct = rows[0]?.points ? Math.round((r.points / rows[0].points) * 100) : 0;
         return `<li class="${r.is_mine ? 'mine' : ''}">
@@ -376,7 +382,7 @@ async function renderBoard() {
 // منصّة الثلاثة الأوائل: الثاني، الأول، الثالث
 function podium(rows) {
   const top = rows.filter((r) => r.points).slice(0, 3);
-  if (top.length < 3) return '';
+  if (!top.length) return '<div class="card muted" style="text-align:center">لم يجمع أحد نقاطًا في هذه الفترة بعد. كن الأول! 💪</div>';
   const place = (r, cls) => `<div class="place ${cls} ${r.is_mine ? 'mine' : ''}">
       <div class="crown">${cls === 'first' ? '👑' : ''}</div>
       <span class="av" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>
@@ -384,7 +390,8 @@ function podium(rows) {
       <div class="ppts">${r.points} <span>نقطة</span></div>
       <div class="step">${MEDALS[r.rank - 1] || r.rank}</div>
     </div>`;
-  return `<div class="podium">${place(top[1], 'second')}${place(top[0], 'first')}${place(top[2], 'third')}</div>`;
+  const order = [top[1] && place(top[1], 'second'), place(top[0], 'first'), top[2] && place(top[2], 'third')].filter(Boolean);
+  return `<div class="podium" style="grid-template-columns:repeat(${order.length}, minmax(0, 1fr))">${order.join('')}</div>`;
 }
 
 function challengeForm(c) {
