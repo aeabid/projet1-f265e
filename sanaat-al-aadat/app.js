@@ -5,6 +5,14 @@ const DAYS = ['إث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 const PERIODS = { week: 'هذا الأسبوع', month: 'هذا الشهر', all: 'منذ البداية' };
 const WINDOWS = { 1: 'اليوم فقط (24 ساعة حتى نصف الليل)', 2: 'اليوم وأمس (48 ساعة)', 3: 'آخر 3 أيام', 7: 'آخر أسبوع' };
+// المستويات: كل LEVEL_STEP نقطة = مستوى جديد
+const LEVEL_STEP = 50;
+const LEVEL_COLORS = ['#f2c12e', '#f07a1a', '#e8365d', '#e47fd6', '#8a5cf6', '#2e8bf0', '#19b394', '#61038d'];
+const level = (points) => {
+  const lv = Math.floor((points || 0) / LEVEL_STEP) + 1;
+  const into = (points || 0) % LEVEL_STEP;
+  return { level: lv, toGo: LEVEL_STEP - into, pct: Math.round((into / LEVEL_STEP) * 100) };
+};
 const COLORS = ['#61038d', '#20149a', '#ef207a', '#1f9d63', '#c26a00', '#0b7fa6', '#8a2be2', '#b0306a'];
 const avatarColor = (id) => COLORS[Number(id) % COLORS.length];
 
@@ -290,8 +298,67 @@ function renderRules() {
       <div class="row"><button class="btn" type="submit">حفظ القانون</button></div></form>` : ''}`;
 }
 
+const MONTH_NAMES = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const shiftMonth = (m, n) => { const d = new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1 + n, 1); return iso(d).slice(0, 7); };
+
+// تقدّم المشارك في مهمة طيلة الشهر
+function renderMonth(c) {
+  const now = today();
+  const month = S.detMonth || now.slice(0, 7);
+  const [y, m] = month.split('-').map(Number);
+  const count = new Date(y, m, 0).getDate();
+  const days = Array.from({ length: count }, (_, i) => `${month}-${pad(i + 1)}`);
+  const blanks = (parse(days[0]).getDay() + 6) % 7;
+  const n = nItems(c);
+  const from = [days[0], c.start_date, member()?.joined_on || days[0]].sort().pop();
+  const to = [days[count - 1], now, c.end_date || '9999-12-31'].sort()[0];
+  const elapsed = to < from ? 0 : diff(from, to) + 1;
+  let full = 0, items = 0, best = 0, run = 0;
+  for (const d of days) {
+    const k = doneCount(c, d);
+    items += k;
+    if (k >= n) { full++; run++; best = Math.max(best, run); } else run = 0;
+  }
+  const pct = elapsed ? Math.round((full / elapsed) * 100) : 0;
+  const sel = n > 1 && days.includes(S.sel[c.id]) ? S.sel[c.id] : null;
+  return `${membersBar()}
+    <div class="row"><button class="btn ghost small" type="button" id="back-habits">→ رجوع للعادات</button></div>
+    <section class="card month" style="display:grid;gap:.8rem">
+      <div class="row"><h2>${esc(c.icon || '⭐')} ${esc(c.title)}</h2></div>
+      <div class="weeknav">
+        <button class="btn ghost small" type="button" data-mnav="-1">→ الشهر السابق</button>
+        <b>${MONTH_NAMES[m - 1]} ${y}</b>
+        <button class="btn ghost small" type="button" data-mnav="1" ${month >= now.slice(0, 7) ? 'disabled' : ''}>الشهر التالي ←</button>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><b>${items * (c.points ?? 1)}</b><span class="small muted">نقطة هذا الشهر</span></div>
+        <div class="kpi"><b>${full}<small class="muted">/${elapsed}</small></b><span class="small muted">يوم كامل</span></div>
+        <div class="kpi"><b>${pct}%</b><span class="small muted">المواظبة</span></div>
+        <div class="kpi"><b>${best} 🔥</b><span class="small muted">أطول سلسلة</span></div>
+      </div>
+      <div class="mbar"><span style="width:${pct}%"></span></div>
+      <div class="cal">
+        ${DAYS.map((d) => `<span class="cal-h">${d}</span>`).join('')}
+        ${'<span></span>'.repeat(blanks)}
+        ${days
+          .map((d) => {
+            const k = doneCount(c, d);
+            const out = d > now || d < c.start_date || (c.end_date && d > c.end_date);
+            const ok = !out && (editable(c, d) || n > 1);
+            return `<button type="button" class="mcell ${k >= n ? 'done' : k ? 'part' : ''} ${out ? 'out' : ''} ${d === now ? 'today' : ''} ${d === sel ? 'sel' : ''}"
+              data-mc="${c.id}" data-d="${d}" ${ok ? '' : 'disabled'}><b>${Number(d.slice(8))}</b>${n > 1 && k && k < n ? `<small>${k}/${n}</small>` : k >= n ? '<small>✔</small>' : ''}</button>`;
+          })
+          .join('')}
+      </div>
+      ${sel ? itemsRow(c, sel) : n > 1 ? '<p class="muted small" style="margin:0">اضغط على يوم لترى العناصر وتسجّلها.</p>' : ''}
+      <p class="muted small" style="margin:0">🟩 يوم كامل · 🟢 يوم ناقص · ⬜ لم يُسجَّل</p>
+    </section>`;
+}
+
 function renderHabits() {
   if (S.editMembers || !S.members.length) return renderMembers();
+  const opened = S.openId && openChallenges().find((x) => x.id === S.openId);
+  if (opened) return renderMonth(opened);
   const list = openChallenges();
   const now = today();
   const start = addDays(weekStart(now), S.week * 7);
@@ -317,7 +384,7 @@ function renderHabits() {
         const st = myStats(c);
         const r = S.ranks[c.id];
         return `<section class="card habit">
-          <div class="row"><h3>${esc(c.icon || '⭐')} ${esc(c.title)}</h3>
+          <div class="row"><button class="title-link" type="button" data-open="${c.id}"><h3>${esc(c.icon || '⭐')} ${esc(c.title)}</h3><span class="small">📅 تقدّم الشهر ←</span></button>
             <button class="rank-link" type="button" data-board="${c.id}">🏆 ${r?.me && r.me.points ? `الترتيب ${r.me.rank}/${r.count}` : "الترتيب"}</button></div>
           <div class="stats muted">⭐ <b>${st.points}</b> نقطة &nbsp;|&nbsp; السلسلة: <b>${st.streak}</b> 🔥 &nbsp;|&nbsp; الإجمالي: <b>${st.percent}%</b></div>
           ${c.description ? `<p class="muted small" style="margin:0">${esc(c.description)}</p>` : ''}
@@ -350,7 +417,6 @@ async function renderBoard() {
   const { data, error } = await sb.rpc('ranking', { p_challenge: c ? c.id : null, p_period: S.period });
   if (error) return `<div class="card error">${esc(error.message)}</div>`;
   const rows = ranked(data || []);
-  const shown = Math.min(3, rows.filter((r) => r.points).length);
   return `<div class="board-filters">
       <div class="seg" role="group" aria-label="الفترة">${Object.entries(PERIODS)
         .map(([k, t]) => `<button type="button" data-period="${k}" aria-pressed="${k === S.period}">${t}</button>`)
@@ -364,34 +430,23 @@ async function renderBoard() {
       <h2>${c ? `${esc(c.icon || '⭐')} أحسن المشاركين في ${esc(c.title)}` : '🏆 الترتيب العام'}</h2>
       <span class="small muted">${PERIODS[S.period]} · ${rows.length} مشارك</span>
     </div>
-    ${podium(rows)}
-    <ol class="board">${rows
-      .slice(shown)
-      .map((r) => {
-        const pct = rows[0]?.points ? Math.round((r.points / rows[0].points) * 100) : 0;
-        return `<li class="${r.is_mine ? 'mine' : ''}">
-          <span class="pos">${medal(r.rank, r.points)}</span>
-          <div style="min-width:0;display:flex;gap:.55rem;align-items:center"><span class="av sm" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span><div style="min-width:0;flex:1"><span class="name">${esc(r.name)}</span> ${r.is_mine ? '<span class="tag">حسابي</span>' : ''}
-            <div class="bar"><span style="width:${pct}%"></span></div></div></div>
-          <div class="num"><b>${r.points}</b> <span class="small muted">نقطة</span><div class="small muted">${r.days} يوم · ${r.streak ? r.streak + ' 🔥' : '—'}</div></div>
-        </li>`;
-      })
-      .join('')}</ol>`;
-}
-
-// منصّة الثلاثة الأوائل: الثاني، الأول، الثالث
-function podium(rows) {
-  const top = rows.filter((r) => r.points).slice(0, 3);
-  if (!top.length) return '<div class="card muted" style="text-align:center">لم يجمع أحد نقاطًا في هذه الفترة بعد. كن الأول! 💪</div>';
-  const place = (r, cls) => `<div class="place ${cls} ${r.is_mine ? 'mine' : ''}">
-      <div class="crown">${cls === 'first' ? '👑' : ''}</div>
-      <span class="av" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>
-      <div class="pname">${esc(r.name)}</div>
-      <div class="ppts">${r.points} <span>نقطة</span></div>
-      <div class="step">${MEDALS[r.rank - 1] || r.rank}</div>
+    ${rows.some((r) => r.points) ? '' : '<div class="card muted" style="text-align:center">لم يجمع أحد نقاطًا في هذه الفترة بعد. كن الأول! 💪</div>'}
+    <div class="lb">
+      <div class="lb-row lb-head"><span>#</span><span>المستوى</span><span>المشارك والتقدّم</span><span>المجموع</span></div>
+      ${rows
+        .map((r) => {
+          const lv = level(r.points);
+          return `<div class="lb-row ${r.is_mine ? 'mine' : ''} ${r.rank <= 3 && r.points ? 'top' : ''}">
+            <span class="lb-rank">${medal(r.rank, r.points)}</span>
+            <span class="star" style="--star:${LEVEL_COLORS[(lv.level - 1) % LEVEL_COLORS.length]}"><b>${lv.level}</b></span>
+            <span class="lb-who"><span class="av sm" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>
+              <span class="lb-info"><span class="lb-name">${esc(r.name)}${r.is_mine ? ' <span class="tag">حسابي</span>' : ''}</span>
+                <span class="lb-prog"><span class="bar"><span style="width:${lv.pct}%"></span></span><small>${lv.toGo} نقطة للمستوى ${lv.level + 1}</small></span></span></span>
+            <span class="lb-total"><b>${r.points}</b><small>نقطة</small></span>
+          </div>`;
+        })
+        .join('')}
     </div>`;
-  const order = [top[1] && place(top[1], 'second'), place(top[0], 'first'), top[2] && place(top[2], 'third')].filter(Boolean);
-  return `<div class="podium" style="grid-template-columns:repeat(${order.length}, minmax(0, 1fr))">${order.join('')}</div>`;
 }
 
 function challengeForm(c) {
@@ -662,6 +717,24 @@ function bind() {
       render();
     })
   );
+  v.querySelectorAll('[data-open]').forEach((b) =>
+    b.addEventListener('click', () => { S.openId = Number(b.dataset.open); S.detMonth = null; render(); window.scrollTo({ top: 0 }); })
+  );
+  $('#back-habits')?.addEventListener('click', () => { S.openId = null; render(); });
+  v.querySelectorAll('[data-mnav]').forEach((b) =>
+    b.addEventListener('click', () => { S.detMonth = shiftMonth(S.detMonth || today().slice(0, 7), Number(b.dataset.mnav)); render(); })
+  );
+  v.querySelectorAll('.mcell[data-mc]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const c = S.challenges.find((x) => x.id === Number(b.dataset.mc));
+      if (nItems(c) > 1) { S.sel[c.id] = b.dataset.d; return render(); }
+      const done = !b.classList.contains('done');
+      b.disabled = true;
+      if (await toggle(S.memberId, c.id, b.dataset.d, done) && done) toast('بارك الله فيك 👏');
+      await loadHabits();
+      render();
+    })
+  );
   v.querySelectorAll('[data-video]').forEach((b) =>
     b.addEventListener('click', () => { const id = Number(b.dataset.video); S.video[id] = !S.video[id]; render(); })
   );
@@ -707,7 +780,7 @@ $('#who').addEventListener('click', () => {
   });
 });
 
-document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => { S.tab = b.dataset.tab; S.pending = null; S.editing = null; render(); }));
+document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => { S.tab = b.dataset.tab; S.openId = null; S.pending = null; S.editing = null; render(); }));
 $('#logout').addEventListener('click', () => sb.auth.signOut());
 
 async function start() {

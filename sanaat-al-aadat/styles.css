@@ -166,3 +166,46 @@ td.cell.part { background: var(--good-soft); color: var(--good); font-size: .75r
 .board-title h2 { font-size: 1.15rem; }
 .tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .2rem; }
 .tabs button { padding: .3rem .2rem; font-size: .88rem; overflow: hidden; text-overflow: ellipsis; }
+
+/* جدول الترتيب العمودي */
+.lb { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.lb-row { display: grid; grid-template-columns: 2rem 2.6rem minmax(0, 1fr) 3.6rem; align-items: center; gap: .5rem; padding: .6rem .75rem; border-top: 1px solid var(--line); }
+.lb-row:nth-child(odd):not(.lb-head) { background: color-mix(in srgb, var(--chip) 45%, transparent); }
+.lb-head { border-top: 0; font-size: .78rem; font-weight: 700; color: var(--muted); background: var(--chip); }
+.lb-row.mine { background: var(--mine) !important; box-shadow: inset 4px 0 0 var(--brand); }
+.lb-rank { font-weight: 700; font-size: 1rem; text-align: center; font-variant-numeric: tabular-nums; }
+.lb-row.top .lb-rank { font-size: 1.35rem; }
+.star { width: 2.3rem; height: 2.3rem; background: var(--star); display: grid; place-items: center; justify-self: center;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.star b { color: #fff; font-size: .9rem; padding-top: .2rem; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.lb-who { display: flex; align-items: center; gap: .45rem; min-width: 0; }
+.lb-name { font-weight: 700; color: var(--brand-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.lb-total { display: grid; justify-items: center; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.lb-total b { font-size: 1.05rem; }
+.lb-total small, .lb-prog small { color: var(--muted); font-size: .7rem; }
+.lb-prog { display: grid; gap: .15rem; min-width: 0; }
+.lb-prog .bar { margin: 0; height: 8px; }
+.lb-prog .bar span { background: linear-gradient(90deg, #2bb3d9, #1f8fbf); }
+.lb-info { display: grid; gap: .2rem; min-width: 0; flex: 1; }
+.lb-total b { color: var(--ink); }
+.lb-name .tag { font-weight: 500; }
+@media (max-width: 360px) { .lb-row { grid-template-columns: 1.7rem 2.2rem minmax(0, 1fr) 3rem; gap: .35rem; padding: .5rem .5rem; } }
+
+/* تقدّم الشهر */
+.title-link { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: start; display: grid; gap: .05rem; color: var(--brand); }
+.title-link:hover h3 { text-decoration: underline; }
+.mbar { height: 10px; background: var(--off); border-radius: 5px; overflow: hidden; }
+.mbar span { display: block; height: 100%; background: linear-gradient(90deg, #1f9d63, #3fc68a); }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
+.cal-h { text-align: center; font-size: .75rem; color: var(--muted); font-weight: 700; }
+.mcell { font: inherit; aspect-ratio: 1; min-width: 0; padding: 0; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  display: grid; place-items: center; align-content: center; cursor: pointer; line-height: 1.05; }
+.mcell b { font-size: .95rem; }
+.mcell small { font-size: .65rem; }
+.mcell.done { background: var(--good); border-color: var(--good); color: #fff; }
+.mcell.part { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.mcell.today { outline: 2px solid var(--brand); outline-offset: 1px; }
+.mcell.sel { outline: 3px solid var(--pink); outline-offset: 1px; }
+.mcell.out { opacity: .35; cursor: default; }
+.mcell:disabled:not(.out) { cursor: default; }
+.kpi b small { font-size: .8rem; }
