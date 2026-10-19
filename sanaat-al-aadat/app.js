@@ -436,7 +436,7 @@ async function renderBoard() {
       ${rows
         .map((r) => {
           const lv = level(r.points);
-          return `<div class="lb-row ${r.is_mine ? 'mine' : ''} ${r.rank <= 3 && r.points ? 'top' : ''}">
+          return `<div class="lb-row ${r.is_mine ? 'mine' : ''} ${r.rank <= 3 && r.points ? 'lead' : ''}">
             <span class="lb-rank">${medal(r.rank, r.points)}</span>
             <span class="star" style="--star:${LEVEL_COLORS[(lv.level - 1) % LEVEL_COLORS.length]}"><b>${lv.level}</b></span>
             <span class="lb-who"><span class="av sm" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>

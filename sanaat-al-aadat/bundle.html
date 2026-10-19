@@ -185,7 +185,7 @@ td.cell.part { background: var(--good-soft); color: var(--good); font-size: .75r
 .lb-head { border-top: 0; font-size: .78rem; font-weight: 700; color: var(--muted); background: var(--chip); }
 .lb-row.mine { background: var(--mine) !important; box-shadow: inset 4px 0 0 var(--brand); }
 .lb-rank { font-weight: 700; font-size: 1rem; text-align: center; font-variant-numeric: tabular-nums; }
-.lb-row.top .lb-rank { font-size: 1.35rem; }
+.lb-row.lead .lb-rank { font-size: 1.35rem; }
 .star { width: 2.3rem; height: 2.3rem; background: var(--star); display: grid; place-items: center; justify-self: center;
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
 .star b { color: #fff; font-size: .9rem; padding-top: .2rem; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
@@ -224,6 +224,10 @@ td.cell.part { background: var(--good-soft); color: var(--good); font-size: .75r
 .lb-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
 .lb-head span:nth-child(3) { text-align: start; }
 @media (max-width: 360px) { .lb-row { grid-template-columns: 1.7rem 3.2rem minmax(0, 1fr) 3.2rem; column-gap: .4rem; } }
+.lb-row.lead { background: #fff8e6; }
+.lb-row.lead:nth-child(2) { background: #fff3d1; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lb-row.lead { background: #2e2616; } }
+:root[data-theme="dark"] .lb-row.lead { background: #2e2616; }
 </style>
 </head>
 <body>
@@ -691,7 +695,7 @@ async function renderBoard() {
       ${rows
         .map((r) => {
           const lv = level(r.points);
-          return `<div class="lb-row ${r.is_mine ? 'mine' : ''} ${r.rank <= 3 && r.points ? 'top' : ''}">
+          return `<div class="lb-row ${r.is_mine ? 'mine' : ''} ${r.rank <= 3 && r.points ? 'lead' : ''}">
             <span class="lb-rank">${medal(r.rank, r.points)}</span>
             <span class="star" style="--star:${LEVEL_COLORS[(lv.level - 1) % LEVEL_COLORS.length]}"><b>${lv.level}</b></span>
             <span class="lb-who"><span class="av sm" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>
