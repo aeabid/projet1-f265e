@@ -272,6 +272,11 @@ const routes = [
     sessionStorage.setItem('levelFilter', '');
     return viewStudents(el);
   }],
+  [/^#\/habits$/, (el) => viewHabits(el)],
+  [/^#\/leaderboard$/, (el) => viewLeaderboard(el)],
+  [/^#\/leaderboard\/(\d+)$/, (el, id) => viewLeaderboard(el, Number(id))],
+  [/^#\/challenges$/, (el) => viewChallenges(el)],
+  [/^#\/challenges\/(\d+)$/, (el, id) => viewChallengeDetails(el, Number(id))],
   [/^#\/account$/, viewAccount],
   [/^#\/dashboard$/, viewDashboard],
 ];
@@ -341,6 +346,14 @@ const NAV = {
         ['#/people', 'كل تلاميذ المركز'],
       ],
     },
+    {
+      label: 'التحديات',
+      items: [
+        ['#/challenges', 'إدارة التحديات'],
+        ['#/leaderboard', 'الترتيب'],
+        ['#/habits', 'عاداتي'],
+      ],
+    },
     ['#/program', 'البرنامج التربوي'],
     ['#/courses', 'الدورات والأنشطة'],
     {
@@ -378,11 +391,15 @@ const NAV = {
     ['#/tasks', 'المهام'],
     ['#/my-pay', 'ساعاتي وخلاصي'],
     ['#/todo', 'مهامي'],
+    ['#/habits', 'عاداتي'],
+    ['#/leaderboard', 'الترتيب'],
     ['#/account', 'حسابي'],
   ],
   parent: [
     ['#/students', 'أبنائي'],
     ['#/timetable', 'جدول الأوقات'],
+    ['#/habits', 'التحديات'],
+    ['#/leaderboard', 'الترتيب'],
     ['#/account', 'حسابي'],
   ],
 };

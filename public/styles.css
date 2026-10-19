@@ -516,3 +516,36 @@ a.card.alert.info { border-inline-start-color: var(--profit); }
 a.card.alert ul { margin: .4rem 0 0; padding-inline-start: 1.2rem; color: var(--muted); font-size: .9rem; }
 .kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
 .home-tiles { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+/* ===== التحديات ===== */
+.nowrap { white-space: nowrap; }
+tr.off { opacity: .55; }
+.chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+.week-nav { align-items: center; }
+.habits-group { margin-bottom: 1.2rem; }
+.card.habit { margin-bottom: .8rem; }
+.card.habit h3 { margin: 0; color: var(--feed-indigo); }
+.habit-stats { margin: .2rem 0 .6rem; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4rem; }
+.day {
+  font: inherit; cursor: pointer; aspect-ratio: 1; max-width: 64px; width: 100%; min-width: 0; padding: 0; justify-self: center;
+  border-radius: 50%; border: 2px solid transparent; background: #e2dcea; color: #fff; font-weight: 700;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; position: relative;
+}
+.day small { position: absolute; bottom: -1.3rem; color: var(--text); font-weight: 500; font-size: .7rem; }
+.day.today { border-color: var(--feed-purple); }
+.day.done { background: var(--good); }
+.day:disabled { cursor: default; opacity: .45; }
+.day.done:disabled { opacity: .8; }
+.days { padding-bottom: 1.2rem; }
+.podium { list-style: none; padding: 0; margin: .4rem 0 0; }
+.podium li { padding: .15rem 0; }
+table.leaderboard tr.mine td { background: #f3eafb; }
+table.leaderboard tr.top td.rank { font-size: 1.3rem; }
+.bar { display: inline-block; width: 80px; height: 8px; background: #eee6f5; border-radius: 4px; overflow: hidden; vertical-align: middle; margin-inline-end: .4rem; }
+.bar span { display: block; height: 100%; background: var(--good); }
+table.habit-grid th, table.habit-grid td { padding: .3rem .35rem; text-align: center; }
+table.habit-grid th.today { color: var(--feed-purple); font-weight: 800; }
+table.habit-grid td.cell { cursor: pointer; min-width: 1.6rem; border: 1px solid #f1ecf6; }
+table.habit-grid td.cell.done { background: #dcf6e9; color: #127a4a; font-weight: 700; }
+table.habit-grid td.cell.out { background: #faf8fc; cursor: default; }

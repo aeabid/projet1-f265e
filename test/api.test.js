@@ -492,3 +492,65 @@ test('center management: discounts, receipts, debts, people, tasks, meetings, al
   assert.ok(k.support_active >= 1 && k.debtors >= 1 && k.tasks_open >= 1);
   assert.strictEqual((await teacher('GET', '/api/kpis')).status, 403);
 });
+
+test('challenges: habits, leaderboard for everyone, details for admin', async () => {
+  const admin = await login('admin', 'admin123');
+  const day = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+  const pa = (await admin('POST', '/api/users', { role: 'parent', username: 'pch', full_name: 'P CH', password: 'secret1' })).body.user;
+  await admin('POST', '/api/users', { role: 'teacher', username: 'tch', full_name: 'T CH', password: 'secret1' });
+  const kid = (await admin('POST', '/api/students', { full_name: 'CH Kid', level: '7', parent_id: pa.id })).body.student;
+  const other = (await admin('POST', '/api/students', { full_name: 'CH Other', level: '7' })).body.student;
+
+  const prayer = (await admin('POST', '/api/challenges', { title: 'صلاة الصبح', icon: '🕌', start_date: day(-20) })).body.challenge;
+  const sport = (await admin('POST', '/api/challenges', { title: 'رياضة', audience: 'team', start_date: day(-20) })).body.challenge;
+  assert.strictEqual((await admin('POST', '/api/challenges', { title: 'x', start_date: day(0), end_date: day(-1) })).status, 400);
+
+  const parent = await login('pch', 'secret1');
+  const habits = (await parent('GET', '/api/habits')).body;
+  assert.deepStrictEqual(habits.participants.map((p) => p.name), ['CH Kid']);
+  assert.ok(habits.participants[0].habits.some((h) => h.id === prayer.id));
+  assert.ok(!habits.participants[0].habits.some((h) => h.id === sport.id));
+
+  // الولي يسجّل لابنه فقط، ولا يسجّل المستقبل ولا قبل 7 أيام
+  for (const n of [0, -1, -2]) {
+    assert.strictEqual((await parent('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: kid.id, date: day(n) })).status, 200);
+  }
+  const last = await parent('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: kid.id, date: day(-1) });
+  assert.strictEqual(last.body.streak, 3);
+  assert.strictEqual((await parent('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: other.id, date: day(0) })).status, 403);
+  assert.strictEqual((await parent('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: kid.id, date: day(1) })).status, 400);
+  assert.strictEqual((await parent('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: kid.id, date: day(-10) })).status, 400);
+  assert.strictEqual((await parent('POST', '/api/habits/check', { challenge_id: sport.id, date: day(0) })).status, 403);
+  // الإدارة تسجّل أي يوم لأي مشارك
+  assert.strictEqual((await admin('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: other.id, date: day(-10) })).status, 200);
+
+  // المعلم يسجّل لنفسه في تحدي الإطار
+  const teacher = await login('tch', 'secret1');
+  assert.strictEqual((await teacher('POST', '/api/habits/check', { challenge_id: sport.id, date: day(0) })).status, 200);
+  assert.strictEqual((await teacher('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: kid.id, date: day(0) })).status, 403);
+
+  // الترتيب يراه الجميع، دون تفاصيل
+  const lb = (await teacher('GET', `/api/challenges/${prayer.id}/leaderboard?period=all`)).body;
+  assert.strictEqual(lb.rows[0].name, 'CH Kid');
+  assert.strictEqual(lb.rows[0].done, 3);
+  assert.strictEqual(lb.rows[0].rank, 1);
+  assert.strictEqual(lb.rows[0].student_id, undefined);
+  assert.ok((await parent('GET', `/api/challenges/${prayer.id}/leaderboard`)).body.rows.find((r) => r.name === 'CH Kid').mine);
+  assert.ok((await parent('GET', '/api/challenges')).body.challenges.some((c) => c.id === prayer.id && c.top[0].name === 'CH Kid'));
+
+  // إلغاء يوم
+  const undo = await parent('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: kid.id, date: day(0), done: false });
+  assert.strictEqual(undo.body.streak, 2);
+
+  // التفاصيل للإدارة فقط: من سجّل ومتى
+  assert.strictEqual((await parent('GET', `/api/challenges/${prayer.id}/details`)).status, 403);
+  const det = (await admin('GET', `/api/challenges/${prayer.id}/details?month=${day(-1).slice(0, 7)}`)).body;
+  const row = det.rows.find((r) => r.name === 'CH Kid');
+  assert.strictEqual(row.logs[day(-1)].by, 'P CH');
+  assert.strictEqual(row.logs[day(-1)].by_role, 'parent');
+
+  // تحدٍّ متوقف لا يظهر لغير الإدارة
+  await admin('PUT', `/api/challenges/${prayer.id}`, { ...prayer, active: false });
+  assert.strictEqual((await parent('GET', `/api/challenges/${prayer.id}/leaderboard`)).status, 404);
+  assert.strictEqual((await parent('POST', '/api/habits/check', { challenge_id: prayer.id, student_id: kid.id, date: day(0) })).status, 404);
+});
