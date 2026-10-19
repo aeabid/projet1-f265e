@@ -9,7 +9,7 @@ const EDIT_DAYS = 7;
 const sb = supabase.createClient(window.APP_CONFIG.supabaseUrl, window.APP_CONFIG.supabaseKey);
 
 const S = {
-  session: null, me: null, challenges: [], members: [], memberId: null, myLogs: new Set(), ranks: {}, google: false,
+  session: null, me: null, challenges: [], members: [], memberId: null, myLogs: new Set(), ranks: {}, overall: null, sel: {}, google: false,
   tab: 'habits', week: 0, period: 'week', boardId: null, board: null,
   detailId: null, month: null, details: null, editing: null, pending: null, authMode: 'login',
 };
@@ -26,7 +26,9 @@ const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Tunis' 
 const weekStart = (s) => addDays(s, -((parse(s).getDay() + 6) % 7));
 const fmt = (s) => { const [, m, d] = s.split('-'); return `${d}/${m}`; };
 const medal = (r, done) => (done && r <= 3 ? MEDALS[r - 1] : r);
-const key = (cid, day) => `${cid}|${day}`;
+const key = (cid, day, item = 0) => `${cid}|${day}|${item}`;
+const nItems = (c) => c.items?.length || 1;
+const doneCount = (c, d) => { let n = 0; for (let i = 0; i < nItems(c); i++) if (S.myLogs.has(key(c.id, d, i))) n++; return n; };
 const openChallenges = () => S.challenges.filter((c) => c.active && c.start_date <= today());
 const member = () => S.members.find((m) => m.id === S.memberId);
 const store = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
@@ -156,39 +158,43 @@ async function loadMembers() {
 async function loadHabits() {
   const [{ data: ch }, { data: logs }] = await Promise.all([
     sb.from('challenges').select('*').order('sort').order('id'),
-    S.memberId ? sb.from('habit_logs').select('challenge_id, day').eq('member_id', S.memberId) : Promise.resolve({ data: [] }),
+    S.memberId ? sb.from('habit_logs').select('challenge_id, day, item').eq('member_id', S.memberId) : Promise.resolve({ data: [] }),
   ]);
   S.challenges = ch || [];
-  S.myLogs = new Set((logs || []).map((l) => key(l.challenge_id, l.day)));
-  const boards = await Promise.all(openChallenges().map((c) => sb.rpc('leaderboard', { p_challenge: c.id, p_period: 'all' })));
+  S.myLogs = new Set((logs || []).map((l) => key(l.challenge_id, l.day, l.item)));
+  const list = openChallenges();
+  const boards = await Promise.all([null, ...list.map((c) => c.id)].map((id) => sb.rpc('ranking', { p_challenge: id, p_period: 'all' })));
+  const pick = (rows) => ({ me: rows.find((r) => r.member_id === S.memberId), count: rows.length });
+  S.overall = pick(ranked(boards[0].data || []));
   S.ranks = {};
-  openChallenges().forEach((c, i) => {
-    const rows = ranked(boards[i].data || []);
-    S.ranks[c.id] = { me: rows.find((r) => r.member_id === S.memberId), count: rows.length };
-  });
+  list.forEach((c, i) => (S.ranks[c.id] = pick(ranked(boards[i + 1].data || []))));
 }
 
 function ranked(rows) {
-  rows.forEach((r, i) => (r.rank = i && r.days === rows[i - 1].days && r.streak === rows[i - 1].streak ? rows[i - 1].rank : i + 1));
+  const same = (a, b) => a.points === b.points && a.days === b.days && a.streak === b.streak;
+  rows.forEach((r, i) => (r.rank = i && same(r, rows[i - 1]) ? rows[i - 1].rank : i + 1));
   return rows;
 }
 
 function myStats(c) {
   const now = today();
   const last = c.end_date && c.end_date < now ? c.end_date : now;
-  const has = (d) => S.myLogs.has(key(c.id, d));
+  // يوم كامل = كل عناصر المهمة منجزة
+  const full = (d) => doneCount(c, d) >= nItems(c);
   let streak = 0;
-  let d = has(last) ? last : addDays(last, -1);
-  while (d >= c.start_date && has(d)) { streak++; d = addDays(d, -1); }
-  let done = 0;
+  let d = full(last) ? last : addDays(last, -1);
+  while (d >= c.start_date && full(d)) { streak++; d = addDays(d, -1); }
   let first = member()?.joined_on || today();
+  let items = 0;
+  const days = new Set();
   for (const k of S.myLogs) {
     const [cid, day] = k.split('|');
-    if (Number(cid) === c.id && day >= c.start_date && day <= last) { done++; if (day < first) first = day; }
+    if (Number(cid) === c.id && day >= c.start_date && day <= last) { items++; days.add(day); if (day < first) first = day; }
   }
+  const done = [...days].filter(full).length;
   const from = first > c.start_date ? first : c.start_date;
   const total = Math.max(last < from ? 0 : diff(from, last) + 1, done);
-  return { streak, done, percent: total ? Math.round((done / total) * 100) : 0 };
+  return { streak, done, points: items * (c.points ?? 1), percent: total ? Math.round((done / total) * 100) : 0 };
 }
 
 // ---------- العرض ----------
@@ -228,6 +234,26 @@ function renderMembers() {
   </form>`;
 }
 
+const editable = (c, d) => {
+  const now = today();
+  return d <= now && d >= c.start_date && (!c.end_date || d <= c.end_date) && (S.me.is_admin || diff(d, now) < EDIT_DAYS);
+};
+// اليوم المختار في مهمة بعناصر (اليوم افتراضيًا)
+const selDay = (c, week) => {
+  const d = S.sel[c.id];
+  if (d && week.includes(d)) return d;
+  return week.includes(today()) ? today() : week[6];
+};
+function itemsRow(c, d) {
+  const ok = editable(c, d);
+  return `<div class="items"><span class="small muted">${fmt(d)}:</span>${c.items
+    .map((t, i) => {
+      const on = S.myLogs.has(key(c.id, d, i));
+      return `<button class="chip item ${on ? 'on' : ''}" type="button" data-ic="${c.id}" data-id="${d}" data-ii="${i}" aria-pressed="${on}" ${ok ? '' : 'disabled'}>${on ? '✔ ' : ''}${esc(t)}</button>`;
+    })
+    .join('')}</div>`;
+}
+
 function renderHabits() {
   if (S.editMembers || !S.members.length) return renderMembers();
   const list = openChallenges();
@@ -239,7 +265,13 @@ function renderHabits() {
       S.me.is_admin ? 'أضف أول تحدٍّ من تبويب «الإدارة».' : 'ستظهر هنا العادات عندما يضيفها المشرف.'
     }</p></div>`;
   }
-  return `${membersBar()}<div class="weeknav">
+  const o = S.overall?.me;
+  return `${membersBar()}
+    <div class="card row" style="padding:.7rem 1rem">
+      <div><span class="muted small">مجموع نقاط ${esc(member()?.name || '')}</span><div class="points">${o?.points ?? 0} <span class="small muted">نقطة</span></div></div>
+      <button class="rank-link" type="button" data-board="0">🏆 ${o?.points ? `الترتيب العام ${o.rank}/${S.overall.count}` : 'الترتيب العام'}</button>
+    </div>
+    <div class="weeknav">
       <button class="btn ghost small" type="button" data-week="-1">→ الأسبوع السابق</button>
       <span class="small muted">${fmt(week[0])} — ${fmt(week[6])}</span>
       <button class="btn ghost small" type="button" data-week="1" ${S.week >= 0 ? 'disabled' : ''}>الأسبوع التالي ←</button>
@@ -250,17 +282,23 @@ function renderHabits() {
         const r = S.ranks[c.id];
         return `<section class="card habit">
           <div class="row"><h3>${esc(c.icon || '⭐')} ${esc(c.title)}</h3>
-            <button class="rank-link" type="button" data-board="${c.id}">🏆 ${r?.me && r.me.days ? `الترتيب ${r.me.rank}/${r.count}` : 'الترتيب'}</button></div>
-          <div class="stats muted">السلسلة: <b>${st.streak}</b> 🔥 &nbsp;|&nbsp; الإجمالي: <b>${st.percent}%</b> &nbsp;|&nbsp; <span>${st.done} يوم</span></div>
+            <button class="rank-link" type="button" data-board="${c.id}">🏆 ${r?.me && r.me.points ? `الترتيب ${r.me.rank}/${r.count}` : "الترتيب"}</button></div>
+          <div class="stats muted">⭐ <b>${st.points}</b> نقطة &nbsp;|&nbsp; السلسلة: <b>${st.streak}</b> 🔥 &nbsp;|&nbsp; الإجمالي: <b>${st.percent}%</b></div>
           ${c.description ? `<p class="muted small" style="margin:0">${esc(c.description)}</p>` : ''}
           <div class="days">${week
             .map((d, i) => {
-              const done = S.myLogs.has(key(c.id, d));
-              const ok = d <= now && d >= c.start_date && (!c.end_date || d <= c.end_date) && (S.me.is_admin || diff(d, now) < EDIT_DAYS);
-              return `<button type="button" class="day ${done ? 'done' : ''} ${d === now ? 'today' : ''}" data-c="${c.id}" data-d="${d}"
-                aria-pressed="${done}" aria-label="${DAYS[i]} ${fmt(d)}" ${ok ? '' : 'disabled'}>${DAYS[i]}${d === now ? '<small>اليوم</small>' : ''}</button>`;
+              const n = doneCount(c, d);
+              const full = n >= nItems(c);
+              const multi = nItems(c) > 1;
+              const ok = editable(c, d);
+              const sel = multi && d === selDay(c, week);
+              return `<button type="button" class="day ${full ? 'done' : n ? 'part' : ''} ${d === now ? 'today' : ''} ${sel ? 'sel' : ''}" data-c="${c.id}" data-d="${d}"
+                aria-pressed="${multi ? sel : full}" aria-label="${DAYS[i]} ${fmt(d)}" ${ok || (multi && d <= now) ? '' : 'disabled'}>${multi && n && !full ? `${n}/${nItems(c)}` : DAYS[i]}${
+                  d === now ? '<small>اليوم</small>' : ''}</button>`;
             })
             .join('')}</div>
+          ${nItems(c) > 1 ? itemsRow(c, selDay(c, week)) : ''}
+          <div class="small muted">+${c.points ?? 1} نقطة لكل ${nItems(c) > 1 ? 'عنصر' : 'يوم'}</div>
         </section>`;
       })
       .join('')}
@@ -270,23 +308,27 @@ function renderHabits() {
 async function renderBoard() {
   const list = openChallenges();
   if (!list.length) return '<div class="card"><h3>لا توجد تحديات بعد</h3></div>';
-  if (!list.some((c) => c.id === S.boardId)) S.boardId = list[0].id;
-  const { data, error } = await sb.rpc('leaderboard', { p_challenge: S.boardId, p_period: S.period });
+  if (S.boardId && !list.some((c) => c.id === S.boardId)) S.boardId = 0;
+  const c = list.find((x) => x.id === S.boardId);
+  const { data, error } = await sb.rpc('ranking', { p_challenge: c ? c.id : null, p_period: S.period });
   if (error) return `<div class="card error">${esc(error.message)}</div>`;
   const rows = ranked(data || []);
   return `<div class="card" style="display:grid;gap:.7rem">
-      <label>التحدي<select id="board-c">${list.map((x) => `<option value="${x.id}" ${x.id === S.boardId ? 'selected' : ''}>${esc(x.icon || '⭐')} ${esc(x.title)}</option>`).join('')}</select></label>
+      <div class="chips">
+        <button class="chip" type="button" data-board="0" aria-pressed="${!c}">🏆 الترتيب العام</button>
+        ${list.map((x) => `<button class="chip" type="button" data-board="${x.id}" aria-pressed="${x.id === S.boardId}">${esc(x.icon || '⭐')} ${esc(x.title)}</button>`).join('')}
+      </div>
       <div class="chips">${Object.entries(PERIODS).map(([k, t]) => `<button class="chip" type="button" data-period="${k}" aria-pressed="${k === S.period}">${t}</button>`).join('')}</div>
-      <p class="muted small" style="margin:0">الترتيب حسب عدد الأيام المنجزة ثم أطول سلسلة.</p>
+      <p class="muted small" style="margin:0">${c ? `أحسن المشاركين في «${esc(c.title)}»: حسب النقاط ثم الأيام الكاملة ثم السلسلة.` : 'مجموع النقاط في كل المهام: من جمع أكثر نقاط في الأول.'}</p>
     </div>
     <ol class="board">${rows
       .map((r) => {
-        const pct = r.total ? Math.min(100, Math.round((r.days / r.total) * 100)) : 0;
+        const pct = rows[0]?.points ? Math.round((r.points / rows[0].points) * 100) : 0;
         return `<li class="${r.is_mine ? 'mine' : ''}">
-          <span class="pos">${medal(r.rank, r.days)}</span>
+          <span class="pos">${medal(r.rank, r.points)}</span>
           <div style="min-width:0"><span class="name">${esc(r.name)}</span> ${r.is_mine ? '<span class="tag">حسابي</span>' : ''}
             <div class="bar"><span style="width:${pct}%"></span></div></div>
-          <div class="num"><b>${r.days}</b> <span class="small muted">يوم</span><div class="small muted">${r.streak ? r.streak + ' 🔥' : '—'} · ${pct}%</div></div>
+          <div class="num"><b>${r.points}</b> <span class="small muted">نقطة</span><div class="small muted">${r.days} يوم · ${r.streak ? r.streak + ' 🔥' : '—'}</div></div>
         </li>`;
       })
       .join('')}</ol>`;
@@ -300,6 +342,10 @@ function challengeForm(c) {
       <label>العنوان<input id="f-title" maxlength="80" value="${esc(c.title || '')}" placeholder="صلاة الصبح في المسجد" required></label>
     </div>
     <label>الوصف (اختياري)<input id="f-desc" maxlength="300" value="${esc(c.description || '')}" placeholder="متى يُعتبر اليوم منجزًا؟"></label>
+    <div class="grid2">
+      <label>النقاط${(c.items || []).length ? ' لكل عنصر' : ' لكل يوم'}<input type="number" id="f-points" min="0" max="1000" value="${c.points ?? 1}" required></label>
+      <label>العناصر (اختياري، كل عنصر في سطر)<textarea id="f-items" rows="3" placeholder="الصبح&#10;الظهر&#10;العصر&#10;المغرب&#10;العشاء">${esc((c.items || []).join('\n'))}</textarea></label>
+    </div>
     <div class="grid2">
       <label>البداية<input type="date" id="f-start" value="${esc(c.start_date || today())}" required></label>
       <label>النهاية (اختياري)<input type="date" id="f-end" value="${esc(c.end_date || '')}"></label>
@@ -322,12 +368,17 @@ async function renderAdmin() {
     const days = Array.from({ length: new Date(y, m, 0).getDate() }, (_, i) => `${month}-${pad(i + 1)}`);
     const [{ data: people }, { data: logs }, { data: board }] = await Promise.all([
       sb.from('members').select('id, name, profiles(display_name)'),
-      sb.from('habit_logs').select('member_id, day, created_at').eq('challenge_id', c.id).gte('day', days[0]).lte('day', days[days.length - 1]),
-      sb.rpc('leaderboard', { p_challenge: c.id, p_period: 'all' }),
+      sb.from('habit_logs').select('member_id, day, item, created_at').eq('challenge_id', c.id).gte('day', days[0]).lte('day', days[days.length - 1]),
+      sb.rpc('ranking', { p_challenge: c.id, p_period: 'all' }),
     ]);
     const rows = ranked(board || []);
     const byUser = {};
-    for (const l of logs || []) (byUser[l.member_id] ??= {})[l.day] = l.created_at;
+    // لكل مشارك ولكل يوم: العناصر المنجزة ووقت آخر تسجيل
+    for (const l of logs || []) {
+      const cell = ((byUser[l.member_id] ??= {})[l.day] ??= { items: [], at: l.created_at });
+      cell.items.push(l.item);
+      if (l.created_at > cell.at) cell.at = l.created_at;
+    }
     const account = Object.fromEntries((people || []).map((m) => [m.id, m.profiles?.display_name || '']));
     S.details = { c, people: people || [] };
     const avg = rows.length ? Math.round(rows.reduce((t, r) => t + (r.total ? r.days / r.total : 0), 0) / rows.length * 100) : 0;
@@ -340,7 +391,7 @@ async function renderAdmin() {
         <div class="kpis">
           <div class="kpi"><b>${rows.length}</b><span class="small muted">مشارك</span></div>
           <div class="kpi"><b>${Object.keys(byUser).length}</b><span class="small muted">سجّل هذا الشهر</span></div>
-          <div class="kpi"><b>${rows.filter((r) => !r.days).length}</b><span class="small muted">لم يسجّل أبدًا</span></div>
+          <div class="kpi"><b>${rows.filter((r) => !r.points).length}</b><span class="small muted">لم يسجّل أبدًا</span></div>
           <div class="kpi"><b>${avg}%</b><span class="small muted">متوسط المواظبة</span></div>
         </div>
         ${S.pending ? `<div class="confirm card"><span>${esc(S.pending.label)}</span>
@@ -348,18 +399,23 @@ async function renderAdmin() {
         <p class="muted small" style="margin:0">✔ = يوم منجز (مرّر على الخانة لترى وقت التسجيل). اضغط على خانة لتصحيح يوم لأي مشارك.</p>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th class="name">الاسم</th>${days.map((d) => `<th class="${d === now ? 'today' : ''}">${Number(d.slice(8))}</th>`).join('')}<th>الشهر</th><th>الإجمالي</th><th>🔥</th></tr></thead>
+        <thead><tr><th class="name">الاسم</th>${days.map((d) => `<th class="${d === now ? 'today' : ''}">${Number(d.slice(8))}</th>`).join('')}<th>الشهر</th><th>النقاط</th><th>الإجمالي</th><th>🔥</th></tr></thead>
         <tbody>${rows
           .map((r) => {
             const mine = byUser[r.member_id] || {};
             const pct = r.total ? Math.round((r.days / r.total) * 100) : 0;
-            return `<tr><td class="name">${medal(r.rank, r.days)} ${esc(r.name)}${account[r.member_id] && account[r.member_id] !== r.name ? ` <span class="small muted">(${esc(account[r.member_id])})</span>` : ''}</td>${days
+            return `<tr><td class="name">${medal(r.rank, r.points)} ${esc(r.name)}${account[r.member_id] && account[r.member_id] !== r.name ? ` <span class="small muted">(${esc(account[r.member_id])})</span>` : ''}</td>${days
               .map((d) => {
                 const out = d > now || d < c.start_date || (c.end_date && d > c.end_date);
-                const at = mine[d] ? new Date(mine[d]).toLocaleString('fr-TN', { timeZone: 'Africa/Tunis' }) : '';
-                return `<td class="cell ${mine[d] ? 'done' : ''} ${out ? 'out' : ''}" title="${at ? 'سُجّل في ' + esc(at) : fmt(d)}" ${out ? '' : `data-u="${r.member_id}" data-d="${d}" data-n="${esc(r.name)}"`}>${mine[d] ? '✔' : ''}</td>`;
+                const cell = mine[d];
+                const n = cell?.items.length || 0;
+                const full = n >= nItems(c);
+                const at = cell ? new Date(cell.at).toLocaleString('fr-TN', { timeZone: 'Africa/Tunis' }) : '';
+                const what = cell && c.items ? ' — ' + cell.items.map((i) => c.items[i]).join('، ') : '';
+                return `<td class="cell ${full ? 'done' : n ? 'part' : ''} ${out ? 'out' : ''}" title="${at ? esc('سُجّل في ' + at + what) : fmt(d)}" ${
+                  out ? '' : `data-u="${r.member_id}" data-d="${d}" data-n="${esc(r.name)}" data-full="${full}"`}>${full ? '✔' : n ? `${n}/${nItems(c)}` : ''}</td>`;
               })
-              .join('')}<td><b>${Object.keys(mine).length}</b></td><td>${r.days}/${r.total} · ${pct}%</td><td>${r.streak}</td></tr>`;
+              .join('')}<td><b>${Object.values(mine).filter((x) => x.items.length >= nItems(c)).length}</b></td><td>⭐ ${r.points}</td><td>${r.days}/${r.total} · ${pct}%</td><td>${r.streak}</td></tr>`;
           })
           .join('')}</tbody></table></div>`;
   }
@@ -369,7 +425,7 @@ async function renderAdmin() {
         .map(
           (x) => `<div class="row" style="border-top:1px solid var(--line);padding-top:.5rem">
             <div style="min-width:0"><b>${esc(x.icon || '⭐')} ${esc(x.title)}</b> ${x.active ? '' : '<span class="small muted">(متوقف)</span>'}
-              <div class="small muted">من ${fmt(x.start_date)}${x.end_date ? ` إلى ${fmt(x.end_date)}` : ''}</div></div>
+              <div class="small muted">⭐ ${x.points ?? 1} نقطة${x.items ? ` لكل عنصر (${x.items.map(esc).join('، ')})` : ''} · من ${fmt(x.start_date)}${x.end_date ? ` إلى ${fmt(x.end_date)}` : ''}</div></div>
             <div class="row"><button class="btn ghost small" type="button" data-edit="${x.id}">تعديل</button>
               <button class="btn danger small" type="button" data-del="${x.id}">حذف</button></div>
           </div>`
@@ -380,10 +436,9 @@ async function renderAdmin() {
     ${details}`;
 }
 
-async function toggle(memberId, cid, day, done) {
-  const { error } = done
-    ? await sb.from('habit_logs').insert({ member_id: Number(memberId), challenge_id: cid, day })
-    : await sb.from('habit_logs').delete().match({ member_id: Number(memberId), challenge_id: cid, day });
+async function toggle(memberId, cid, day, done, item = 0) {
+  const row = { member_id: Number(memberId), challenge_id: cid, day, item };
+  const { error } = done ? await sb.from('habit_logs').insert(row) : await sb.from('habit_logs').delete().match(row);
   if (error && error.code !== '23505') {
     toast(error.code === '42501' ? 'لا يمكن تسجيل هذا اليوم.' : 'تعذّر الحفظ، أعد المحاولة.', true);
     return false;
@@ -445,6 +500,9 @@ function bind() {
   v.querySelectorAll('.day').forEach((b) =>
     b.addEventListener('click', async () => {
       const cid = Number(b.dataset.c);
+      const c = S.challenges.find((x) => x.id === cid);
+      // مهمة بعناصر: الدائرة تختار اليوم، والعناصر تُسجَّل تحتها
+      if (nItems(c) > 1) { S.sel[cid] = b.dataset.d; return render(); }
       const done = !b.classList.contains('done');
       b.disabled = true;
       const k = key(cid, b.dataset.d);
@@ -459,9 +517,19 @@ function bind() {
       render();
     })
   );
+  v.querySelectorAll('.item[data-ic]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const cid = Number(b.dataset.ic);
+      const item = Number(b.dataset.ii);
+      const done = b.getAttribute('aria-pressed') !== 'true';
+      b.disabled = true;
+      if (await toggle(S.memberId, cid, b.dataset.id, done, item) && done) toast('بارك الله فيك 👏');
+      await loadHabits();
+      render();
+    })
+  );
   v.querySelectorAll('[data-board]').forEach((b) => b.addEventListener('click', () => { S.boardId = Number(b.dataset.board); S.tab = 'board'; render(); }));
-  $('#board-c')?.addEventListener('change', (e) => { S.boardId = Number(e.target.value); render(); });
-  v.querySelectorAll('[data-period]').forEach((b) => b.addEventListener('click', () => { S.period = b.dataset.period; render(); }));
+    v.querySelectorAll('[data-period]').forEach((b) => b.addEventListener('click', () => { S.period = b.dataset.period; render(); }));
   // الإدارة
   $('#add-c')?.addEventListener('click', () => { S.editing = { start_date: today(), active: true }; render(); });
   v.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => { S.editing = { ...S.challenges.find((x) => x.id === Number(b.dataset.edit)) }; render(); }));
@@ -481,7 +549,10 @@ function bind() {
     const row = {
       icon: $('#f-icon').value.trim() || null, title: $('#f-title').value.trim(), description: $('#f-desc').value.trim() || null,
       start_date: $('#f-start').value || today(), end_date: $('#f-end').value || null, active: $('#f-active').checked,
+      points: Math.max(0, Math.min(1000, Number($('#f-points').value) || 0)),
+      items: $('#f-items').value.split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 10),
     };
+    if (!row.items.length) row.items = null;
     if (!row.title) return toast('العنوان إجباري.', true);
     if (row.end_date && row.end_date < row.start_date) return toast('تاريخ النهاية قبل البداية.', true);
     const { error } = S.editing.id
@@ -497,11 +568,15 @@ function bind() {
   $('#d-month')?.addEventListener('change', (e) => { S.month = e.target.value || null; S.pending = null; render(); });
   v.querySelectorAll('td.cell[data-u]').forEach((td) =>
     td.addEventListener('click', () => {
-      const done = !td.classList.contains('done');
-      const cid = S.detailId;
+      // تصحيح المشرف: يوم ناقص يُكمَّل (كل العناصر)، ويوم كامل يُلغى
+      const done = td.dataset.full !== 'true';
+      const c = S.challenges.find((x) => x.id === S.detailId);
       S.pending = {
-        label: `${done ? 'تسجيل' : 'إلغاء'} يوم ${fmt(td.dataset.d)} لـ ${td.dataset.n}؟`,
-        run: async () => { await toggle(td.dataset.u, cid, td.dataset.d, done); await loadHabits(); },
+        label: `${done ? 'تسجيل' : 'إلغاء'} يوم ${fmt(td.dataset.d)} لـ ${td.dataset.n}${c.items ? ' (كل العناصر)' : ''}؟`,
+        run: async () => {
+          for (let i = 0; i < nItems(c); i++) await toggle(td.dataset.u, c.id, td.dataset.d, done, i);
+          await loadHabits();
+        },
       };
       render();
     })

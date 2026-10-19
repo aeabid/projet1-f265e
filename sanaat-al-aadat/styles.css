@@ -113,3 +113,11 @@ body { margin: 0; }
 .error { color: var(--pink); margin: 0; font-size: .9rem; }
 .link { font: inherit; background: none; border: 0; color: var(--brand); cursor: pointer; padding: 0; }
 .top .btn.ghost { color: #fff; border-color: rgba(255,255,255,.5); }
+
+.points { font-size: 1.6rem; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.day.part { background: var(--good-soft); color: var(--good); font-size: .8rem; }
+.day.sel { outline: 3px solid var(--pink); outline-offset: 2px; }
+.items { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.chip.item.on { background: var(--good); border-color: var(--good); color: #fff; }
+.chip:disabled { opacity: .45; cursor: default; }
+td.cell.part { background: var(--good-soft); color: var(--good); font-size: .75rem; }
