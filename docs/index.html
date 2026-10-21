@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>صناعة العادات</title>
+  <meta name="theme-color" content="#61038d">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+[hidden] { display: none !important; }
+
+/* تخطيط: شريط علوي بتدرّج بنفسجي، ثلاثة تبويبات، وبطاقات عادات بأيام الأسبوع كدوائر */
+:root {
+  --bg: #f6f3fa; --card: #ffffff; --ink: #2a1840; --muted: #76688a; --line: #e9e1f2;
+  --brand: #61038d; --brand-2: #20149a; --pink: #ef207a; --good: #1f9d63; --good-soft: #dcf6e9;
+  --off: #e2dcea; --off-ink: #ffffff; --chip: #f3eafb; --mine: #f3eafb;
+  --bar-ink: #ffffff;
+  --font: 'Tajawal', 'Segoe UI', Tahoma, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #150c22; --card: #20142f; --ink: #efe8f7; --muted: #a596b8; --line: #34254a;
+  --brand: #c58cf0; --brand-2: #8d84ff; --pink: #ff5c9f; --good: #3fc68a; --good-soft: #173b2c;
+  --off: #3a2c50; --off-ink: #cbbfdc; --chip: #2d1f42; --mine: #2d1f42; --bar-ink: #ffffff; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #150c22; --card: #20142f; --ink: #efe8f7; --muted: #a596b8; --line: #34254a;
+  --brand: #c58cf0; --brand-2: #8d84ff; --pink: #ff5c9f; --good: #3fc68a; --good-soft: #173b2c;
+  --off: #3a2c50; --off-ink: #cbbfdc; --chip: #2d1f42; --mine: #2d1f42; --bar-ink: #ffffff; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; }
+.top {
+  position: sticky; top: 0; z-index: 5;
+  background: linear-gradient(120deg, #20149a 0%, #4a0b93 45%, #61038d 100%); color: var(--bar-ink);
+  box-shadow: 0 2px 12px rgba(50, 10, 110, .25);
+}
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .7rem; }
+.top h1 { margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--bar-ink); }
+.top .who { font-size: .9rem; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tabs { display: flex; gap: .3rem; padding-bottom: .6rem; overflow-x: auto; scrollbar-width: none; }
+.tabs button { white-space: nowrap; flex: none; padding: .3rem .7rem; font-size: .92rem; }
+.tabs button { font: inherit; cursor: pointer; border: 0; background: transparent; color: rgba(255,255,255,.85); padding: .35rem .9rem; border-radius: 999px; }
+.tabs button[aria-selected="true"] { background: #fff; color: #61038d; font-weight: 700; }
+.tabs button:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+main.wrap { padding-block: 1.2rem 3rem; display: grid; gap: 1rem; }
+h2 { margin: 0; font-size: 1.3rem; color: var(--brand); font-weight: 800; text-wrap: balance; }
+h3 { margin: 0; font-size: 1.08rem; color: var(--brand-2); font-weight: 700; text-wrap: balance; }
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; min-width: 0; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+.btn { font: inherit; font-weight: 500; cursor: pointer; background: var(--brand); color: var(--card); border: 1px solid transparent; padding: .45rem 1rem; border-radius: 8px; }
+.btn.ghost { background: transparent; color: var(--brand); border-color: var(--line); }
+.btn.danger { background: transparent; color: var(--pink); border-color: var(--line); }
+.btn.small { padding: .2rem .6rem; font-size: .85rem; }
+.btn:disabled { opacity: .45; cursor: default; }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: .45rem .6rem; width: 100%; }
+label { display: grid; gap: .25rem; font-size: .9rem; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .7rem; }
+.check { display: flex; align-items: center; gap: .4rem; }
+.check input { width: auto; }
+
+/* بطاقة العادة */
+.habit { display: grid; gap: .5rem; }
+.stats { font-size: .92rem; font-variant-numeric: tabular-nums; }
+.stats b { color: var(--ink); }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .45rem; padding-bottom: 1.2rem; }
+.day {
+  font: inherit; font-weight: 700; cursor: pointer; aspect-ratio: 1; width: 100%; max-width: 62px; min-width: 0; padding: 0;
+  justify-self: center; border-radius: 50%; border: 2px solid transparent; background: var(--off); color: var(--off-ink);
+  position: relative; display: grid; place-items: center; transition: transform .12s, background .15s;
+}
+.day:not(:disabled):active { transform: scale(.92); }
+.day.done { background: var(--good); color: #fff; }
+.day.today { border-color: var(--brand); }
+.day:disabled { cursor: default; opacity: .45; }
+.day.done:disabled { opacity: .75; }
+.day small { position: absolute; bottom: -1.35rem; font-size: .7rem; font-weight: 500; color: var(--ink); white-space: nowrap; }
+.weeknav { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.rank-link { font: inherit; background: none; border: 0; color: var(--brand); cursor: pointer; padding: 0; font-size: .88rem; }
+
+/* الترتيب */
+.chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+.chip { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: .25rem .8rem; }
+.chip[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--card); }
+.board { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.board li { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; padding: .55rem .7rem; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+.board li.mine { background: var(--mine); border-color: var(--brand); }
+.board .pos { font-size: 1.25rem; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+.board .name { font-weight: 700; overflow-wrap: anywhere; }
+.board .num { text-align: end; font-variant-numeric: tabular-nums; }
+.board .num b { font-size: 1.15rem; }
+.bar { height: 6px; background: var(--off); border-radius: 3px; overflow: hidden; margin-top: .25rem; }
+.bar span { display: block; height: 100%; background: var(--good); }
+.tag { display: inline-block; font-size: .75rem; padding: 0 .45rem; border-radius: 6px; background: var(--good-soft); color: var(--good); font-weight: 500; }
+
+/* التفاصيل */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+table { border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; }
+th, td { padding: .3rem .35rem; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; }
+th.name, td.name { text-align: start; position: sticky; right: 0; background: var(--card); }
+td.cell { min-width: 1.7rem; cursor: pointer; border-inline-start: 1px solid var(--line); }
+td.cell.done { background: var(--good-soft); color: var(--good); font-weight: 700; }
+td.cell.out { cursor: default; opacity: .35; }
+th.today { color: var(--brand); font-weight: 800; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .6rem; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: .7rem; text-align: center; }
+.kpi b { display: block; font-size: 1.4rem; color: var(--brand); font-variant-numeric: tabular-nums; }
+.toast { position: fixed; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--good); color: #fff; padding: .5rem 1.1rem; border-radius: 10px; z-index: 20; }
+.toast.err { background: var(--pink); }
+.confirm { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+@media (prefers-reduced-motion: reduce) { .day { transition: none; } }
+
+body { margin: 0; }
+.auth { max-width: 420px; margin: 2rem auto; display: grid; gap: .9rem; }
+.auth form { display: grid; gap: .7rem; }
+.google { display: flex; align-items: center; justify-content: center; gap: .6rem; background: var(--card); color: var(--ink); border: 1px solid var(--line); width: 100%; }
+.or { text-align: center; color: var(--muted); font-size: .85rem; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; background: var(--chip); padding: .25rem; border-radius: 10px; }
+.seg button { font: inherit; border: 0; background: transparent; padding: .4rem; border-radius: 8px; cursor: pointer; color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--card); font-weight: 700; color: var(--brand); }
+.error { color: var(--pink); margin: 0; font-size: .9rem; }
+.link { font: inherit; background: none; border: 0; color: var(--brand); cursor: pointer; padding: 0; }
+.top .btn.ghost { color: #fff; border-color: rgba(255,255,255,.5); }
+
+.points { font-size: 1.6rem; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.day.part { background: var(--good-soft); color: var(--good); font-size: .8rem; }
+.day.sel { outline: 3px solid var(--pink); outline-offset: 2px; }
+.items { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.chip.item.on { background: var(--good); border-color: var(--good); color: #fff; }
+.chip:disabled { opacity: .45; cursor: default; }
+td.cell.part { background: var(--good-soft); color: var(--good); font-size: .75rem; }
+
+/* الفيديو */
+.video { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 10px; overflow: hidden; background: #000; }
+.video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-btn { justify-self: start; }
+/* القانون */
+.rules-text { white-space: pre-wrap; line-height: 1.9; font-size: 1.02rem; }
+.warnbox { border-color: var(--pink); }
+/* منصّة الترتيب */
+.podium {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: .5rem;
+  background: linear-gradient(160deg, #20149a 0%, #4a0b93 50%, #61038d 100%); border-radius: 16px; padding: 1.2rem .6rem 0; color: #fff;
+}
+.place { display: grid; justify-items: center; gap: .25rem; text-align: center; min-width: 0; }
+.place .crown { font-size: 1.5rem; height: 1.6rem; line-height: 1; }
+.place .pname { font-weight: 700; font-size: .95rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place .ppts { font-weight: 800; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.place .ppts span { font-size: .75rem; font-weight: 500; opacity: .8; }
+.place .step { width: 100%; border-radius: 12px 12px 0 0; display: grid; place-items: start center; padding-top: .5rem; font-size: 1.6rem; background: rgba(255,255,255,.16); }
+.place.first .step { height: 6.5rem; background: linear-gradient(180deg, #f6c84c, #d99a12); }
+.place.second .step { height: 4.6rem; background: linear-gradient(180deg, #e3e6ee, #a9b0c2); }
+.place.third .step { height: 3.4rem; background: linear-gradient(180deg, #f0b58a, #c4733a); }
+.place.mine .pname::after { content: ' (حسابي)'; font-weight: 500; font-size: .75rem; opacity: .85; }
+.av { width: 3.4rem; height: 3.4rem; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 1.3rem; border: 3px solid rgba(255,255,255,.85); box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.place.first .av { width: 4.2rem; height: 4.2rem; font-size: 1.6rem; border-color: #f6c84c; }
+.av.sm { width: 2.2rem; height: 2.2rem; font-size: .95rem; border-width: 2px; box-shadow: none; flex: none; }
+@media (prefers-reduced-motion: no-preference) { .place .av { animation: pop .5s ease-out both; } .place.first .av { animation-delay: .1s; } }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* مرشّحات الترتيب */
+.board-filters { display: grid; gap: .6rem; min-width: 0; }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--chip); border-radius: 12px; padding: .25rem; gap: .25rem; }
+.seg button { font: inherit; font-size: .92rem; border: 0; background: transparent; color: var(--muted); padding: .45rem .2rem; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--brand); font-weight: 700; box-shadow: 0 1px 4px rgba(50, 10, 110, .15); }
+.scroller { display: flex; gap: .45rem; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; padding-block: .1rem; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+.scroller::-webkit-scrollbar { display: none; }
+.pill { font: inherit; font-size: .9rem; flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: .35rem; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: .35rem .85rem; white-space: nowrap; max-width: 15rem; overflow: hidden; text-overflow: ellipsis; }
+.pill span { font-size: 1.05rem; }
+.pill[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--card); font-weight: 700; }
+.board-title { display: grid; gap: .1rem; }
+.board-title h2 { font-size: 1.15rem; }
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .2rem; }
+.tabs button { padding: .3rem .2rem; font-size: .88rem; overflow: hidden; text-overflow: ellipsis; }
+
+/* جدول الترتيب العمودي */
+.lb { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.lb-row { display: grid; grid-template-columns: 2rem 2.6rem minmax(0, 1fr) 3.6rem; align-items: center; gap: .5rem; padding: .6rem .75rem; border-top: 1px solid var(--line); }
+.lb-row:nth-child(odd):not(.lb-head) { background: color-mix(in srgb, var(--chip) 45%, transparent); }
+.lb-head { border-top: 0; font-size: .78rem; font-weight: 700; color: var(--muted); background: var(--chip); }
+.lb-row.mine { background: var(--mine) !important; box-shadow: inset 4px 0 0 var(--brand); }
+.lb-rank { font-weight: 700; font-size: 1rem; text-align: center; font-variant-numeric: tabular-nums; }
+.lb-row.lead .lb-rank { font-size: 1.35rem; }
+.star { width: 2.3rem; height: 2.3rem; background: var(--star); display: grid; place-items: center; justify-self: center;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.star b { color: #fff; font-size: .9rem; padding-top: .2rem; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.lb-who { display: flex; align-items: center; gap: .45rem; min-width: 0; }
+.lb-name { font-weight: 700; color: var(--brand-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.lb-total { display: grid; justify-items: center; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.lb-total b { font-size: 1.05rem; }
+.lb-total small, .lb-prog small { color: var(--muted); font-size: .7rem; }
+.lb-prog { display: grid; gap: .15rem; min-width: 0; }
+.lb-prog .bar { margin: 0; height: 8px; }
+.lb-prog .bar span { background: linear-gradient(90deg, #2bb3d9, #1f8fbf); }
+.lb-info { display: grid; gap: .2rem; min-width: 0; flex: 1; }
+.lb-total b { color: var(--ink); }
+.lb-name .tag { font-weight: 500; }
+@media (max-width: 360px) { .lb-row { grid-template-columns: 1.7rem 2.2rem minmax(0, 1fr) 3rem; gap: .35rem; padding: .5rem .5rem; } }
+
+/* تقدّم الشهر */
+.title-link { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: start; display: grid; gap: .05rem; color: var(--brand); }
+.title-link:hover h3 { text-decoration: underline; }
+.mbar { height: 10px; background: var(--off); border-radius: 5px; overflow: hidden; }
+.mbar span { display: block; height: 100%; background: linear-gradient(90deg, #1f9d63, #3fc68a); }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
+.cal-h { text-align: center; font-size: .75rem; color: var(--muted); font-weight: 700; }
+.mcell { font: inherit; aspect-ratio: 1; min-width: 0; padding: 0; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  display: grid; place-items: center; align-content: center; cursor: pointer; line-height: 1.05; }
+.mcell b { font-size: .95rem; }
+.mcell small { font-size: .65rem; }
+.mcell.done { background: var(--good); border-color: var(--good); color: #fff; }
+.mcell.part { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.mcell.today { outline: 2px solid var(--brand); outline-offset: 1px; }
+.mcell.sel { outline: 3px solid var(--pink); outline-offset: 1px; }
+.mcell.out { opacity: .35; cursor: default; }
+.mcell:disabled:not(.out) { cursor: default; }
+.kpi b small { font-size: .8rem; }
+.lb-row { grid-template-columns: 2rem 3.6rem minmax(0, 1fr) 3.8rem; column-gap: .6rem; }
+.lb-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.lb-head span:nth-child(3) { text-align: start; }
+@media (max-width: 360px) { .lb-row { grid-template-columns: 1.7rem 3.2rem minmax(0, 1fr) 3.2rem; column-gap: .4rem; } }
+.lb-row.lead { background: #fff8e6; }
+.lb-row.lead:nth-child(2) { background: #fff3d1; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lb-row.lead { background: #2e2616; } }
+:root[data-theme="dark"] .lb-row.lead { background: #2e2616; }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <h1>صناعة العادات</h1>
+      <div class="row" style="flex-wrap:nowrap;min-width:0">
+        <span class="who" id="who"></span>
+        <button class="btn ghost small" id="logout" hidden>خروج</button>
+      </div>
+    </div>
+    <div class="wrap tabs" role="tablist" id="tabs" hidden>
+      <button type="button" role="tab" data-tab="habits" aria-selected="true">عاداتي</button>
+      <button type="button" role="tab" data-tab="board" aria-selected="false">🏆 الترتيب</button>
+      <button type="button" role="tab" data-tab="rules" aria-selected="false">📜 القانون</button>
+      <button type="button" role="tab" data-tab="admin" aria-selected="false" hidden id="tab-admin">الإدارة</button>
+    </div>
+  </header>
+  <main class="wrap" id="view"><p class="muted">جاري التحميل…</p></main>
+  <div class="toast" id="toast" hidden></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script>
+// مشروع Supabase: الرابط والمفتاح العام (publishable) — مخصّص للمتصفح، والحماية بقواعد RLS
+window.APP_CONFIG = {
+  supabaseUrl: 'https://bviwupumpnczymsuklom.supabase.co',
+  supabaseKey: 'sb_publishable_vcOHyh166cQyuCizAqUNfw_BPrYSpp-',
+};
+</script>
+  <script>
+'use strict';
+// صناعة العادات: تسجيل (Google أو إيميل)، عاداتي، الترتيب، والإدارة
+
+const DAYS = ['إث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
+const MEDALS = ['🥇', '🥈', '🥉'];
+const PERIODS = { week: 'هذا الأسبوع', month: 'هذا الشهر', all: 'منذ البداية' };
+const WINDOWS = { 1: 'اليوم فقط (24 ساعة حتى نصف الليل)', 2: 'اليوم وأمس (48 ساعة)', 3: 'آخر 3 أيام', 7: 'آخر أسبوع' };
+// المستويات: كل LEVEL_STEP نقطة = مستوى جديد
+const LEVEL_STEP = 50;
+const LEVEL_COLORS = ['#f2c12e', '#f07a1a', '#e8365d', '#e47fd6', '#8a5cf6', '#2e8bf0', '#19b394', '#61038d'];
+const level = (points) => {
+  const lv = Math.floor((points || 0) / LEVEL_STEP) + 1;
+  const into = (points || 0) % LEVEL_STEP;
+  return { level: lv, toGo: LEVEL_STEP - into, pct: Math.round((into / LEVEL_STEP) * 100) };
+};
+const COLORS = ['#61038d', '#20149a', '#ef207a', '#1f9d63', '#c26a00', '#0b7fa6', '#8a2be2', '#b0306a'];
+const avatarColor = (id) => COLORS[Number(id) % COLORS.length];
+
+// معرّف فيديو يوتيوب من أي شكل من أشكال الرابط
+function youtubeId(url) {
+  const m = String(url || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/))([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+const sb = supabase.createClient(window.APP_CONFIG.supabaseUrl, window.APP_CONFIG.supabaseKey);
+
+const S = {
+  session: null, me: null, challenges: [], members: [], memberId: null, myLogs: new Set(), ranks: {}, overall: null, sel: {}, google: false,
+  rules: '', editDays: 2, video: {},
+  tab: 'habits', week: 0, period: 'week', boardId: null, board: null,
+  detailId: null, month: null, details: null, editing: null, pending: null, authMode: 'login',
+};
+
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const pad = (n) => String(n).padStart(2, '0');
+const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+const diff = (a, b) => Math.round((parse(b) - parse(a)) / 86400000);
+// اليوم بتوقيت تونس (نفس توقيت قاعدة البيانات)
+const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Tunis' }).format(new Date());
+const weekStart = (s) => addDays(s, -((parse(s).getDay() + 6) % 7));
+const fmt = (s) => { const [, m, d] = s.split('-'); return `${d}/${m}`; };
+const medal = (r, done) => (done && r <= 3 ? MEDALS[r - 1] : r);
+const key = (cid, day, item = 0) => `${cid}|${day}|${item}`;
+const nItems = (c) => c.items?.length || 1;
+const doneCount = (c, d) => { let n = 0; for (let i = 0; i < nItems(c); i++) if (S.myLogs.has(key(c.id, d, i))) n++; return n; };
+const openChallenges = () => S.challenges.filter((c) => c.active && c.start_date <= today());
+const member = () => S.members.find((m) => m.id === S.memberId);
+const store = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const recall = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+
+function toast(msg, err = false) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast' + (err ? ' err' : '');
+  t.hidden = false;
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => (t.hidden = true), 2800);
+}
+
+const AUTH_ERRORS = {
+  'Invalid login credentials': 'الإيميل أو كلمة السر غير صحيحة.',
+  'Email not confirmed': 'أكّد بريدك أولًا من الرسالة التي وصلتك.',
+  'User already registered': 'هذا الإيميل مسجّل، ادخل بكلمة السر.',
+};
+const authError = (e) => AUTH_ERRORS[e?.message] || (/at least 6/.test(e?.message || '') ? 'كلمة السر 6 أحرف على الأقل.' : e?.message || 'حدث خطأ');
+
+// ---------- التسجيل والدخول ----------
+function renderAuth() {
+  $('#tabs').hidden = true;
+  $('#logout').hidden = true;
+  $('#who').textContent = '';
+  const signup = S.authMode === 'signup';
+  const reset = S.authMode === 'reset';
+  $('#view').innerHTML = `<div class="auth">
+    <div class="card" style="display:grid;gap:.4rem">
+      <h2>كل عادة يومية تحدٍّ</h2>
+      <p class="muted small" style="margin:0">صلاة الصبح في المسجد، ورد القرآن، الأذكار… سجّل أيامك وشاهد سلسلتك وترتيبك بين المشاركين.</p>
+    </div>
+    <div class="card" style="display:grid;gap:.8rem">
+      ${S.google ? `<button class="btn google" type="button" id="google">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        الدخول بحساب Google</button>
+      <div class="or">أو بالإيميل</div>` : ''}
+      ${reset ? '' : `<div class="seg"><button type="button" data-mode="login" aria-pressed="${!signup}">دخول</button><button type="button" data-mode="signup" aria-pressed="${signup}">حساب جديد</button></div>`}
+      <form id="auth-form" novalidate>
+        ${signup ? '<label>اسمك<input id="a-name" maxlength="60" required autocomplete="name"></label>' : ''}
+        <label>الإيميل<input id="a-email" type="email" required autocomplete="email" dir="ltr"></label>
+        ${reset ? '' : `<label>كلمة السر<input id="a-pass" type="password" minlength="6" required autocomplete="${signup ? 'new-password' : 'current-password'}" dir="ltr"></label>`}
+        <p class="error" id="a-err" hidden></p>
+        <button class="btn" type="submit">${reset ? 'إرسال رابط تغيير كلمة السر' : signup ? 'إنشاء الحساب' : 'دخول'}</button>
+        ${reset ? '<button class="link small" type="button" data-mode="login">→ رجوع للدخول</button>' : signup ? '' : '<button class="link small" type="button" data-mode="reset">نسيت كلمة السر؟</button>'}
+      </form>
+    </div>
+  </div>`;
+  document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { S.authMode = b.dataset.mode; renderAuth(); }));
+  $('#google')?.addEventListener('click', async () => {
+    const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+    if (error) showErr(error);
+  });
+  const showErr = (e) => { $('#a-err').textContent = authError(e); $('#a-err').hidden = false; };
+  $('#auth-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('#a-email').value.trim();
+    const btn = e.submitter || $('#auth-form button[type=submit]');
+    btn.disabled = true;
+    try {
+      if (reset) {
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+        if (error) throw error;
+        toast('أرسلنا لك رابطًا على بريدك');
+      } else if (signup) {
+        const name = $('#a-name').value.trim();
+        if (!name) throw new Error('الاسم إجباري');
+        const password = $('#a-pass').value;
+        // الحساب يُنشأ مؤكَّدًا (دون رسالة)، ثم ندخل مباشرة
+        const { data, error } = await sb.functions.invoke('signup', { body: { email, password, name } });
+        if (error) {
+          let msg = 'تعذّر إنشاء الحساب';
+          try { msg = (await error.context.json()).error || msg; } catch {}
+          throw new Error(msg);
+        }
+        if (!data?.ok) throw new Error('تعذّر إنشاء الحساب');
+        const { error: e2 } = await sb.auth.signInWithPassword({ email, password });
+        if (e2) throw e2;
+      } else {
+        const { error } = await sb.auth.signInWithPassword({ email, password: $('#a-pass').value });
+        if (error) throw error;
+      }
+    } catch (err) {
+      showErr(err);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+function renderNewPassword() {
+  $('#view').innerHTML = `<div class="auth"><form class="card" id="np-form" style="display:grid;gap:.7rem">
+    <h3>كلمة سر جديدة</h3>
+    <label>كلمة السر<input id="np" type="password" minlength="6" required dir="ltr" autocomplete="new-password"></label>
+    <p class="error" id="np-err" hidden></p>
+    <button class="btn" type="submit">حفظ</button></form></div>`;
+  $('#np-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const { error } = await sb.auth.updateUser({ password: $('#np').value });
+    if (error) { $('#np-err').textContent = authError(error); $('#np-err').hidden = false; return; }
+    toast('تم تغيير كلمة السر');
+    S.recovery = false;
+    start();
+  });
+}
+
+// ---------- تحميل البيانات ----------
+async function loadMe() {
+  const uid = S.session.user.id;
+  let { data } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+  // الحساب قد يُنشأ قبل لحظة من الملف الشخصي
+  for (let i = 0; !data && i < 3; i++) {
+    await new Promise((r) => setTimeout(r, 600));
+    ({ data } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle());
+  }
+  S.me = data;
+}
+
+async function loadMembers() {
+  const { data } = await sb.from('members').select('id, name, joined_on').eq('account_id', S.me.id).order('id');
+  S.members = data || [];
+  if (!member()) S.memberId = Number(recall('member')) || null;
+  if (!member()) S.memberId = S.members[0]?.id ?? null;
+}
+
+async function loadHabits() {
+  const [{ data: ch }, { data: logs }, { data: settings }] = await Promise.all([
+    sb.from('challenges').select('*').order('sort').order('id'),
+    S.memberId ? sb.from('habit_logs').select('challenge_id, day, item').eq('member_id', S.memberId) : Promise.resolve({ data: [] }),
+    sb.from('app_settings').select('key, value'),
+  ]);
+  const set = Object.fromEntries((settings || []).map((x) => [x.key, x.value]));
+  S.rules = typeof set.rules === 'string' ? set.rules : '';
+  S.editDays = Math.max(1, Number(set.edit_days) || 2);
+  S.challenges = ch || [];
+  S.myLogs = new Set((logs || []).map((l) => key(l.challenge_id, l.day, l.item)));
+  const list = openChallenges();
+  const boards = await Promise.all([null, ...list.map((c) => c.id)].map((id) => sb.rpc('ranking', { p_challenge: id, p_period: 'all' })));
+  const pick = (rows) => ({ me: rows.find((r) => r.member_id === S.memberId), count: rows.length });
+  S.overall = pick(ranked(boards[0].data || []));
+  S.ranks = {};
+  list.forEach((c, i) => (S.ranks[c.id] = pick(ranked(boards[i + 1].data || []))));
+}
+
+function ranked(rows) {
+  const same = (a, b) => a.points === b.points && a.days === b.days && a.streak === b.streak;
+  rows.forEach((r, i) => (r.rank = i && same(r, rows[i - 1]) ? rows[i - 1].rank : i + 1));
+  return rows;
+}
+
+function myStats(c) {
+  const now = today();
+  const last = c.end_date && c.end_date < now ? c.end_date : now;
+  // يوم كامل = كل عناصر المهمة منجزة
+  const full = (d) => doneCount(c, d) >= nItems(c);
+  let streak = 0;
+  let d = full(last) ? last : addDays(last, -1);
+  while (d >= c.start_date && full(d)) { streak++; d = addDays(d, -1); }
+  let first = member()?.joined_on || today();
+  let items = 0;
+  const days = new Set();
+  for (const k of S.myLogs) {
+    const [cid, day] = k.split('|');
+    if (Number(cid) === c.id && day >= c.start_date && day <= last) { items++; days.add(day); if (day < first) first = day; }
+  }
+  const done = [...days].filter(full).length;
+  const from = first > c.start_date ? first : c.start_date;
+  const total = Math.max(last < from ? 0 : diff(from, last) + 1, done);
+  return { streak, done, points: items * (c.points ?? 1), percent: total ? Math.round((done / total) * 100) : 0 };
+}
+
+// ---------- العرض ----------
+async function render() {
+  document.querySelectorAll('#tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === S.tab)));
+  $('#tab-admin').hidden = !S.me.is_admin;
+  const v = $('#view');
+  if (S.tab === 'habits') v.innerHTML = renderHabits();
+  else if (S.tab === 'board') v.innerHTML = await renderBoard();
+  else if (S.tab === 'rules') v.innerHTML = renderRules();
+  else v.innerHTML = await renderAdmin();
+  bind();
+}
+
+function membersBar() {
+  if (!S.members.length) return '';
+  return `<div class="card row" style="padding:.6rem .8rem">
+    <div class="chips">${S.members
+      .map((m) => `<button class="chip" type="button" data-member="${m.id}" aria-pressed="${m.id === S.memberId}">👤 ${esc(m.name)}</button>`)
+      .join('')}</div>
+    <button class="link small" type="button" id="manage-members">+ إضافة / تعديل</button></div>`;
+}
+
+function renderMembers() {
+  const first = !S.members.length;
+  return `<form class="card" id="members-form" style="display:grid;gap:.7rem">
+    <h3>${first ? 'من سيشارك في التحديات؟' : 'المشاركون في حسابك'}</h3>
+    <p class="muted small" style="margin:0">أضف أبناءك (أو نفسك). كل مشارك له أيامه وترتيبه، وتسجّل له من هذا الحساب.</p>
+    ${S.members
+      .map((m) => `<div class="row" style="flex-wrap:nowrap"><input data-mname="${m.id}" maxlength="60" value="${esc(m.name)}" style="flex:1;min-width:0">
+        <button class="btn danger small" type="button" data-mdel="${m.id}">حذف</button></div>`)
+      .join('')}
+    <div class="row" style="flex-wrap:nowrap"><input id="new-member" maxlength="60" placeholder="اسم المشارك، مثال: سارة" style="flex:1;min-width:0">
+      <button class="btn ghost small" type="button" id="add-member">+ إضافة</button></div>
+    ${S.pending ? `<div class="confirm card"><span>${esc(S.pending.label)}</span>
+      <button class="btn small" type="button" id="p-yes">تأكيد</button><button class="btn ghost small" type="button" id="p-no">إلغاء</button></div>` : ''}
+    ${first ? '' : '<div class="row"><button class="btn" type="submit">حفظ الأسماء</button><button class="btn ghost" type="button" id="m-done">رجوع</button></div>'}
+  </form>`;
+}
+
+const editable = (c, d) => {
+  const now = today();
+  return d <= now && d >= c.start_date && (!c.end_date || d <= c.end_date) && (S.me.is_admin || diff(d, now) < S.editDays);
+};
+// اليوم المختار في مهمة بعناصر (اليوم افتراضيًا)
+const selDay = (c, week) => {
+  const d = S.sel[c.id];
+  if (d && week.includes(d)) return d;
+  return week.includes(today()) ? today() : week[6];
+};
+function itemsRow(c, d) {
+  const ok = editable(c, d);
+  return `<div class="items"><span class="small muted">${fmt(d)}:</span>${c.items
+    .map((t, i) => {
+      const on = S.myLogs.has(key(c.id, d, i));
+      return `<button class="chip item ${on ? 'on' : ''}" type="button" data-ic="${c.id}" data-id="${d}" data-ii="${i}" aria-pressed="${on}" ${ok ? '' : 'disabled'}>${on ? '✔ ' : ''}${esc(t)}</button>`;
+    })
+    .join('')}</div>`;
+}
+
+function videoBlock(c) {
+  const id = youtubeId(c.video_url);
+  if (!id) return '';
+  if (!S.video[c.id]) return `<button class="btn ghost small video-btn" type="button" data-video="${c.id}">▶ مشاهدة الفيديو</button>`;
+  return `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0" title="${esc(c.title)}"
+      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>
+    <button class="link small" type="button" data-video="${c.id}">إخفاء الفيديو</button>`;
+}
+
+// القانون: يكتبه المشرف ويقرؤه الجميع
+function renderRules() {
+  const text = S.rules.trim();
+  return `<div class="card rules" style="display:grid;gap:.7rem">
+      <h2>📜 القانون</h2>
+      ${text ? `<div class="rules-text">${esc(text)}</div>` : `<p class="muted">${S.me.is_admin ? 'لم تكتب القانون بعد. اكتبه هنا ليراه كل المشاركين.' : 'لم يُكتب القانون بعد.'}</p>`}
+    </div>
+    ${S.me.is_admin ? `<form class="card" id="rules-form" style="display:grid;gap:.6rem">
+      <h3>تعديل القانون (المشرف)</h3>
+      <textarea id="rules-text" rows="10" maxlength="10000" placeholder="1. تُسجَّل الصلاة في وقتها.&#10;2. الصدق في التسجيل.&#10;3. …">${esc(S.rules)}</textarea>
+      <div class="row"><button class="btn" type="submit">حفظ القانون</button></div></form>` : ''}`;
+}
+
+const MONTH_NAMES = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const shiftMonth = (m, n) => { const d = new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1 + n, 1); return iso(d).slice(0, 7); };
+
+// تقدّم المشارك في مهمة طيلة الشهر
+function renderMonth(c) {
+  const now = today();
+  const month = S.detMonth || now.slice(0, 7);
+  const [y, m] = month.split('-').map(Number);
+  const count = new Date(y, m, 0).getDate();
+  const days = Array.from({ length: count }, (_, i) => `${month}-${pad(i + 1)}`);
+  const blanks = (parse(days[0]).getDay() + 6) % 7;
+  const n = nItems(c);
+  const from = [days[0], c.start_date, member()?.joined_on || days[0]].sort().pop();
+  const to = [days[count - 1], now, c.end_date || '9999-12-31'].sort()[0];
+  const elapsed = to < from ? 0 : diff(from, to) + 1;
+  let full = 0, items = 0, best = 0, run = 0;
+  for (const d of days) {
+    const k = doneCount(c, d);
+    items += k;
+    if (k >= n) { full++; run++; best = Math.max(best, run); } else run = 0;
+  }
+  const pct = elapsed ? Math.round((full / elapsed) * 100) : 0;
+  const sel = n > 1 && days.includes(S.sel[c.id]) ? S.sel[c.id] : null;
+  return `${membersBar()}
+    <div class="row"><button class="btn ghost small" type="button" id="back-habits">→ رجوع للعادات</button></div>
+    <section class="card month" style="display:grid;gap:.8rem">
+      <div class="row"><h2>${esc(c.icon || '⭐')} ${esc(c.title)}</h2></div>
+      <div class="weeknav">
+        <button class="btn ghost small" type="button" data-mnav="-1">→ الشهر السابق</button>
+        <b>${MONTH_NAMES[m - 1]} ${y}</b>
+        <button class="btn ghost small" type="button" data-mnav="1" ${month >= now.slice(0, 7) ? 'disabled' : ''}>الشهر التالي ←</button>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><b>${items * (c.points ?? 1)}</b><span class="small muted">نقطة هذا الشهر</span></div>
+        <div class="kpi"><b>${full}<small class="muted">/${elapsed}</small></b><span class="small muted">يوم كامل</span></div>
+        <div class="kpi"><b>${pct}%</b><span class="small muted">المواظبة</span></div>
+        <div class="kpi"><b>${best} 🔥</b><span class="small muted">أطول سلسلة</span></div>
+      </div>
+      <div class="mbar"><span style="width:${pct}%"></span></div>
+      <div class="cal">
+        ${DAYS.map((d) => `<span class="cal-h">${d}</span>`).join('')}
+        ${'<span></span>'.repeat(blanks)}
+        ${days
+          .map((d) => {
+            const k = doneCount(c, d);
+            const out = d > now || d < c.start_date || (c.end_date && d > c.end_date);
+            const ok = !out && (editable(c, d) || n > 1);
+            return `<button type="button" class="mcell ${k >= n ? 'done' : k ? 'part' : ''} ${out ? 'out' : ''} ${d === now ? 'today' : ''} ${d === sel ? 'sel' : ''}"
+              data-mc="${c.id}" data-d="${d}" ${ok ? '' : 'disabled'}><b>${Number(d.slice(8))}</b>${n > 1 && k && k < n ? `<small>${k}/${n}</small>` : k >= n ? '<small>✔</small>' : ''}</button>`;
+          })
+          .join('')}
+      </div>
+      ${sel ? itemsRow(c, sel) : n > 1 ? '<p class="muted small" style="margin:0">اضغط على يوم لترى العناصر وتسجّلها.</p>' : ''}
+      <p class="muted small" style="margin:0">🟩 يوم كامل · 🟢 يوم ناقص · ⬜ لم يُسجَّل</p>
+    </section>`;
+}
+
+function renderHabits() {
+  if (S.editMembers || !S.members.length) return renderMembers();
+  const opened = S.openId && openChallenges().find((x) => x.id === S.openId);
+  if (opened) return renderMonth(opened);
+  const list = openChallenges();
+  const now = today();
+  const start = addDays(weekStart(now), S.week * 7);
+  const week = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  if (!list.length) {
+    return `<div class="card"><h3>لا توجد عادات بعد</h3><p class="muted">${
+      S.me.is_admin ? 'أضف أول تحدٍّ من تبويب «الإدارة».' : 'ستظهر هنا العادات عندما يضيفها المشرف.'
+    }</p></div>`;
+  }
+  const o = S.overall?.me;
+  return `${membersBar()}
+    <div class="card row" style="padding:.7rem 1rem">
+      <div><span class="muted small">مجموع نقاط ${esc(member()?.name || '')}</span><div class="points">${o?.points ?? 0} <span class="small muted">نقطة</span></div></div>
+      <button class="rank-link" type="button" data-board="0">🏆 ${o?.points ? `الترتيب العام ${o.rank}/${S.overall.count}` : 'الترتيب العام'}</button>
+    </div>
+    <div class="weeknav">
+      <button class="btn ghost small" type="button" data-week="-1">→ الأسبوع السابق</button>
+      <span class="small muted">${fmt(week[0])} — ${fmt(week[6])}</span>
+      <button class="btn ghost small" type="button" data-week="1" ${S.week >= 0 ? 'disabled' : ''}>الأسبوع التالي ←</button>
+    </div>
+    ${list
+      .map((c) => {
+        const st = myStats(c);
+        const r = S.ranks[c.id];
+        return `<section class="card habit">
+          <div class="row"><button class="title-link" type="button" data-open="${c.id}"><h3>${esc(c.icon || '⭐')} ${esc(c.title)}</h3><span class="small">📅 تقدّم الشهر ←</span></button>
+            <button class="rank-link" type="button" data-board="${c.id}">🏆 ${r?.me && r.me.points ? `الترتيب ${r.me.rank}/${r.count}` : "الترتيب"}</button></div>
+          <div class="stats muted">⭐ <b>${st.points}</b> نقطة &nbsp;|&nbsp; السلسلة: <b>${st.streak}</b> 🔥 &nbsp;|&nbsp; الإجمالي: <b>${st.percent}%</b></div>
+          ${c.description ? `<p class="muted small" style="margin:0">${esc(c.description)}</p>` : ''}
+          ${videoBlock(c)}
+          <div class="days">${week
+            .map((d, i) => {
+              const n = doneCount(c, d);
+              const full = n >= nItems(c);
+              const multi = nItems(c) > 1;
+              const ok = editable(c, d);
+              const sel = multi && d === selDay(c, week);
+              return `<button type="button" class="day ${full ? 'done' : n ? 'part' : ''} ${d === now ? 'today' : ''} ${sel ? 'sel' : ''}" data-c="${c.id}" data-d="${d}"
+                aria-pressed="${multi ? sel : full}" aria-label="${DAYS[i]} ${fmt(d)}" ${ok || (multi && d <= now) ? '' : 'disabled'}>${multi && n && !full ? `${n}/${nItems(c)}` : DAYS[i]}${
+                  d === now ? '<small>اليوم</small>' : ''}</button>`;
+            })
+            .join('')}</div>
+          ${nItems(c) > 1 ? itemsRow(c, selDay(c, week)) : ''}
+          <div class="small muted">+${c.points ?? 1} نقطة لكل ${nItems(c) > 1 ? 'عنصر' : 'يوم'}</div>
+        </section>`;
+      })
+      .join('')}
+    <p class="muted small">اضغط على دائرة اليوم لتسجيله منجزًا (أو لإلغائه). ${S.editDays === 1 ? 'يمكن تسجيل اليوم فقط (حتى نصف الليل).' : `يمكن تسجيل آخر ${S.editDays} أيام.`}</p>`;
+}
+
+async function renderBoard() {
+  const list = openChallenges();
+  if (!list.length) return '<div class="card"><h3>لا توجد تحديات بعد</h3></div>';
+  if (S.boardId && !list.some((c) => c.id === S.boardId)) S.boardId = 0;
+  const c = list.find((x) => x.id === S.boardId);
+  const { data, error } = await sb.rpc('ranking', { p_challenge: c ? c.id : null, p_period: S.period });
+  if (error) return `<div class="card error">${esc(error.message)}</div>`;
+  const rows = ranked(data || []);
+  return `<div class="board-filters">
+      <div class="seg" role="group" aria-label="الفترة">${Object.entries(PERIODS)
+        .map(([k, t]) => `<button type="button" data-period="${k}" aria-pressed="${k === S.period}">${t}</button>`)
+        .join('')}</div>
+      <div class="scroller" role="group" aria-label="المهمة">
+        <button class="pill" type="button" data-board="0" aria-pressed="${!c}"><span>🏆</span>الكل</button>
+        ${list.map((x) => `<button class="pill" type="button" data-board="${x.id}" aria-pressed="${x.id === S.boardId}"><span>${esc(x.icon || '⭐')}</span>${esc(x.title)}</button>`).join('')}
+      </div>
+    </div>
+    <div class="board-title">
+      <h2>${c ? `${esc(c.icon || '⭐')} أحسن المشاركين في ${esc(c.title)}` : '🏆 الترتيب العام'}</h2>
+      <span class="small muted">${PERIODS[S.period]} · ${rows.length} مشارك</span>
+    </div>
+    ${rows.some((r) => r.points) ? '' : '<div class="card muted" style="text-align:center">لم يجمع أحد نقاطًا في هذه الفترة بعد. كن الأول! 💪</div>'}
+    <div class="lb">
+      <div class="lb-row lb-head"><span>#</span><span>المستوى</span><span>المشارك والتقدّم</span><span>المجموع</span></div>
+      ${rows
+        .map((r) => {
+          const lv = level(r.points);
+          return `<div class="lb-row ${r.is_mine ? 'mine' : ''} ${r.rank <= 3 && r.points ? 'lead' : ''}">
+            <span class="lb-rank">${medal(r.rank, r.points)}</span>
+            <span class="star" style="--star:${LEVEL_COLORS[(lv.level - 1) % LEVEL_COLORS.length]}"><b>${lv.level}</b></span>
+            <span class="lb-who"><span class="av sm" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>
+              <span class="lb-info"><span class="lb-name">${esc(r.name)}${r.is_mine ? ' <span class="tag">حسابي</span>' : ''}</span>
+                <span class="lb-prog"><span class="bar"><span style="width:${lv.pct}%"></span></span><small>${lv.toGo} نقطة للمستوى ${lv.level + 1}</small></span></span></span>
+            <span class="lb-total"><b>${r.points}</b><small>نقطة</small></span>
+          </div>`;
+        })
+        .join('')}
+    </div>`;
+}
+
+function challengeForm(c) {
+  return `<form class="card" id="ch-form" style="display:grid;gap:.7rem">
+    <h3>${c.id ? 'تعديل التحدي' : 'تحدٍّ جديد'}</h3>
+    <div class="grid2">
+      <label>الرمز<input id="f-icon" maxlength="8" value="${esc(c.icon || '')}" placeholder="🕌"></label>
+      <label>العنوان<input id="f-title" maxlength="80" value="${esc(c.title || '')}" placeholder="صلاة الصبح في المسجد" required></label>
+    </div>
+    <label>الوصف (اختياري)<input id="f-desc" maxlength="300" value="${esc(c.description || '')}" placeholder="متى يُعتبر اليوم منجزًا؟"></label>
+    <label>رابط فيديو يوتيوب (اختياري)<input id="f-video" maxlength="300" dir="ltr" value="${esc(c.video_url || '')}" placeholder="https://www.youtube.com/watch?v=…"></label>
+    <div class="grid2">
+      <label>النقاط${(c.items || []).length ? ' لكل عنصر' : ' لكل يوم'}<input type="number" id="f-points" min="0" max="1000" value="${c.points ?? 1}" required></label>
+      <label>العناصر (اختياري، كل عنصر في سطر)<textarea id="f-items" rows="3" placeholder="الصبح&#10;الظهر&#10;العصر&#10;المغرب&#10;العشاء">${esc((c.items || []).join('\n'))}</textarea></label>
+    </div>
+    <div class="grid2">
+      <label>البداية<input type="date" id="f-start" value="${esc(c.start_date || today())}" required></label>
+      <label>النهاية (اختياري)<input type="date" id="f-end" value="${esc(c.end_date || '')}"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="f-active" ${c.active !== false ? 'checked' : ''}> مفتوح للمشاركين</label>
+    <div class="row"><button class="btn" type="submit">حفظ</button><button class="btn ghost" type="button" id="f-cancel">إلغاء</button></div>
+  </form>`;
+}
+
+async function renderAdmin() {
+  if (!S.me.is_admin) return '';
+  if (S.editing) return challengeForm(S.editing);
+  const now = today();
+  const c = S.challenges.find((x) => x.id === S.detailId) || S.challenges[0];
+  let details = '';
+  if (c) {
+    S.detailId = c.id;
+    const month = S.month || now.slice(0, 7);
+    const [y, m] = month.split('-').map(Number);
+    const days = Array.from({ length: new Date(y, m, 0).getDate() }, (_, i) => `${month}-${pad(i + 1)}`);
+    const [{ data: people }, { data: logs }, { data: board }] = await Promise.all([
+      sb.from('members').select('id, name, profiles(display_name)'),
+      sb.from('habit_logs').select('member_id, day, item, created_at').eq('challenge_id', c.id).gte('day', days[0]).lte('day', days[days.length - 1]),
+      sb.rpc('ranking', { p_challenge: c.id, p_period: 'all' }),
+    ]);
+    const rows = ranked(board || []);
+    const byUser = {};
+    // لكل مشارك ولكل يوم: العناصر المنجزة ووقت آخر تسجيل
+    for (const l of logs || []) {
+      const cell = ((byUser[l.member_id] ??= {})[l.day] ??= { items: [], at: l.created_at });
+      cell.items.push(l.item);
+      if (l.created_at > cell.at) cell.at = l.created_at;
+    }
+    const account = Object.fromEntries((people || []).map((m) => [m.id, m.profiles?.display_name || '']));
+    S.details = { c, people: people || [] };
+    const avg = rows.length ? Math.round(rows.reduce((t, r) => t + (r.total ? r.days / r.total : 0), 0) / rows.length * 100) : 0;
+    details = `<div class="card" style="display:grid;gap:.7rem">
+        <h2>التفاصيل</h2>
+        <div class="grid2">
+          <label>التحدي<select id="d-c">${S.challenges.map((x) => `<option value="${x.id}" ${x.id === c.id ? 'selected' : ''}>${esc(x.icon || '⭐')} ${esc(x.title)}</option>`).join('')}</select></label>
+          <label>الشهر<input type="month" id="d-month" value="${month}"></label>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><b>${rows.length}</b><span class="small muted">مشارك</span></div>
+          <div class="kpi"><b>${Object.keys(byUser).length}</b><span class="small muted">سجّل هذا الشهر</span></div>
+          <div class="kpi"><b>${rows.filter((r) => !r.points).length}</b><span class="small muted">لم يسجّل أبدًا</span></div>
+          <div class="kpi"><b>${avg}%</b><span class="small muted">متوسط المواظبة</span></div>
+        </div>
+        ${S.pending && !S.pending.top ? `<div class="confirm card"><span>${esc(S.pending.label)}</span>
+          <button class="btn small" type="button" id="p-yes">تأكيد</button><button class="btn ghost small" type="button" id="p-no">إلغاء</button></div>` : ''}
+        <p class="muted small" style="margin:0">✔ = يوم منجز (مرّر على الخانة لترى وقت التسجيل). اضغط على خانة لتصحيح يوم لأي مشارك.</p>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="name">الاسم</th>${days.map((d) => `<th class="${d === now ? 'today' : ''}">${Number(d.slice(8))}</th>`).join('')}<th>الشهر</th><th>النقاط</th><th>الإجمالي</th><th>🔥</th></tr></thead>
+        <tbody>${rows
+          .map((r) => {
+            const mine = byUser[r.member_id] || {};
+            const pct = r.total ? Math.round((r.days / r.total) * 100) : 0;
+            return `<tr><td class="name">${medal(r.rank, r.points)} ${esc(r.name)}${account[r.member_id] && account[r.member_id] !== r.name ? ` <span class="small muted">(${esc(account[r.member_id])})</span>` : ''}</td>${days
+              .map((d) => {
+                const out = d > now || d < c.start_date || (c.end_date && d > c.end_date);
+                const cell = mine[d];
+                const n = cell?.items.length || 0;
+                const full = n >= nItems(c);
+                const at = cell ? new Date(cell.at).toLocaleString('fr-TN', { timeZone: 'Africa/Tunis' }) : '';
+                const what = cell && c.items ? ' — ' + cell.items.map((i) => c.items[i]).join('، ') : '';
+                return `<td class="cell ${full ? 'done' : n ? 'part' : ''} ${out ? 'out' : ''}" title="${at ? esc('سُجّل في ' + at + what) : fmt(d)}" ${
+                  out ? '' : `data-u="${r.member_id}" data-d="${d}" data-n="${esc(r.name)}" data-full="${full}"`}>${full ? '✔' : n ? `${n}/${nItems(c)}` : ''}</td>`;
+              })
+              .join('')}<td><b>${Object.values(mine).filter((x) => x.items.length >= nItems(c)).length}</b></td><td>⭐ ${r.points}</td><td>${r.days}/${r.total} · ${pct}%</td><td>${r.streak}</td></tr>`;
+          })
+          .join('')}</tbody></table></div>`;
+  }
+  const confirmTop = S.pending && S.pending.top ? `<div class="confirm card warnbox"><span>${esc(S.pending.label)}</span>
+      <button class="btn small" type="button" id="p-yes">تأكيد الحذف</button><button class="btn ghost small" type="button" id="p-no">إلغاء</button></div>` : '';
+  return `${confirmTop}
+    <form class="card" id="window-form" style="display:grid;gap:.6rem">
+      <h3>⏰ مدّة تعمير اليوم</h3>
+      <p class="muted small" style="margin:0">إلى متى يبقى بإمكان المشاركين تسجيل يوم ما؟ (المشرف يصحّح أي يوم في كل الحالات)</p>
+      <div class="row" style="flex-wrap:nowrap"><select id="edit-days" style="flex:1;min-width:0">${Object.entries(WINDOWS)
+        .map(([k, t]) => `<option value="${k}" ${Number(k) === S.editDays ? 'selected' : ''}>${t}</option>`)
+        .join('')}</select><button class="btn" type="submit">حفظ</button></div>
+    </form>
+    <div class="card" style="display:grid;gap:.6rem">
+      <div class="row"><h2>التحديات</h2><button class="btn" type="button" id="add-c">+ تحدٍّ جديد</button></div>
+      ${S.challenges
+        .map(
+          (x) => `<div class="row" style="border-top:1px solid var(--line);padding-top:.5rem">
+            <div style="min-width:0"><b>${esc(x.icon || '⭐')} ${esc(x.title)}</b> ${x.active ? '' : '<span class="small muted">(متوقف)</span>'}
+              <div class="small muted">⭐ ${x.points ?? 1} نقطة${x.items ? ` لكل عنصر (${x.items.map(esc).join('، ')})` : ''} · من ${fmt(x.start_date)}${x.end_date ? ` إلى ${fmt(x.end_date)}` : ''}</div></div>
+            <div class="row"><button class="btn ghost small" type="button" data-edit="${x.id}">تعديل</button>
+              <button class="btn danger small" type="button" data-del="${x.id}">حذف</button></div>
+          </div>`
+        )
+        .join('') || '<p class="muted">لا توجد تحديات بعد.</p>'}
+      <p class="muted small" style="margin:0">المشاركون يرون الترتيب فقط. أنت ترى هنا كل يوم لكل مشارك.</p>
+    </div>
+    ${details}`;
+}
+
+async function toggle(memberId, cid, day, done, item = 0) {
+  const row = { member_id: Number(memberId), challenge_id: cid, day, item };
+  const { error } = done ? await sb.from('habit_logs').insert(row) : await sb.from('habit_logs').delete().match(row);
+  if (error && error.code !== '23505') {
+    toast(error.code === '42501' ? 'لا يمكن تسجيل هذا اليوم.' : 'تعذّر الحفظ، أعد المحاولة.', true);
+    return false;
+  }
+  return true;
+}
+
+function bind() {
+  const v = $('#view');
+  v.querySelectorAll('[data-member]').forEach((b) =>
+    b.addEventListener('click', async () => { S.memberId = Number(b.dataset.member); store('member', String(S.memberId)); await loadHabits(); render(); })
+  );
+  $('#manage-members')?.addEventListener('click', () => { S.editMembers = true; render(); });
+  $('#m-done')?.addEventListener('click', () => { S.editMembers = false; S.pending = null; render(); });
+  $('#add-member')?.addEventListener('click', async () => {
+    const name = $('#new-member').value.trim();
+    if (!name) return toast('اكتب اسم المشارك.', true);
+    const { data, error } = await sb.from('members').insert({ account_id: S.me.id, name }).select('id').single();
+    if (error) return toast(error.code === '42501' ? 'وصلت إلى الحد الأقصى من المشاركين.' : 'تعذّر الإضافة.', true);
+    await loadMembers();
+    if (S.members.length === 1 || !S.memberId) S.memberId = data.id;
+    await loadHabits();
+    toast('تمت إضافة ' + name);
+    render();
+  });
+  $('#new-member')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#add-member').click(); } });
+  $('#members-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    for (const inp of v.querySelectorAll('[data-mname]')) {
+      const m = S.members.find((x) => x.id === Number(inp.dataset.mname));
+      const name = inp.value.trim();
+      if (m && name && name !== m.name) {
+        const { error } = await sb.from('members').update({ name }).eq('id', m.id);
+        if (error) return toast('تعذّر الحفظ.', true);
+      }
+    }
+    await loadMembers();
+    S.editMembers = false;
+    toast('تم الحفظ');
+    render();
+  });
+  v.querySelectorAll('[data-mdel]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const m = S.members.find((x) => x.id === Number(b.dataset.mdel));
+      S.pending = {
+        label: `حذف «${m.name}» وكل أيامه المسجّلة؟`,
+        run: async () => {
+          const { error } = await sb.from('members').delete().eq('id', m.id);
+          if (error) toast('تعذّر الحذف.', true);
+          if (S.memberId === m.id) S.memberId = null;
+          await loadMembers();
+          await loadHabits();
+        },
+      };
+      render();
+    })
+  );
+  v.querySelectorAll('[data-week]').forEach((b) => b.addEventListener('click', () => { S.week += Number(b.dataset.week); render(); }));
+  v.querySelectorAll('.day').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const cid = Number(b.dataset.c);
+      const c = S.challenges.find((x) => x.id === cid);
+      // مهمة بعناصر: الدائرة تختار اليوم، والعناصر تُسجَّل تحتها
+      if (nItems(c) > 1) { S.sel[cid] = b.dataset.d; return render(); }
+      const done = !b.classList.contains('done');
+      b.disabled = true;
+      const k = key(cid, b.dataset.d);
+      done ? S.myLogs.add(k) : S.myLogs.delete(k);
+      b.classList.toggle('done', done);
+      if (await toggle(S.memberId, cid, b.dataset.d, done)) {
+        if (done) toast('بارك الله فيك 👏');
+      } else {
+        done ? S.myLogs.delete(k) : S.myLogs.add(k);
+      }
+      await loadHabits();
+      render();
+    })
+  );
+  v.querySelectorAll('.item[data-ic]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const cid = Number(b.dataset.ic);
+      const item = Number(b.dataset.ii);
+      const done = b.getAttribute('aria-pressed') !== 'true';
+      b.disabled = true;
+      if (await toggle(S.memberId, cid, b.dataset.id, done, item) && done) toast('بارك الله فيك 👏');
+      await loadHabits();
+      render();
+    })
+  );
+  v.querySelectorAll('[data-board]').forEach((b) => b.addEventListener('click', () => { S.boardId = Number(b.dataset.board); S.tab = 'board'; render(); }));
+    v.querySelectorAll('[data-period]').forEach((b) => b.addEventListener('click', () => { S.period = b.dataset.period; render(); }));
+  // الإدارة
+  $('#add-c')?.addEventListener('click', () => { S.editing = { start_date: today(), active: true }; render(); });
+  v.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => { S.editing = { ...S.challenges.find((x) => x.id === Number(b.dataset.edit)) }; render(); }));
+  v.querySelectorAll('[data-del]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const x = S.challenges.find((c) => c.id === Number(b.dataset.del));
+      S.pending = {
+        top: true,
+        label: `حذف «${x.title}» وكل الأيام المسجّلة فيه؟ (للإخفاء فقط: عدّل وألغِ «مفتوح»)`,
+        run: async () => {
+          const { data, error } = await sb.from('challenges').delete().eq('id', x.id).select('id');
+          if (error || !data?.length) toast('تعذّر الحذف.', true);
+          else toast('تم حذف «' + x.title + '»');
+          if (S.detailId === x.id) S.detailId = null;
+          await loadHabits();
+        },
+      };
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    })
+  );
+  $('#f-cancel')?.addEventListener('click', () => { S.editing = null; render(); });
+  $('#ch-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const row = {
+      icon: $('#f-icon').value.trim() || null, title: $('#f-title').value.trim(), description: $('#f-desc').value.trim() || null,
+      start_date: $('#f-start').value || today(), end_date: $('#f-end').value || null, active: $('#f-active').checked,
+      points: Math.max(0, Math.min(1000, Number($('#f-points').value) || 0)),
+      items: $('#f-items').value.split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 10),
+    };
+    if (!row.items.length) row.items = null;
+    row.video_url = $('#f-video').value.trim() || null;
+    if (row.video_url && !youtubeId(row.video_url)) return toast('رابط يوتيوب غير صالح.', true);
+    if (!row.title) return toast('العنوان إجباري.', true);
+    if (row.end_date && row.end_date < row.start_date) return toast('تاريخ النهاية قبل البداية.', true);
+    const { error } = S.editing.id
+      ? await sb.from('challenges').update(row).eq('id', S.editing.id)
+      : await sb.from('challenges').insert({ ...row, sort: S.challenges.length + 1 });
+    if (error) return toast(error.message, true);
+    S.editing = null;
+    toast('تم الحفظ');
+    await loadHabits();
+    render();
+  });
+  $('#d-c')?.addEventListener('change', (e) => { S.detailId = Number(e.target.value); S.pending = null; render(); });
+  $('#d-month')?.addEventListener('change', (e) => { S.month = e.target.value || null; S.pending = null; render(); });
+  v.querySelectorAll('td.cell[data-u]').forEach((td) =>
+    td.addEventListener('click', () => {
+      // تصحيح المشرف: يوم ناقص يُكمَّل (كل العناصر)، ويوم كامل يُلغى
+      const done = td.dataset.full !== 'true';
+      const c = S.challenges.find((x) => x.id === S.detailId);
+      S.pending = {
+        label: `${done ? 'تسجيل' : 'إلغاء'} يوم ${fmt(td.dataset.d)} لـ ${td.dataset.n}${c.items ? ' (كل العناصر)' : ''}؟`,
+        run: async () => {
+          for (let i = 0; i < nItems(c); i++) await toggle(td.dataset.u, c.id, td.dataset.d, done, i);
+          await loadHabits();
+        },
+      };
+      render();
+    })
+  );
+  v.querySelectorAll('[data-open]').forEach((b) =>
+    b.addEventListener('click', () => { S.openId = Number(b.dataset.open); S.detMonth = null; render(); window.scrollTo({ top: 0 }); })
+  );
+  $('#back-habits')?.addEventListener('click', () => { S.openId = null; render(); });
+  v.querySelectorAll('[data-mnav]').forEach((b) =>
+    b.addEventListener('click', () => { S.detMonth = shiftMonth(S.detMonth || today().slice(0, 7), Number(b.dataset.mnav)); render(); })
+  );
+  v.querySelectorAll('.mcell[data-mc]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const c = S.challenges.find((x) => x.id === Number(b.dataset.mc));
+      if (nItems(c) > 1) { S.sel[c.id] = b.dataset.d; return render(); }
+      const done = !b.classList.contains('done');
+      b.disabled = true;
+      if (await toggle(S.memberId, c.id, b.dataset.d, done) && done) toast('بارك الله فيك 👏');
+      await loadHabits();
+      render();
+    })
+  );
+  v.querySelectorAll('[data-video]').forEach((b) =>
+    b.addEventListener('click', () => { const id = Number(b.dataset.video); S.video[id] = !S.video[id]; render(); })
+  );
+  $('#rules-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = $('#rules-text').value.slice(0, 10000);
+    const { error } = await sb.from('app_settings').upsert({ key: 'rules', value, updated_at: new Date().toISOString() });
+    if (error) return toast('تعذّر الحفظ.', true);
+    S.rules = value;
+    toast('تم حفظ القانون');
+    render();
+  });
+  $('#window-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = Number($('#edit-days').value);
+    const { error } = await sb.from('app_settings').upsert({ key: 'edit_days', value, updated_at: new Date().toISOString() });
+    if (error) return toast('تعذّر الحفظ.', true);
+    S.editDays = value;
+    toast('تم الحفظ: ' + WINDOWS[value]);
+  });
+  $('#p-yes')?.addEventListener('click', async () => { const p = S.pending; S.pending = null; await p.run(); render(); });
+  $('#p-no')?.addEventListener('click', () => { S.pending = null; render(); });
+}
+
+// تبديل الاسم: اضغط على اسمك في الأعلى
+$('#who').addEventListener('click', () => {
+  if (!S.me) return;
+  $('#view').innerHTML = `<form class="card" id="name-form" style="display:grid;gap:.7rem">
+    <h3>اسمك في الترتيب</h3>
+    <input id="nm" maxlength="60" value="${esc(S.me.display_name)}" required>
+    <div class="row"><button class="btn" type="submit">حفظ</button><button class="btn ghost" type="button" id="nm-cancel">إلغاء</button></div></form>`;
+  $('#nm-cancel').addEventListener('click', render);
+  $('#name-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('#nm').value.trim();
+    if (!name) return;
+    const { error } = await sb.from('profiles').update({ display_name: name }).eq('id', S.me.id);
+    if (error) return toast(error.message, true);
+    S.me.display_name = name;
+    $('#who').textContent = name + ' ✎';
+    toast('تم الحفظ');
+    render();
+  });
+});
+
+document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => { S.tab = b.dataset.tab; S.openId = null; S.pending = null; S.editing = null; render(); }));
+$('#logout').addEventListener('click', () => sb.auth.signOut());
+
+async function start() {
+  if (S.recovery) return renderNewPassword();
+  if (!S.session) return renderAuth();
+  await loadMe();
+  if (!S.me) {
+    $('#view').innerHTML = '<div class="card error">تعذّر تحميل حسابك. أعد تحميل الصفحة.</div>';
+    return;
+  }
+  $('#tabs').hidden = false;
+  $('#logout').hidden = false;
+  $('#who').textContent = S.me.display_name + ' ✎';
+  $('#who').style.cursor = 'pointer';
+  await loadMembers();
+  await loadHabits();
+  render();
+}
+
+// الزر يظهر فقط إذا كان الدخول بـ Google مفعّلًا في Supabase
+fetch(window.APP_CONFIG.supabaseUrl + '/auth/v1/settings', { headers: { apikey: window.APP_CONFIG.supabaseKey } })
+  .then((r) => r.json())
+  .then((st) => { S.google = !!st?.external?.google; if (!S.session) renderAuth(); })
+  .catch(() => {});
+
+let started = null;
+sb.auth.onAuthStateChange((event, session) => {
+  const changed = (S.session?.user.id || null) !== (session?.user.id || null);
+  S.session = session;
+  if (event === 'PASSWORD_RECOVERY') S.recovery = true;
+  if (event === 'PASSWORD_RECOVERY' || changed || !started) {
+    if (!session) S.me = null;
+    started = setTimeout(start, 0);
+  }
+});
+</script>
+</body>
+</html>
