@@ -4,7 +4,10 @@
 -- الواجهة لا تصل إلا إلى الدوال public.flousi_* (SECURITY DEFINER) بمفتاح Supabase العمومي.
 -- كل دالة تتحقق من رمز الجلسة؛ كل حساب يرى عملياته فقط؛ المسؤول يدير الأنواع.
 -- يُنفَّذ مرة واحدة في SQL Editor (يتطلب pgcrypto في المخطط extensions، موجودة افتراضيًا في Supabase).
+-- الدخول بـ Google: الإضافة http تتحقق من رمز Google عند Google نفسه (oauth2.googleapis.com/tokeninfo).
 -- =====================================================================
+
+CREATE EXTENSION IF NOT EXISTS http WITH SCHEMA extensions;
 
 CREATE SCHEMA IF NOT EXISTS flousi;
 REVOKE ALL ON SCHEMA flousi FROM PUBLIC;
@@ -17,8 +20,10 @@ END $$;
 CREATE TABLE flousi.users (
   id SERIAL PRIMARY KEY,
   username TEXT NOT NULL,
-  pass_hash TEXT NOT NULL,
+  pass_hash TEXT,              -- NULL = حساب يدخل بـ Google فقط
   full_name TEXT NOT NULL,
+  google_sub TEXT UNIQUE,
+  email TEXT,
   is_admin BOOLEAN NOT NULL DEFAULT false,
   failed INTEGER NOT NULL DEFAULT 0,
   locked_until TIMESTAMPTZ,
@@ -35,7 +40,8 @@ CREATE TABLE flousi.sessions (
 
 CREATE TABLE flousi.settings (
   id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id),
-  signup_open BOOLEAN NOT NULL DEFAULT true
+  signup_open BOOLEAN NOT NULL DEFAULT true,
+  google_client_id TEXT
 );
 INSERT INTO flousi.settings DEFAULT VALUES;
 
@@ -117,7 +123,8 @@ END $$;
 
 CREATE FUNCTION flousi.user_json(u flousi.users) RETURNS JSONB
 LANGUAGE sql STABLE SET search_path = '' AS $$
-  SELECT jsonb_build_object('id', u.id, 'username', u.username, 'full_name', u.full_name, 'is_admin', u.is_admin)
+  SELECT jsonb_build_object('id', u.id, 'username', u.username, 'full_name', u.full_name, 'is_admin', u.is_admin,
+    'google', u.google_sub IS NOT NULL, 'email', u.email, 'password', u.pass_hash IS NOT NULL)
 $$;
 
 CREATE FUNCTION flousi.new_session(p_user INTEGER) RETURNS TEXT
@@ -149,6 +156,27 @@ BEGIN
   RETURN coalesce(nullif(p, ''), '🏷️');
 END $$;
 
+-- التحقق من رمز Google (ID token) عند Google: الجمهور = Client ID فلوسي، والبريد مؤكَّد
+CREATE FUNCTION flousi.google_claims(p_credential TEXT) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE cid TEXT := (SELECT google_client_id FROM flousi.settings); r extensions.http_response; c JSONB;
+BEGIN
+  IF cid IS NULL THEN RAISE EXCEPTION 'الدخول بـ Google غير مفعّل'; END IF;
+  IF p_credential IS NULL OR p_credential !~ '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$' OR length(p_credential) > 4096 THEN
+    RAISE EXCEPTION 'رمز Google غير صالح';
+  END IF;
+  PERFORM extensions.http_set_curlopt('CURLOPT_TIMEOUT_MS', '8000');
+  r := extensions.http_get('https://oauth2.googleapis.com/tokeninfo?id_token=' || p_credential);
+  IF r.status <> 200 THEN RAISE EXCEPTION 'تعذّر التحقق من حساب Google'; END IF;
+  c := r.content::jsonb;
+  IF c->>'aud' IS DISTINCT FROM cid OR c->>'iss' NOT IN ('accounts.google.com', 'https://accounts.google.com') THEN
+    RAISE EXCEPTION 'حساب Google غير صالح لهذا التطبيق';
+  END IF;
+  IF c->>'email_verified' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'البريد غير مؤكَّد في Google'; END IF;
+  IF (c->>'exp')::bigint < extract(epoch FROM now()) THEN RAISE EXCEPTION 'انتهت صلاحية رمز Google، أعد المحاولة'; END IF;
+  RETURN c;
+END $$;
+
 -- ---------------------------------------------------------------------
 -- الدوال المفتوحة للواجهة
 -- ---------------------------------------------------------------------
@@ -158,7 +186,8 @@ CREATE FUNCTION public.flousi_info() RETURNS JSONB
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT jsonb_build_object(
     'signup_open', (SELECT signup_open FROM flousi.settings) OR NOT EXISTS (SELECT 1 FROM flousi.users),
-    'has_users', EXISTS (SELECT 1 FROM flousi.users))
+    'has_users', EXISTS (SELECT 1 FROM flousi.users),
+    'google_client_id', (SELECT google_client_id FROM flousi.settings))
 $$;
 
 -- أول حساب يُنشأ يصبح المسؤول
@@ -193,6 +222,7 @@ BEGIN
   SELECT * INTO u FROM flousi.users WHERE lower(username) = lower(btrim(coalesce(p_username, '')));
   IF u.id IS NULL THEN RETURN jsonb_build_object('error', 'اسم المستخدم أو كلمة السر غير صحيحة'); END IF;
   IF u.locked_until > now() THEN RETURN jsonb_build_object('error', 'محاولات كثيرة. حاول بعد ربع ساعة'); END IF;
+  IF u.pass_hash IS NULL THEN RETURN jsonb_build_object('error', 'هذا الحساب يدخل بـ Google'); END IF;
   IF u.pass_hash <> extensions.crypt(coalesce(p_password, ''), u.pass_hash) THEN
     UPDATE flousi.users SET failed = CASE WHEN failed >= 9 THEN 0 ELSE failed + 1 END,
       locked_until = CASE WHEN failed >= 9 THEN now() + interval '15 minutes' ELSE locked_until END
@@ -209,11 +239,48 @@ LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
   SELECT '{"ok":true}'::jsonb
 $$;
 
+-- الدخول بـ Google: حساب موجود مربوط، وإلا حساب جديد (الأول = المسؤول؛ البقية إن كان التسجيل مفتوحًا)
+CREATE FUNCTION public.flousi_google(p_credential TEXT) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE c JSONB := flousi.google_claims(p_credential); u flousi.users; first BOOLEAN; base TEXT; uname TEXT; i INTEGER := 1;
+BEGIN
+  SELECT * INTO u FROM flousi.users WHERE google_sub = c->>'sub';
+  IF u.id IS NULL THEN
+    PERFORM pg_advisory_xact_lock(917311);
+    first := NOT EXISTS (SELECT 1 FROM flousi.users);
+    IF NOT first AND NOT (SELECT signup_open FROM flousi.settings) THEN
+      RAISE EXCEPTION 'لا يوجد حساب فلوسي مربوط بهذا الحساب في Google، وإنشاء الحسابات مغلق';
+    END IF;
+    base := left(regexp_replace(lower(split_part(c->>'email', '@', 1)), '[^a-z0-9._-]', '', 'g'), 24);
+    IF char_length(base) < 3 THEN base := 'user' || base; END IF;
+    uname := base;
+    WHILE EXISTS (SELECT 1 FROM flousi.users WHERE lower(username) = uname) LOOP i := i + 1; uname := base || i; END LOOP;
+    INSERT INTO flousi.users (username, pass_hash, full_name, is_admin, google_sub, email)
+    VALUES (uname, NULL, left(coalesce(nullif(btrim(c->>'name'), ''), c->>'email'), 60), first, c->>'sub', c->>'email')
+    RETURNING * INTO u;
+  END IF;
+  IF u.locked_until > now() THEN RAISE EXCEPTION 'محاولات كثيرة. حاول بعد ربع ساعة'; END IF;
+  RETURN jsonb_build_object('token', flousi.new_session(u.id), 'user', flousi.user_json(u));
+END $$;
+
+-- ربط حساب موجود (بكلمة سر) بحساب Google، ليدخل بالطريقتين
+CREATE FUNCTION public.flousi_google_link(p_token TEXT, p_credential TEXT) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE u flousi.users := flousi.auth(p_token); c JSONB := flousi.google_claims(p_credential);
+BEGIN
+  IF EXISTS (SELECT 1 FROM flousi.users WHERE google_sub = c->>'sub' AND id <> u.id) THEN
+    RAISE EXCEPTION 'حساب Google هذا مربوط بحساب فلوسي آخر';
+  END IF;
+  UPDATE flousi.users SET google_sub = c->>'sub', email = c->>'email' WHERE id = u.id RETURNING * INTO u;
+  RETURN flousi.user_json(u);
+END $$;
+
 CREATE FUNCTION public.flousi_password(p_token TEXT, p_current TEXT, p_next TEXT) RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE u flousi.users := flousi.auth(p_token);
 BEGIN
-  IF u.pass_hash <> extensions.crypt(coalesce(p_current, ''), u.pass_hash) THEN RAISE EXCEPTION 'كلمة السر الحالية غير صحيحة'; END IF;
+  -- حساب Google دون كلمة سر يستطيع إضافة كلمة سر دون «الحالية»
+  IF u.pass_hash IS NOT NULL AND u.pass_hash <> extensions.crypt(coalesce(p_current, ''), u.pass_hash) THEN RAISE EXCEPTION 'كلمة السر الحالية غير صحيحة'; END IF;
   IF char_length(coalesce(p_next, '')) < 6 THEN RAISE EXCEPTION 'كلمة السر: 6 أحرف على الأقل'; END IF;
   UPDATE flousi.users SET pass_hash = extensions.crypt(p_next, extensions.gen_salt('bf', 10)) WHERE id = u.id;
   DELETE FROM flousi.sessions WHERE user_id = u.id AND token_hash <> flousi.hash_token(p_token);
@@ -227,11 +294,13 @@ DECLARE u flousi.users := flousi.auth(p_token);
 BEGIN
   RETURN jsonb_build_object(
     'user', flousi.user_json(u),
+    'google_client_id', (SELECT google_client_id FROM flousi.settings),
     'categories', coalesce((SELECT jsonb_agg(flousi.cat_json(c) ORDER BY c.type, c.archived, c.sort_order, c.id) FROM flousi.categories c), '[]'),
     'transactions', coalesce((SELECT jsonb_agg(flousi.tx_json(t) ORDER BY t.date DESC, t.id DESC) FROM flousi.transactions t WHERE t.user_id = u.id), '[]'),
     'settings', CASE WHEN u.is_admin THEN jsonb_build_object(
       'signup_open', (SELECT signup_open FROM flousi.settings),
-      'users', (SELECT jsonb_agg(jsonb_build_object('id', x.id, 'username', x.username, 'full_name', x.full_name, 'is_admin', x.is_admin) ORDER BY x.id) FROM flousi.users x))
+      'google_client_id', (SELECT google_client_id FROM flousi.settings),
+      'users', (SELECT jsonb_agg(jsonb_build_object('id', x.id, 'username', x.username, 'full_name', x.full_name, 'is_admin', x.is_admin, 'email', x.email) ORDER BY x.id) FROM flousi.users x))
     END);
 END $$;
 
@@ -366,6 +435,19 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE u flousi.users := flousi.admin(p_token);
 BEGIN
   UPDATE flousi.settings SET signup_open = coalesce(p_signup_open, signup_open);
+  RETURN '{"ok":true}'::jsonb;
+END $$;
+
+-- Client ID من Google Cloud (نوع Web، والمصدر المسموح = رابط فلوسي). فارغ = إيقاف الدخول بـ Google
+CREATE FUNCTION public.flousi_admin_google(p_token TEXT, p_client_id TEXT) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE u flousi.users := flousi.admin(p_token);
+BEGIN
+  p_client_id := nullif(btrim(coalesce(p_client_id, '')), '');
+  IF p_client_id IS NOT NULL AND p_client_id !~ '^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$' THEN
+    RAISE EXCEPTION 'Client ID غير صالح (ينتهي بـ .apps.googleusercontent.com)';
+  END IF;
+  UPDATE flousi.settings SET google_client_id = p_client_id;
   RETURN '{"ok":true}'::jsonb;
 END $$;
 

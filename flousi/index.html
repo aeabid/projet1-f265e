@@ -255,6 +255,9 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .login .top p{margin:0;opacity:.85;font-size:14px}
 .login form{padding:22px 24px 26px}
 .login .btn{width:100%;margin-top:6px}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:16px 0 12px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.gbtn{display:flex;justify-content:center;min-height:44px}
 .login .back{display:block;text-align:center;margin-top:14px;font-size:13px;color:var(--muted)}
 
 .skeleton{border-radius:14px;background:linear-gradient(90deg,var(--soft),var(--line),var(--soft));background-size:200% 100%;animation:sh 1.2s infinite}
@@ -353,9 +356,27 @@ async function rpc(fn, args = {}, withToken = true) {
   if (data && data.error) throw new Error(data.error);
   return data;
 }
+// زر Google (Google Identity Services)
+let gsiLoading = null;
+function loadGsi() {
+  return (gsiLoading ??= new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://accounts.google.com/gsi/client';
+    sc.async = true;
+    sc.onload = res;
+    sc.onerror = () => { gsiLoading = null; rej(new Error('تعذّر تحميل زر Google')); };
+    document.head.appendChild(sc);
+  }));
+}
+async function googleButton(el, clientId, onCredential) {
+  try { await loadGsi(); } catch (e) { el.innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+  google.accounts.id.initialize({ client_id: clientId, callback: (r) => onCredential(r.credential), ux_mode: 'popup' });
+  google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', locale: 'ar', width: Math.min(el.clientWidth || 320, 400) });
+}
 const onAuthError = (err) => { if (err.auth) { setToken(null); S.user = null; renderLogin('انتهت الجلسة، ادخل من جديد'); return true; } return false; };
 
 function toast(msg, bad = false) {
+  $$('.toast').forEach((t) => t.remove());
   const el = document.createElement('div');
   el.className = 'toast' + (bad ? ' bad' : '');
   el.textContent = msg;
@@ -456,9 +477,15 @@ async function renderLogin(message, mode) {
       <div class="field"><span>كلمة السر</span><input class="input" name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" dir="ltr"></div>
       <p class="err" id="login-err" hidden></p>
       <button class="btn">${signup ? 'إنشاء الحساب' : 'الدخول'}</button>
+      ${info.google_client_id ? '<div class="or"><span>أو</span></div><div id="gbtn" class="gbtn"></div>' : ''}
       ${info.has_users && info.signup_open ? `<a class="back" href="#" id="switch">${signup ? 'عندي حساب، الدخول' : 'ليس عندي حساب؟ إنشاء حساب'}</a>` : ''}
     </form>
   </div></div>`;
+  if (info.google_client_id) googleButton($('#gbtn'), info.google_client_id, async (credential) => {
+    const p = $('#login-err');
+    try { const r = await rpc('google', { p_credential: credential }, false); setToken(r.token); boot(); }
+    catch (err) { p.textContent = err.message; p.hidden = false; }
+  });
   $('#switch') && ($('#switch').onclick = (e) => { e.preventDefault(); renderLogin(null, signup ? 'login' : 'signup'); });
   $('#login-form').onsubmit = async (e) => {
     e.preventDefault();
@@ -765,11 +792,17 @@ function renderCats() {
     <section class="card span"><div class="card-h"><h2>الإعدادات</h2></div><div class="settings-list">
       <label class="set"><span class="t">العملة<small>تظهر بجانب المبالغ في هذا الجهاز</small></span><input class="input" id="cur" value="${esc(CUR)}" maxlength="8"></label>
       <div class="set"><span class="t">تصدير كل عملياتي<small>ملف CSV يُفتح في Excel</small></span><button class="btn sm light" id="csv">${icon('download')} تصدير</button></div>
-      <div class="set"><span class="t">كلمة السر<small>حسابك: <span dir="ltr">${esc(S.user.username)}</span></small></span><button class="btn sm light" id="pass">تغيير</button></div>
+      <div class="set"><span class="t">كلمة السر<small>حسابك: <span dir="ltr">${esc(S.user.username)}</span>${S.user.password ? '' : ' · تدخل بـ Google فقط'}</small></span><button class="btn sm light" id="pass">${S.user.password ? 'تغيير' : 'إضافة'}</button></div>
+      ${S.user.google ? `<div class="set"><span class="t">Google<small>مربوط: <span dir="ltr">${esc(S.user.email || '')}</span></small></span><span style="color:var(--in);font-weight:700">✓</span></div>`
+        : S.googleClientId ? `<div class="set"><span class="t">ربط حسابي بـ Google<small>لتدخل بنقرة واحدة</small></span><div id="glink" style="min-width:200px"></div></div>` : ''}
     </div></section>
     ${admin ? accountsCard() : ''}</div>`;
   $('#add-cat') && ($('#add-cat').onclick = () => openCat(null));
   $('#pass').onclick = changePassword;
+  if ($('#glink')) googleButton($('#glink'), S.googleClientId, async (credential) => {
+    try { await rpc('google_link', { p_credential: credential }); await load(); renderCats(); toast('تمّ ربط حسابك بـ Google ✓'); }
+    catch (err) { onAuthError(err) || toast(err.message, true); }
+  });
   if (admin) bindAccounts();
   $$('[data-edit]').forEach((b) => (b.onclick = () => openCat(catById(Number(b.dataset.edit)))));
   $$('[data-restore]').forEach((b) => (b.onclick = async () => {
@@ -795,8 +828,10 @@ function accountsCard() {
     <div class="settings-list">
       <label class="set"><span class="t">إنشاء حسابات جديدة<small>${st.signup_open ? 'مفتوح: أي شخص عنده الرابط يستطيع إنشاء حساب (يرى عملياته فقط)' : 'مغلق: لا أحد يستطيع إنشاء حساب'}</small></span>
         <input type="checkbox" id="signup-open" ${st.signup_open ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--purple)"></label>
+      <div class="set" style="flex-wrap:wrap"><span class="t" style="min-width:220px">الدخول بـ Google<small>${st.google_client_id ? 'مفعّل' : 'غير مفعّل'}. ضع Client ID من Google Cloud (نوع Web). المصدر المسموح: <b dir="ltr">${esc(location.origin)}</b></small></span>
+        <span style="display:flex;gap:6px;flex:1 1 100%;min-width:0"><input class="input" id="gcid" dir="ltr" placeholder="xxxx.apps.googleusercontent.com" value="${esc(st.google_client_id || '')}" style="flex:1;width:auto;min-width:0;font-size:13px"><button class="btn sm" id="gcid-save">حفظ</button></span></div>
       ${st.users.map((x) => `<div class="set"><span class="ico" style="background:var(--card);width:38px;height:38px;font-family:Tajawal;font-weight:800;color:var(--purple)">${esc(x.full_name.trim().charAt(0))}</span>
-        <span class="t">${esc(x.full_name)}${x.is_admin ? ' <span style="font-size:11px;color:var(--purple);background:var(--card);border-radius:99px;padding:1px 8px">مسؤول</span>' : ''}<small dir="ltr" style="text-align:right">${esc(x.username)}</small></span>
+        <span class="t">${esc(x.full_name)}${x.is_admin ? ' <span style="font-size:11px;color:var(--purple);background:var(--card);border-radius:99px;padding:1px 8px">مسؤول</span>' : ''}<small dir="ltr" style="text-align:right">${esc(x.username)}${x.email ? ' · ' + esc(x.email) : ''}</small></span>
         ${x.id === S.user.id ? '<small style="color:var(--muted)">أنت</small>' : `<button class="btn sm light" data-admin="${x.id}" data-v="${x.is_admin ? 0 : 1}">${x.is_admin ? 'إلغاء المسؤول' : 'جعله مسؤولًا'}</button>
           <button class="ibtn" data-deluser="${x.id}" title="حذف الحساب" style="color:#e11d48">✕</button>`}</div>`).join('')}
     </div></section>`;
@@ -805,6 +840,7 @@ function bindAccounts() {
   const run = async (fn, args, msg) => {
     try { await rpc(fn, args); await load(); renderCats(); toast(msg); } catch (err) { onAuthError(err) || toast(err.message, true); }
   };
+  $('#gcid-save').onclick = () => run('admin_google', { p_client_id: $('#gcid').value }, $('#gcid').value.trim() ? 'تمّ تفعيل الدخول بـ Google ✓' : 'تمّ إيقاف الدخول بـ Google');
   $('#signup-open').onchange = (e) => run('admin_settings', { p_signup_open: e.target.checked }, 'تمّ ✓');
   $$('[data-admin]').forEach((b) => (b.onclick = () => run('admin_user', { p_user_id: Number(b.dataset.admin), p_is_admin: b.dataset.v === '1', p_delete: false }, 'تمّ ✓')));
   $$('[data-deluser]').forEach((b) => (b.onclick = () => {
@@ -813,9 +849,10 @@ function bindAccounts() {
 }
 async function changePassword() {
   $('.menu')?.remove();
-  const cur = prompt('كلمة السر الحالية'); if (cur === null) return;
+  let cur = '';
+  if (S.user.password) { cur = prompt('كلمة السر الحالية'); if (cur === null) return; }
   const next = prompt('كلمة السر الجديدة (6 أحرف على الأقل)'); if (next === null) return;
-  try { await rpc('password', { p_current: cur, p_next: next }); toast('تمّ تغيير كلمة السر ✓'); }
+  try { await rpc('password', { p_current: cur, p_next: next }); await load(); if (UI.view === 'cats') renderCats(); toast('تمّ حفظ كلمة السر ✓'); }
   catch (err) { onAuthError(err) || toast(err.message, true); }
 }
 
@@ -942,7 +979,7 @@ document.addEventListener('keydown', (e) => {
 /* ================= boot ================= */
 async function load() {
   const d = await rpc('state');
-  S.user = d.user; S.cats = d.categories; S.tx = d.transactions.map((x) => ({ ...x, amount: Number(x.amount) })); S.settings = d.settings;
+  S.user = d.user; S.cats = d.categories; S.tx = d.transactions.map((x) => ({ ...x, amount: Number(x.amount) })); S.settings = d.settings; S.googleClientId = d.google_client_id;
   S.loaded = true;
 }
 async function boot() {
