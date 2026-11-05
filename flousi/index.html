@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>فلوسي — فيد</title>
+<title>فلوسي — مداخيلي ومصاريفي</title>
 <meta name="theme-color" content="#3a0d8f">
-<link rel="icon" href="/feed-icon.png">
-<link rel="apple-touch-icon" href="/feed-icon.png">
+<link rel="icon" href="feed-icon.png">
+<link rel="apple-touch-icon" href="feed-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
@@ -329,13 +329,32 @@ const ICONS = {
 };
 const icon = (n) => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 
-async function api(method, url, body) {
-  const res = await fetch(url, { method, credentials: 'same-origin',
-    headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) { const e = new Error(data.error || 'تعذّر الاتصال'); e.status = res.status; throw e; }
+// الإعداد: مشروع Supabase والمفتاح العمومي (publishable، مخصّص للمتصفح). الجداول مغلقة؛ لا يصل إلا إلى دوال flousi_*
+const SUPABASE_URL = 'https://wunachimbqwjdkgguhzf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_aJF0sOw7HpaDExTgg86czQ_b79Zxvkj';
+let TOKEN = null;
+try { TOKEN = localStorage.getItem('flousi.token'); } catch (e) {}
+function setToken(t) { TOKEN = t; try { t ? localStorage.setItem('flousi.token', t) : localStorage.removeItem('flousi.token'); } catch (e) {} }
+async function rpc(fn, args = {}, withToken = true) {
+  let res;
+  try {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/flousi_${fn}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(withToken ? { p_token: TOKEN, ...args } : args),
+    });
+  } catch (e) { throw new Error('لا يوجد اتصال بالإنترنت'); }
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const e = new Error((data && data.message) || 'تعذّر الاتصال');
+    e.auth = data && data.hint === 'auth';
+    throw e;
+  }
+  if (data && data.error) throw new Error(data.error);
   return data;
 }
+const onAuthError = (err) => { if (err.auth) { setToken(null); S.user = null; renderLogin('انتهت الجلسة، ادخل من جديد'); return true; } return false; };
+
 function toast(msg, bad = false) {
   const el = document.createElement('div');
   el.className = 'toast' + (bad ? ' bad' : '');
@@ -419,26 +438,37 @@ function delta(cur, prev, upIsGood) {
 /* ================= views ================= */
 const app = $('#app');
 
-function renderLogin(message) {
+async function renderLogin(message, mode) {
+  let info = { signup_open: true, has_users: true };
+  try { info = await rpc('info', {}, false); } catch (e) {}
+  if (!info.has_users) mode = 'signup';
+  if (!info.signup_open) mode = 'login';
+  mode = mode || 'login';
+  const signup = mode === 'signup';
   app.innerHTML = `
   <div class="login"><div class="box">
-    <div class="top"><img src="/feed-logo-white.png" alt="فيد"><h1>فلوسي ✦</h1><p>مداخيلك ومصاريفك، بوضوح، في مكان واحد.</p></div>
-    <form id="login-form">
+    <div class="top"><img src="feed-logo-white.png" alt=""><h1>فلوسي ✦</h1><p>مداخيلك ومصاريفك، بوضوح، في مكان واحد.</p></div>
+    <form id="login-form" novalidate>
       ${message ? `<p class="err" style="margin:0 0 12px">${esc(message)}</p>` : ''}
-      <div class="field"><span>اسم المستخدم</span><input class="input" name="username" autocomplete="username" required></div>
-      <div class="field"><span>كلمة السر</span><input class="input" name="password" type="password" autocomplete="current-password" required></div>
+      ${!info.has_users ? '<p class="sub" style="margin:0 0 14px;color:var(--muted);font-size:14px">أول حساب يُنشأ يكون <b>المسؤول</b>: يدير الأنواع والحسابات.</p>' : ''}
+      ${signup ? '<div class="field"><span>الاسم</span><input class="input" name="full_name" autocomplete="name" maxlength="60"></div>' : ''}
+      <div class="field"><span>اسم المستخدم</span><input class="input" name="username" autocomplete="username" dir="ltr" maxlength="30" ${signup ? 'placeholder="مثلاً: alaa"' : ''}></div>
+      <div class="field"><span>كلمة السر</span><input class="input" name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" dir="ltr"></div>
       <p class="err" id="login-err" hidden></p>
-      <button class="btn">الدخول بحساب فيد</button>
-      <a class="back" href="/">← الرجوع إلى تطبيق فيد</a>
+      <button class="btn">${signup ? 'إنشاء الحساب' : 'الدخول'}</button>
+      ${info.has_users && info.signup_open ? `<a class="back" href="#" id="switch">${signup ? 'عندي حساب، الدخول' : 'ليس عندي حساب؟ إنشاء حساب'}</a>` : ''}
     </form>
   </div></div>`;
+  $('#switch') && ($('#switch').onclick = (e) => { e.preventDefault(); renderLogin(null, signup ? 'login' : 'signup'); });
   $('#login-form').onsubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target), btn = $('button', e.target);
     btn.disabled = true;
     try {
-      const { user } = await api('POST', '/api/login', { username: fd.get('username'), password: fd.get('password') });
-      if (user.role !== 'admin') return renderLogin('فلوسي متاح لحسابات الإدارة فقط.');
+      const r = signup
+        ? await rpc('signup', { p_username: fd.get('username'), p_password: fd.get('password'), p_full_name: fd.get('full_name') }, false)
+        : await rpc('login', { p_username: fd.get('username'), p_password: fd.get('password') }, false);
+      setToken(r.token);
       boot();
     } catch (err) {
       const p = $('#login-err'); p.textContent = err.message; p.hidden = false; btn.disabled = false;
@@ -453,7 +483,7 @@ function shell() {
     <span class="spark" style="top:70px;left:16%">✦</span><span class="spark" style="top:150px;right:8%;font-size:11px;opacity:.6">✦</span>
     <div class="wrap">
       <div class="topline">
-        <a class="brand" href="/" title="فيد"><img src="/feed-logo-white.png" alt="فيد"><span class="tag">فلوسي</span></a>
+        <a class="brand" href="#" title="فلوسي"><img src="feed-logo-white.png" alt=""><span class="tag">فلوسي</span></a>
         <button class="me" id="me" aria-haspopup="true"><span>${esc(u.full_name)}</span><b class="av">${esc((u.full_name || '?').trim().charAt(0))}</b></button>
       </div>
       <div id="hero-body"></div>
@@ -463,7 +493,7 @@ function shell() {
   <nav class="dock">
     <button class="tab" data-view="home">${icon('home')}لوحتي</button>
     <button class="add" id="dock-add" aria-label="إضافة عملية">${icon('plus')}</button>
-    <button class="tab" data-view="cats">${icon('tag')}الأنواع</button>
+    <button class="tab" data-view="cats">${icon('tag')}${u.is_admin ? 'الإدارة' : 'الأنواع'}</button>
   </nav>`;
   $$('.dock .tab').forEach((b) => (b.onclick = () => go(b.dataset.view)));
   $('#dock-add').onclick = () => openTx('expense');
@@ -472,12 +502,13 @@ function shell() {
     const old = $('.menu'); if (old) return old.remove();
     const m = document.createElement('div');
     m.className = 'menu';
-    m.innerHTML = `<a href="/">${icon('back')} الرجوع إلى فيد</a>
+    m.innerHTML = `<button id="m-pass">${icon('edit')} تغيير كلمة السر</button>
       <button id="m-csv">${icon('download')} تصدير Excel (CSV)</button>
       <button id="m-out">${icon('logout')} خروج</button>`;
     $('#me').appendChild(m);
     $('#m-csv').onclick = exportCsv;
-    $('#m-out').onclick = async () => { await api('POST', '/api/logout').catch(() => {}); S.user = null; renderLogin(); };
+    $('#m-pass').onclick = changePassword;
+    $('#m-out').onclick = async () => { await rpc('logout').catch(() => {}); setToken(null); S.user = null; renderLogin(); };
   };
 }
 document.addEventListener('click', (e) => { if (!e.target.closest('.me')) $('.menu')?.remove(); });
@@ -702,56 +733,90 @@ function bindBanner() {
   $('#imp').onclick = async () => {
     const d = localData(), name = (type, id) => (d.cats?.[type] || []).find((c) => c.id === id)?.name;
     try {
-      const r = await api('POST', '/api/flousi/import', { transactions: d.tx.map((x) => ({ type: x.type, amount: x.amount, date: x.date, note: x.note, category: name(x.type, x.cat) })) });
+      const r = await rpc('import', { p_items: d.tx.map((x) => ({ type: x.type, amount: x.amount, date: x.date, note: x.note, category: name(x.type, x.cat) })) });
       done(); toast(`تمّ نقل ${r.imported} عملية ✓`); await load(); render();
-    } catch (err) { toast(err.message, true); }
+    } catch (err) { onAuthError(err) || toast(err.message, true); }
   };
 }
 
 /* ---------- categories admin ---------- */
 function renderCats() {
-  const type = UI.manageType;
+  const type = UI.manageType, admin = S.user.is_admin;
   const used = new Map();
   S.tx.forEach((x) => used.set(x.category_id, (used.get(x.category_id) || 0) + 1));
   const active = activeCats(type), archived = S.cats.filter((c) => c.type === type && c.archived);
   $('#hero-body').innerHTML = `
-    <div style="padding:10px 0 4px"><div style="font-family:Tajawal;font-weight:800;font-size:26px">أنواع المداخيل والمصاريف</div>
-    <div style="opacity:.8;font-size:14px">أضف، غيّر الاسم أو الرمز أو اللون، رتّب، أو أوقف نوعًا.</div></div>
+    <div style="padding:10px 0 4px"><div style="font-family:Tajawal;font-weight:800;font-size:26px">${admin ? 'الإدارة' : 'الأنواع والإعدادات'}</div>
+    <div style="opacity:.8;font-size:14px">${admin ? 'الأنواع: أضف، غيّر الاسم أو الرمز أو اللون، رتّب، أو أوقف نوعًا. والحسابات.' : 'الأنواع يديرها المسؤول.'}</div></div>
     <div class="seg" style="margin-top:14px"><button data-mt="expense" class="${type === 'expense' ? 'on' : ''}">المصاريف (${activeCats('expense').length})</button>
       <button data-mt="income" class="${type === 'income' ? 'on' : ''}">المداخيل (${activeCats('income').length})</button></div>`;
   $$('[data-mt]').forEach((b) => (b.onclick = () => { UI.manageType = b.dataset.mt; renderCats(); }));
   const row = (c, i) => `<div class="manage-row">
-      ${c.archived ? '<span style="width:30px"></span>' : `<div class="move"><button data-up="${c.id}" ${i === 0 ? 'disabled' : ''} aria-label="فوق">${icon('up')}</button><button data-down="${c.id}" ${i === active.length - 1 ? 'disabled' : ''} aria-label="تحت">${icon('down')}</button></div>`}
+      ${c.archived || !admin ? '<span style="width:30px"></span>' : `<div class="move"><button data-up="${c.id}" ${i === 0 ? 'disabled' : ''} aria-label="فوق">${icon('up')}</button><button data-down="${c.id}" ${i === active.length - 1 ? 'disabled' : ''} aria-label="تحت">${icon('down')}</button></div>`}
       <span class="ico" style="background:${c.color}1f;box-shadow:inset 0 0 0 1.5px ${c.color}55">${esc(c.icon)}</span>
       <span class="n">${esc(c.name)}<small>${used.get(c.id) ? `${used.get(c.id)} عملية` : 'لم يُستعمل بعد'}</small></span>
-      ${c.archived ? `<button class="btn sm light" data-restore="${c.id}">${icon('restore')} إرجاع</button>` : `<button class="ibtn" data-edit="${c.id}" aria-label="تعديل">${icon('edit')}</button>`}
+      ${!admin ? '' : c.archived ? `<button class="btn sm light" data-restore="${c.id}">${icon('restore')} إرجاع</button>` : `<button class="ibtn" data-edit="${c.id}" aria-label="تعديل">${icon('edit')}</button>`}
     </div>`;
   $('#main').innerHTML = `<div class="grid"><section class="card span">
-      <div class="card-h"><h2>${type === 'expense' ? 'أنواع المصاريف' : 'أنواع المداخيل'}</h2><button class="btn sm" id="add-cat">+ نوع جديد</button></div>
+      <div class="card-h"><h2>${type === 'expense' ? 'أنواع المصاريف' : 'أنواع المداخيل'}</h2>${admin ? '<button class="btn sm" id="add-cat">+ نوع جديد</button>' : ''}</div>
       ${active.map(row).join('')}
-      ${archived.length ? `<div class="arch-h">موقوفة (تبقى في الإحصائيات القديمة ولا تظهر عند الإضافة)</div>${archived.map(row).join('')}` : ''}
+      ${archived.length && admin ? `<div class="arch-h">موقوفة (تبقى في الإحصائيات القديمة ولا تظهر عند الإضافة)</div>${archived.map(row).join('')}` : ''}
     </section>
     <section class="card span"><div class="card-h"><h2>الإعدادات</h2></div><div class="settings-list">
       <label class="set"><span class="t">العملة<small>تظهر بجانب المبالغ في هذا الجهاز</small></span><input class="input" id="cur" value="${esc(CUR)}" maxlength="8"></label>
       <div class="set"><span class="t">تصدير كل عملياتي<small>ملف CSV يُفتح في Excel</small></span><button class="btn sm light" id="csv">${icon('download')} تصدير</button></div>
-    </div></section></div>`;
-  $('#add-cat').onclick = () => openCat(null);
+      <div class="set"><span class="t">كلمة السر<small>حسابك: <span dir="ltr">${esc(S.user.username)}</span></small></span><button class="btn sm light" id="pass">تغيير</button></div>
+    </div></section>
+    ${admin ? accountsCard() : ''}</div>`;
+  $('#add-cat') && ($('#add-cat').onclick = () => openCat(null));
+  $('#pass').onclick = changePassword;
+  if (admin) bindAccounts();
   $$('[data-edit]').forEach((b) => (b.onclick = () => openCat(catById(Number(b.dataset.edit)))));
   $$('[data-restore]').forEach((b) => (b.onclick = async () => {
-    try { await api('PUT', `/api/flousi/categories/${b.dataset.restore}`, { archived: false }); await load(); renderCats(); toast('تمّ الإرجاع ✓'); }
-    catch (err) { toast(err.message, true); }
+    try { await rpc('cat_save', { p_id: Number(b.dataset.restore), p_type: null, p_name: null, p_icon: null, p_color: null, p_archived: false }); await load(); renderCats(); toast('تمّ الإرجاع ✓'); }
+    catch (err) { onAuthError(err) || toast(err.message, true); }
   }));
   const reorder = async (id, dir) => {
     const ids = active.map((c) => c.id), i = ids.indexOf(id);
     [ids[i], ids[i + dir]] = [ids[i + dir], ids[i]];
     ids.forEach((cid, k) => (catById(cid).sort_order = k + 1));
     renderCats();
-    try { await api('PUT', '/api/flousi/categories/order', { ids }); } catch (err) { toast(err.message, true); await load(); renderCats(); }
+    try { await rpc('cat_order', { p_ids: ids }); } catch (err) { if (!onAuthError(err)) { toast(err.message, true); await load(); renderCats(); } }
   };
   $$('[data-up]').forEach((b) => (b.onclick = () => reorder(Number(b.dataset.up), -1)));
   $$('[data-down]').forEach((b) => (b.onclick = () => reorder(Number(b.dataset.down), 1)));
   $('#cur').onchange = (e) => { CUR = e.target.value.trim() || 'د.ت'; try { localStorage.setItem('flousi.currency', CUR); } catch (er) {} toast('تمّ ✓'); };
   $('#csv').onclick = exportCsv;
+}
+
+function accountsCard() {
+  const st = S.settings || { users: [] };
+  return `<section class="card span"><div class="card-h"><h2>الحسابات</h2><span class="sub">${st.users.length} حساب</span></div>
+    <div class="settings-list">
+      <label class="set"><span class="t">إنشاء حسابات جديدة<small>${st.signup_open ? 'مفتوح: أي شخص عنده الرابط يستطيع إنشاء حساب (يرى عملياته فقط)' : 'مغلق: لا أحد يستطيع إنشاء حساب'}</small></span>
+        <input type="checkbox" id="signup-open" ${st.signup_open ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--purple)"></label>
+      ${st.users.map((x) => `<div class="set"><span class="ico" style="background:var(--card);width:38px;height:38px;font-family:Tajawal;font-weight:800;color:var(--purple)">${esc(x.full_name.trim().charAt(0))}</span>
+        <span class="t">${esc(x.full_name)}${x.is_admin ? ' <span style="font-size:11px;color:var(--purple);background:var(--card);border-radius:99px;padding:1px 8px">مسؤول</span>' : ''}<small dir="ltr" style="text-align:right">${esc(x.username)}</small></span>
+        ${x.id === S.user.id ? '<small style="color:var(--muted)">أنت</small>' : `<button class="btn sm light" data-admin="${x.id}" data-v="${x.is_admin ? 0 : 1}">${x.is_admin ? 'إلغاء المسؤول' : 'جعله مسؤولًا'}</button>
+          <button class="ibtn" data-deluser="${x.id}" title="حذف الحساب" style="color:#e11d48">✕</button>`}</div>`).join('')}
+    </div></section>`;
+}
+function bindAccounts() {
+  const run = async (fn, args, msg) => {
+    try { await rpc(fn, args); await load(); renderCats(); toast(msg); } catch (err) { onAuthError(err) || toast(err.message, true); }
+  };
+  $('#signup-open').onchange = (e) => run('admin_settings', { p_signup_open: e.target.checked }, 'تمّ ✓');
+  $$('[data-admin]').forEach((b) => (b.onclick = () => run('admin_user', { p_user_id: Number(b.dataset.admin), p_is_admin: b.dataset.v === '1', p_delete: false }, 'تمّ ✓')));
+  $$('[data-deluser]').forEach((b) => (b.onclick = () => {
+    if (confirm('حذف هذا الحساب وكل عملياته؟ لا يمكن التراجع.')) run('admin_user', { p_user_id: Number(b.dataset.deluser), p_is_admin: null, p_delete: true }, 'تمّ حذف الحساب');
+  }));
+}
+async function changePassword() {
+  $('.menu')?.remove();
+  const cur = prompt('كلمة السر الحالية'); if (cur === null) return;
+  const next = prompt('كلمة السر الجديدة (6 أحرف على الأقل)'); if (next === null) return;
+  try { await rpc('password', { p_current: cur, p_next: next }); toast('تمّ تغيير كلمة السر ✓'); }
+  catch (err) { onAuthError(err) || toast(err.message, true); }
 }
 
 const EMOJIS = ['🛒', '🍞', '🥩', '☕', '🍽️', '🚗', '⛽', '🚕', '🏠', '💡', '💧', '🔥', '📱', '🌐', '💊', '🏥', '📚', '🎒', '👕', '👟', '💇', '🎁', '🎉', '✈️', '🕌', '🐑', '👶', '👨‍👩‍👧', '💳', '🏦', '🧾', '🛠️', '💼', '🏪', '💰', '🤝', '📈', '🧑‍🏫', '🎓', '📦'];
@@ -782,18 +847,19 @@ $('#c-name').oninput = (e) => { CE.name = e.target.value; $('#c-prev-name').text
 $('#c-icon').oninput = (e) => { CE.icon = e.target.value.trim(); $('#c-prev-ico').textContent = CE.icon || '🏷️'; };
 $('#form-cat').onsubmit = async (e) => {
   e.preventDefault();
-  const data = { type: CE.type, name: CE.name.trim(), icon: CE.icon, color: CE.color };
-  if (!data.name) { $('#c-err').textContent = 'اكتب اسم النوع'; $('#c-err').hidden = false; return; }
+  const data = { p_id: CE.id, p_type: CE.type, p_name: CE.name.trim(), p_icon: CE.icon, p_color: CE.color, p_archived: null };
+  if (!data.p_name) { $('#c-err').textContent = 'اكتب اسم النوع'; $('#c-err').hidden = false; return; }
   try {
-    if (CE.id) await api('PUT', `/api/flousi/categories/${CE.id}`, data); else await api('POST', '/api/flousi/categories', data);
+    await rpc('cat_save', data);
     $('#sheet-cat').close(); await load(); renderCats(); toast(CE.id ? 'تمّ التعديل ✓' : 'تمّت الإضافة ✓');
-  } catch (err) { $('#c-err').textContent = err.message; $('#c-err').hidden = false; }
+  } catch (err) {
+    if (onAuthError(err)) return $('#sheet-cat').close(); $('#c-err').textContent = err.message; $('#c-err').hidden = false; }
 };
 $('#c-del').onclick = async () => {
   const n = S.tx.filter((x) => x.category_id === CE.id).length;
   if (!confirm(n ? `فيه ${n} عملية. سيُوقف النوع ويبقى في الإحصائيات القديمة. نواصل؟` : 'حذف هذا النوع؟')) return;
   try {
-    const r = await api('DELETE', `/api/flousi/categories/${CE.id}`);
+    const r = await rpc('cat_delete', { p_id: CE.id });
     $('#sheet-cat').close(); await load(); renderCats(); toast(r.archived ? 'تمّ إيقاف النوع' : 'تمّ الحذف');
   } catch (err) { $('#c-err').textContent = err.message; $('#c-err').hidden = false; }
 };
@@ -836,25 +902,21 @@ $('#form-tx').onsubmit = async (e) => {
   if (!(amount > 0)) return fail('اكتب مبلغًا صحيحًا (مثلاً 12,500)');
   if (!TE.category_id) return fail('اختر النوع');
   if (!$('#f-date').value) return fail('اختر التاريخ');
-  const data = { type: TE.type, amount, category_id: TE.category_id, date: $('#f-date').value, note: $('#f-note').value };
+  const data = { p_id: TE.id, p_type: TE.type, p_amount: amount, p_category_id: TE.category_id, p_date: $('#f-date').value, p_note: $('#f-note').value };
   const btn = $('#f-save'); btn.disabled = true;
   try {
-    if (TE.id) {
-      const { transaction } = await api('PUT', `/api/flousi/transactions/${TE.id}`, data);
-      S.tx = S.tx.map((x) => (x.id === TE.id ? transaction : x));
-    } else {
-      const { transaction } = await api('POST', '/api/flousi/transactions', data);
-      S.tx.push(transaction);
-    }
+    const transaction = await rpc('tx_save', data);
+    if (TE.id) S.tx = S.tx.map((x) => (x.id === TE.id ? transaction : x));
+    else S.tx.push(transaction);
     $('#sheet-tx').close(); toast(TE.id ? 'تمّ التعديل ✓' : 'تمّت الإضافة ✓');
     if (UI.view !== 'home') UI.view = 'home';
     render();
-  } catch (err) { fail(err.message); } finally { btn.disabled = false; }
+  } catch (err) { if (onAuthError(err)) $('#sheet-tx').close(); else fail(err.message); } finally { btn.disabled = false; }
 };
 $('#f-del').onclick = async () => {
   if (!confirm('حذف هذه العملية؟')) return;
-  try { await api('DELETE', `/api/flousi/transactions/${TE.id}`); S.tx = S.tx.filter((x) => x.id !== TE.id); $('#sheet-tx').close(); render(); toast('تمّ الحذف'); }
-  catch (err) { toast(err.message, true); }
+  try { await rpc('tx_delete', { p_id: TE.id }); S.tx = S.tx.filter((x) => x.id !== TE.id); $('#sheet-tx').close(); render(); toast('تمّ الحذف'); }
+  catch (err) { if (onAuthError(err)) $('#sheet-tx').close(); else toast(err.message, true); }
 };
 $$('[data-close]').forEach((b) => (b.onclick = () => b.closest('dialog').close()));
 $$('dialog.sheet').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
@@ -879,19 +941,19 @@ document.addEventListener('keydown', (e) => {
 
 /* ================= boot ================= */
 async function load() {
-  const d = await api('GET', '/api/flousi');
-  S.cats = d.categories; S.tx = d.transactions; S.loaded = true;
+  const d = await rpc('state');
+  S.user = d.user; S.cats = d.categories; S.tx = d.transactions.map((x) => ({ ...x, amount: Number(x.amount) })); S.settings = d.settings;
+  S.loaded = true;
 }
 async function boot() {
+  if (!TOKEN) return renderLogin();
   app.innerHTML = `<div class="hero" style="height:300px"></div><div class="wrap" style="margin-top:-52px;display:grid;gap:14px">
     <div class="skeleton" style="height:120px"></div><div class="skeleton" style="height:220px"></div></div>`;
   try {
-    const { user } = await api('GET', '/api/me');
-    if (user.role !== 'admin') return renderLogin('فلوسي متاح لحسابات الإدارة فقط.');
-    S.user = user;
     await load();
   } catch (err) {
-    return err.status === 401 ? renderLogin() : (app.innerHTML = `<div class="empty" style="padding:80px 20px"><span class="big">⚠️</span>${esc(err.message)}<br><br><button class="btn" onclick="boot()">إعادة المحاولة</button></div>`);
+    if (err.auth) { setToken(null); return renderLogin(); }
+    return (app.innerHTML = `<div class="empty" style="padding:80px 20px"><span class="big">⚠️</span>${esc(err.message)}<br><br><button class="btn" onclick="boot()">إعادة المحاولة</button></div>`);
   }
   UI.view = location.hash === '#cats' ? 'cats' : 'home';
   shell(); render();

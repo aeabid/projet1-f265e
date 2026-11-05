@@ -7,7 +7,7 @@ import { createHandler } from './lib/app.js';
 
 const root = path.dirname(new URL(import.meta.url).pathname);
 const PUBLIC = path.join(root, 'public');
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
 
 let connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -41,7 +41,7 @@ const server = http.createServer(async (req, res) => {
     res.end(Buffer.from(await response.arrayBuffer()));
     return;
   }
-  const file = path.join(PUBLIC, path.normalize(url.pathname.endsWith('/') ? url.pathname + 'index.html' : url.pathname));
+  const file = path.join(PUBLIC, path.normalize(url.pathname === '/' ? '/index.html' : url.pathname));
   try {
     if (!file.startsWith(PUBLIC)) throw new Error('outside');
     const content = await fs.readFile(file);
