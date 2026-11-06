@@ -43,7 +43,8 @@ CREATE TABLE flousi.settings (
   signup_open BOOLEAN NOT NULL DEFAULT true,
   google_client_id TEXT
 );
-INSERT INTO flousi.settings DEFAULT VALUES;
+-- Client ID من Google Cloud (يمكن تغييره لاحقًا من «الإدارة ← الحسابات»)
+INSERT INTO flousi.settings (google_client_id) VALUES ('482406194913-llv82ivhs6je9dobkd4fjfdui369t12m.apps.googleusercontent.com');
 
 CREATE TABLE flousi.categories (
   id SERIAL PRIMARY KEY,
