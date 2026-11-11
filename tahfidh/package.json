@@ -1,0 +1,19 @@
+{
+  "name": "tahfidh",
+  "version": "1.0.0",
+  "description": "متابعة الشيخ لحفظ ومراجعة طلبته للقرآن الكريم",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20.12" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@netlify/database": "^2.0.1",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@netlify/database-dev": "^1.0.1"
+  }
+}
