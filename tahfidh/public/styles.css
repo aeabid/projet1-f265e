@@ -279,3 +279,74 @@ dialog .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; 
   .q-day b { font-size: .7rem; }
   .q-ring { width: 100px; height: 100px; }
 }
+
+/* ---------- المراجعة التي يختارها الطالب ---------- */
+.q-bar.warn i { background: var(--q-weak); }
+.q-prog { display: flex; flex-direction: column; gap: .6rem; margin: .4rem 0 .8rem; }
+.q-prog-row { display: grid; grid-template-columns: minmax(0, 1.3fr) 1fr auto; align-items: center; gap: .6rem; font-size: .9rem; }
+.q-prog-row small { color: var(--muted); }
+.q-prog-row b { white-space: nowrap; font-size: .85rem; }
+@media (max-width: 480px) { .q-prog-row { grid-template-columns: 1fr auto; } .q-prog-row .q-bar { grid-column: 1 / -1; grid-row: 2; } }
+.q-today-rev { background: var(--soft); border-radius: 14px; padding: .8rem; margin-top: .4rem; }
+.q-today-rev p { margin: 0 0 .6rem; }
+.q-left { margin-top: .8rem; }
+.q-left summary, .q-help summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+.q-left p { margin: .4rem 0; font-size: .92rem; }
+.q-chip-demo { display: inline-block; border: 1.5px solid var(--border); border-radius: 999px; padding: 0 .55rem; margin: .1rem 0; }
+.q-chip-demo.s { border-color: var(--q-solid); color: var(--q-solid); }
+.q-chip-demo.w { border-color: var(--q-weak); color: var(--q-weak); }
+.q-chip-demo.on { background: var(--gradient); color: #fff; border-color: transparent; }
+.q-chip-demo.need { border-style: dashed; }
+.q-need { color: var(--danger); font-weight: 800; }
+.q-sura.ks { border-color: var(--q-solid); }
+.q-sura.kw { border-color: var(--q-weak); }
+.q-sura.need { border-style: dashed; }
+.q-sura.picked { background: var(--gradient); color: #fff; border-style: solid; font-weight: 700; }
+.q-sura.picked small { color: rgba(255, 255, 255, .8); }
+.q-sura.half { background: var(--soft); border-style: solid; border-color: var(--accent); }
+.q-sura em { font-style: normal; font-size: .72rem; opacity: .8; }
+.q-pick.on { background: var(--gradient); border-color: transparent; color: #fff; }
+
+/* جدول الأسبوع */
+.q-table-wrap { overflow-x: auto; margin-top: .5rem; }
+.q-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.q-table th, .q-table td { padding: .55rem .4rem; text-align: center; border-bottom: 1px solid var(--border); }
+.q-table th:first-child, .q-table td:first-child { text-align: start; }
+.q-table thead th { font-size: .8rem; color: var(--muted); font-weight: 700; }
+.q-table tfoot th { border-bottom: 0; color: var(--accent); }
+.q-table tr.today td { background: var(--soft); }
+.q-table tr.future { opacity: .45; }
+.q-table tr.clickable { cursor: pointer; }
+.q-table tr.clickable:hover td { background: var(--soft); }
+.q-what { display: block; color: var(--muted); font-size: .75rem; max-width: 220px; }
+.q-help { margin-top: .8rem; font-size: .9rem; }
+.q-help ul { margin: .5rem 0 0; padding-inline-start: 1.2rem; }
+.q-help li { margin-bottom: .3rem; }
+
+/* بطاقة الدرس: منطقة ضغط كبيرة */
+.q-tap { width: 100%; display: flex; align-items: center; gap: 1rem; font: inherit; color: var(--text); text-align: start; cursor: pointer;
+  background: var(--soft); border: 2px dashed var(--accent); border-radius: 20px; padding: 1rem; margin-bottom: .4rem; }
+.q-tap.ok { border-color: var(--q-solid); border-style: solid; }
+.q-tap-txt { display: flex; flex-direction: column; gap: .2rem; }
+.q-tap-txt b { font-size: 1.1rem; color: var(--accent); }
+.q-tap-txt small { color: var(--muted); }
+
+/* العدّاد بملء الشاشة */
+body.no-scroll { overflow: hidden; }
+.q-counter-full { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; background: var(--hero); color: #fff;
+  user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  padding: calc(12px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); }
+.q-counter-full.done { background: linear-gradient(135deg, #0f7a52, #1f9d63); }
+.qc-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.qc-btn { font: inherit; font-weight: 700; color: #fff; background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .35); border-radius: 14px; padding: .55rem .9rem; cursor: pointer; }
+.qc-lesson { font-weight: 800; text-align: center; flex: 1; }
+.qc-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem; }
+.qc-ring { --p: 0; width: min(78vw, 360px); aspect-ratio: 1; border-radius: 50%; display: grid; place-content: center; text-align: center;
+  background: radial-gradient(closest-side, #4f33cc 80%, transparent 81%), conic-gradient(#fff calc(var(--p) * 1%), rgba(255, 255, 255, .22) 0); }
+.q-counter-full.done .qc-ring { background: radial-gradient(closest-side, #168556 80%, transparent 81%), conic-gradient(#fff 100%, #fff 0); }
+.qc-ring b { font-family: 'Oswald', 'Tajawal', sans-serif; font-size: clamp(5rem, 28vw, 9rem); line-height: 1; }
+.qc-ring small { font-size: 1.2rem; opacity: .85; }
+.qc-hint { font-size: 1.1rem; opacity: .92; text-align: center; margin: 0; }
+.qc-foot { text-align: center; opacity: .85; }
+.q-counter-full.tap .qc-ring { animation: qc-pop .18s ease-out; }
+@keyframes qc-pop { 50% { transform: scale(1.04); } }

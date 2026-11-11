@@ -115,9 +115,8 @@ const icon = (name) =>
   `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ICON_PATHS.grid}</svg>`;
 
 const NAV = {
-  admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'المجموعات', 'grid'], ['#/quran/sheikhs', 'المشايخ', 'star'], ['#/account', 'حسابي', 'user']],
-  sheikh: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'طلبتي', 'users'], ['#/quran/groups', 'المجموعات', 'grid'], ['#/account', 'حسابي', 'user']],
-  talib: [['#/home', 'متابعتي', 'home'], ['#/my-hifz', 'محفوظي', 'book'], ['#/account', 'حسابي', 'user']],
+  admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'المجموعات', 'grid'], ['#/account', 'حسابي', 'user']],
+  talib: [['#/home', 'متابعتي', 'home'], ['#/my-review', 'مراجعتي', 'star'], ['#/my-hifz', 'محفوظي', 'book'], ['#/account', 'حسابي', 'user']],
 };
 
 function renderTopbar() {
@@ -193,7 +192,9 @@ function viewAccount(el) {
     <div class="card narrow"><h3>تغيير كلمة السر</h3>
       <form id="pw-form"><label>كلمة السر الحالية<input name="current" type="password" required autocomplete="current-password"></label>
         <label>كلمة السر الجديدة<input name="next" type="password" required minlength="6" autocomplete="new-password"></label>
-        <button class="btn" type="submit">تغيير</button></form></div>`;
+        <button class="btn" type="submit">تغيير</button></form></div>
+    ${u.role === 'admin' ? '<div class="card narrow" id="admins"></div>' : ''}`;
+  if (u.role === 'admin') adminsCard($('#admins'));
   $('#me-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
@@ -214,6 +215,40 @@ function viewAccount(el) {
       toast(err.message, true);
     }
   });
+}
+
+// المشرفون (الشيخ والإدارة): نفس الصلاحيات
+async function adminsCard(box) {
+  const { admins } = await api('GET', '/api/admins');
+  box.innerHTML = `<div class="section-head"><h3>المشرفون</h3><button type="button" class="btn small" id="adm-add">＋ مشرف</button></div>
+    <p class="muted small">كل مشرف (الشيخ أو الإدارة) له نفس الصلاحيات: الطلبة، المجموعات، المحفوظ، المراجعة، التقييم.</p>
+    <ul class="levels">${admins
+      .map((a) => `<li><span><b>${esc(a.full_name)}</b> <span class="muted small" dir="ltr">${esc(a.username)}</span>${a.id === state.user.id ? ' <span class="pill">أنت</span>' : ''}</span>
+        <span class="row-actions"><button type="button" class="btn small ghost" data-edit="${a.id}">تعديل</button>
+        ${a.id === state.user.id ? '' : `<button type="button" class="btn small ghost danger" data-del="${a.id}">حذف</button>`}</span></li>`)
+      .join('')}</ul>`;
+  const form = (a) =>
+    openModal(
+      a ? 'تعديل حساب المشرف' : 'مشرف جديد',
+      `<label>الاسم<input name="full_name" required value="${esc(a?.full_name || '')}" placeholder="مثال: الشيخ أيوب"></label>
+       ${a ? '' : '<label>اسم المستخدم<input name="username" required dir="ltr" autocomplete="off"></label>'}
+       <label>الهاتف<input name="phone" type="tel" value="${esc(a?.phone || '')}"></label>
+       <label>${a ? 'كلمة سر جديدة (اختياري)' : 'كلمة السر'}<input name="password" ${a ? '' : 'required'} minlength="6" autocomplete="new-password"></label>`,
+      async (data) => {
+        await api(a ? 'PUT' : 'POST', a ? `/api/admins/${a.id}` : '/api/admins', data);
+        toast('تم الحفظ ✓');
+        adminsCard(box);
+      }
+    );
+  $('#adm-add').addEventListener('click', () => form(null));
+  box.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => form(admins.find((a) => a.id === Number(b.dataset.edit)))));
+  box.querySelectorAll('[data-del]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      if (!confirmAction('حذف حساب هذا المشرف؟')) return;
+      await api('DELETE', `/api/admins/${b.dataset.del}`).catch((e) => toast(e.message, true));
+      adminsCard(box);
+    })
+  );
 }
 
 // ---------- التوجيه (quran.js يضيف مساراته) ----------

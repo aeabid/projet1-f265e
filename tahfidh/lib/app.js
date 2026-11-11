@@ -43,8 +43,9 @@ function password(value) {
   if (v.length < 6) throw new HttpError(400, 'كلمة السر يجب أن تحتوي على 6 أحرف على الأقل');
   return v;
 }
-const today = () => new Date().toISOString().slice(0, 10);
-const ROLE_LABELS = { admin: 'المشرف', sheikh: 'شيخ', talib: 'طالب' };
+// اليوم بتوقيت تونس
+const today = () => new Date().toLocaleDateString('en-CA', { timeZone: process.env.TZ_APP || 'Africa/Tunis' });
+const ROLE_LABELS = { admin: 'مشرف', talib: 'طالب' };
 
 function parseCookies(header = '') {
   const out = {};
@@ -128,6 +129,38 @@ export function createHandler(pool, {
       text(body.full_name, { required: true, max: 120, name: 'الاسم' }), text(body.phone, { max: 30, name: 'الهاتف' }), email, user.id,
     ]);
     return { user: withLabel(await userById(user.id)) };
+  });
+
+  // ---------- المشرفون: الشيخ والإدارة، بنفس الصلاحيات ----------
+  route('GET', '/api/admins', ['admin'], async () => ({
+    admins: await all(`SELECT id, username, email, full_name, phone, last_seen FROM users WHERE role = 'admin' ORDER BY id`),
+  }));
+  route('POST', '/api/admins', ['admin'], async ({ body }) => {
+    const username = clean(text(body.username, { required: true, max: 50, name: 'اسم المستخدم' }));
+    if (await one('SELECT 1 FROM users WHERE lower(username) = lower($1)', [username])) throw new HttpError(409, 'اسم المستخدم مستعمل');
+    const admin = await one(
+      `INSERT INTO users (username, password_hash, full_name, role, phone) VALUES ($1, $2, $3, 'admin', $4) RETURNING id, username, full_name, phone`,
+      [username, hashPassword(password(body.password)), text(body.full_name, { required: true, max: 120, name: 'الاسم' }), text(body.phone, { max: 30, name: 'الهاتف' })]
+    );
+    return [201, { admin }];
+  });
+  route('PUT', '/api/admins/:id', ['admin'], async ({ params, body }) => {
+    const a = await one(`SELECT id FROM users WHERE id = $1 AND role = 'admin'`, [params.id]);
+    if (!a) throw new HttpError(404, 'الحساب غير موجود');
+    await pool.query('UPDATE users SET full_name = $1, phone = $2 WHERE id = $3', [
+      text(body.full_name, { required: true, max: 120, name: 'الاسم' }), text(body.phone, { max: 30, name: 'الهاتف' }), a.id,
+    ]);
+    if (body.password) {
+      await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashPassword(password(body.password)), a.id]);
+      await pool.query('DELETE FROM sessions WHERE user_id = $1', [a.id]);
+    }
+    return { ok: true };
+  });
+  route('DELETE', '/api/admins/:id', ['admin'], async ({ user, params }) => {
+    if (params.id === user.id) throw new HttpError(400, 'لا يمكنك حذف حسابك');
+    const { rowCount } = await pool.query(`DELETE FROM users WHERE id = $1 AND role = 'admin'`, [params.id]);
+    if (!rowCount) throw new HttpError(404, 'الحساب غير موجود');
+    return { ok: true };
   });
 
   // ---------- المتابعة ----------
