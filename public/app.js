@@ -2,7 +2,7 @@
 
 const state = { user: null, meta: null };
 
-const ROLE_LABELS = { admin: 'الإدارة', teacher: 'معلم', parent: 'ولي', sheikh: 'شيخ', talib: 'طالب' };
+const ROLE_LABELS = { admin: 'الإدارة', teacher: 'معلم', parent: 'ولي' };
 const CATEGORY_LABELS = { behavior: 'السلوك', level: 'المستوى', general: 'عامة' };
 const RATING_LABELS = { excellent: 'ممتاز', good: 'حسن', average: 'متوسط', weak: 'ضعيف' };
 // سلالم بطاقة التقييم: المستوى والسلوك
@@ -387,8 +387,7 @@ const routes = [
   [/^#\/broadcast$/, viewBroadcast],
   [/^#\/payroll$/, viewPayroll],
   [/^#\/home$/, (el) =>
-    state.user.role === 'teacher' ? (state.user.program_staff ? viewFacilitatorHome(el) : viewTeacherHome(el)) : state.user.role === 'parent' ? viewParentHome(el)
-      : state.user.role === 'sheikh' ? viewQuranHome(el) : state.user.role === 'talib' ? viewQuranStudent(el, state.user.id) : viewHome(el)],
+    state.user.role === 'teacher' ? (state.user.program_staff ? viewFacilitatorHome(el) : viewTeacherHome(el)) : state.user.role === 'parent' ? viewParentHome(el) : viewHome(el)],
   [/^#\/program$/, (el) => viewProgram(el)],
   [/^#\/program\/child\/(\d+)$/, (el, id) => viewProgramChild(el, Number(id))],
   [/^#\/kid\/(\d+)$/, (el, id) => viewProgramChild(el, Number(id))],
@@ -511,7 +510,7 @@ const HASH_PERM = {
   '#/board': 'stats', '#/finance': 'stats', '#/general': 'stats', '#/dashboard': 'school', '#/program/board': 'school',
   '#/payroll': 'salaries', '#/program/pay': 'salaries', '#/salaries': 'salaries', '#/staff': 'salaries',
   '#/fees': 'fees', '#/accounting': 'accounting', '#/cash': 'cash', '#/ledger': 'expenses',
-  '#/partners': 'partners', '#/quran': 'quran', '#/permissions': 'super', '#/admins': 'super', '#/center-debts': 'expenses',
+  '#/partners': 'partners', '#/permissions': 'super', '#/admins': 'super', '#/center-debts': 'expenses',
   '#/people': 'school', '#/parents': 'school', '#/parent-requests': 'school', '#/students': 'school', '#/program': 'school',
   '#/attendance': 'school', '#/messages': 'school', '#/broadcast': 'school', '#/whatsapp': 'school', '#/courses': 'school',
   '#/support/teachers': 'accounts', '#/program/staff': 'accounts', '#/debts': 'expenses',
@@ -581,7 +580,6 @@ const NAV = {
       ],
     },
     ['#/courses', 'الدورات والأنشطة'],
-    ['#/quran', 'فضاء التحفيظ'],
     {
       label: 'إدارة المركز',
       items: [
@@ -661,17 +659,6 @@ const NAV = {
     ['#/program/pay', 'أجرتي'],
     ['#/account', 'حسابي'],
   ],
-  sheikh: [
-    ['#/home', 'الرئيسية'],
-    ['#/quran/students', 'طلبتي'],
-    ['#/quran/groups', 'المجموعات'],
-    ['#/account', 'حسابي'],
-  ],
-  talib: [
-    ['#/home', 'متابعتي'],
-    ['#/my-hifz', 'محفوظي'],
-    ['#/account', 'حسابي'],
-  ],
   parent: [
     ['#/home', 'الرئيسية'],
     ['#/students', 'أبنائي'],
@@ -724,15 +711,12 @@ const LINK_ICONS = {
   '#/attendance': 'check', '#/program/attendance': 'check', '#/program/classes': 'grid', '#/messages': 'chat', '#/my-pay': 'wallet', '#/program/pay': 'wallet',
   '#/account': 'user', '#/tasks': 'clipboard', '#/evaluations': 'clipboard', '#/overview': 'chart', '#/program/posts': 'star',
   '#/todo': 'clipboard', '#/program': 'spark', '#/group-message': 'chat', '#/board': 'chart',
-  '#/quran': 'book', '#/quran/students': 'users', '#/quran/groups': 'grid', '#/my-hifz': 'book',
 };
 // شريط التنقل السفلي في الهاتف: 4 وجهات حسب الدور + «المزيد»
 const TABS = {
   admin: [['#/home', 'الرئيسية', 'home'], ['#/students', 'الدعم', 'book'], ['#/program', 'التربوي', 'spark'], ['#/messages', 'الرسائل', 'chat']],
   teacher: [['#/home', 'الرئيسية', 'home'], ['#/students', 'تلاميذي', 'users'], ['#/attendance', 'الغيابات', 'check'], ['#/messages', 'الرسائل', 'chat']],
   program_staff: [['#/home', 'الرئيسية', 'home'], ['#/program', 'أطفالي', 'smile'], ['#/program/attendance', 'الغيابات', 'check'], ['#/program/posts', 'الأنشطة', 'star']],
-  sheikh: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'طلبتي', 'users'], ['#/quran/groups', 'المجموعات', 'grid']],
-  talib: [['#/home', 'متابعتي', 'home'], ['#/my-hifz', 'محفوظي', 'book'], ['#/account', 'حسابي', 'user']],
   parent: [['#/home', 'الرئيسية', 'home'], ['#/students', 'أبنائي', 'smile'], ['#/timetable', 'الجدول', 'calendar'], ['#/messages', 'الرسائل', 'chat']],
 };
 
@@ -825,11 +809,10 @@ function renderTopbar() {
     document.body.classList.toggle('sheet-open', open);
   });
   $('#vmenu').querySelectorAll('a').forEach((a) => a.addEventListener('click', closeVmenu));
-  const quranOnly = ['sheikh', 'talib'].includes(state.user.role);
-  $('#mail').hidden = quranOnly || (state.user.role === 'admin' && !can('school'));
+  $('#mail').hidden = state.user.role === 'admin' && !can('school');
   $('#bell').hidden = state.user.role !== 'admin' || !can('school');
   if (state.user.role === 'admin' && can('school')) refreshBell();
-  if (!quranOnly) refreshMail();
+  refreshMail();
   fitNav();
 }
 
