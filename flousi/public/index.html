@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>فلوسي — مداخيلي ومصاريفي</title>
+<title>Habits360 — عاداتي ويومي وفلوسي</title>
 <meta name="theme-color" content="#3a0d8f">
 <link rel="icon" href="feed-icon.png">
 <link rel="apple-touch-icon" href="feed-icon.png">
@@ -39,12 +39,14 @@ button{cursor:pointer}
 svg.i{width:20px;height:20px;flex:none}
 
 /* ---------- hero ---------- */
-.hero{background:var(--grad);color:#fff;position:relative;overflow:hidden;border-radius:0 0 34px 34px;padding:calc(10px + env(safe-area-inset-top)) 0 74px}
+.hero{background:var(--grad);color:#fff;position:relative;overflow:hidden;border-radius:0 0 26px 26px;padding:calc(6px + env(safe-area-inset-top)) 0 18px}
 .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
 .hero::before{width:340px;height:340px;background:radial-gradient(circle,rgba(239,32,122,.45),transparent 65%);top:-160px;left:-100px}
 .hero::after{width:300px;height:300px;background:radial-gradient(circle,rgba(111,182,255,.35),transparent 65%);bottom:-170px;right:-60px}
 .hero .wrap{position:relative;z-index:1}
-.topline{display:flex;align-items:center;justify-content:space-between;gap:10px;height:56px}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:10px;height:48px}
+.brand img{height:28px!important}
+.me{padding:3px 3px 3px 10px!important}.me .av{width:26px!important;height:26px!important}
 .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none}
 .brand img{height:34px;display:block}
 .brand .tag{font-family:Tajawal;font-weight:800;font-size:15px;padding:3px 12px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px)}
@@ -60,7 +62,7 @@ svg.i{width:20px;height:20px;flex:none}
 .seg::-webkit-scrollbar{display:none}
 .seg button{flex:1;border:0;background:none;color:rgba(255,255,255,.82);border-radius:12px;padding:8px 10px;font-weight:600;white-space:nowrap;transition:background .2s,color .2s}
 .seg button.on{background:#fff;color:var(--purple);box-shadow:0 4px 14px rgba(20,0,50,.25)}
-.pnav{display:flex;align-items:center;gap:10px;margin:14px 0 4px}
+.pnav{display:flex;align-items:center;gap:10px;margin:8px 0 2px}
 .pnav .lab{flex:1;text-align:center;font-family:Tajawal;font-weight:700;font-size:17px}
 .pnav .lab small{display:block;font-family:"IBM Plex Sans Arabic";font-weight:400;font-size:12px;opacity:.75}
 .round{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center;transition:background .2s}
@@ -69,22 +71,22 @@ svg.i{width:20px;height:20px;flex:none}
 .custom{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .custom label{font-size:12px;opacity:.85}
 .custom input{display:block;width:100%;margin-top:4px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;padding:9px 10px;color-scheme:dark}
-.balance{text-align:center;margin-top:16px}
+.balance{text-align:center;margin-top:10px}
 .balance .k{font-size:13px;opacity:.8}
-.balance .v{font-size:44px;font-weight:800;line-height:1.15;letter-spacing:-.5px}
+.balance .v{font-size:34px;font-weight:800;line-height:1.15;letter-spacing:-.5px}
 .balance .v small{font-size:16px;font-weight:700;opacity:.75;margin-inline-start:6px}
-.flows{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
-.flow{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:10px 12px;backdrop-filter:blur(6px);min-width:0}
-.flow .ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;flex:none}
+.flows{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.flow{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:7px 10px;backdrop-filter:blur(6px);min-width:0}
+.flow .ic{width:30px;height:30px;border-radius:12px;display:grid;place-items:center;flex:none}
 .flow.in .ic{background:rgba(52,211,153,.22);color:#86efac}
 .flow.out .ic{background:rgba(239,32,122,.25);color:#ffb3d1}
 .flow .t{font-size:12px;opacity:.8}
-.flow .a{font-size:19px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flow .a{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .flow .d{font-size:11px;opacity:.85;white-space:nowrap}
 .flow>div{min-width:0}
 
 /* ---------- content ---------- */
-main{margin-top:-52px;position:relative;z-index:2}
+main#main{margin-top:16px;position:relative;z-index:2}
 .grid{display:grid;gap:14px}
 @media (min-width:860px){.grid{grid-template-columns:1.15fr 1fr}.grid .span{grid-column:1/-1}}
 .card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);border:1px solid var(--line);min-width:0}
@@ -410,7 +412,7 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .qsel select{width:100%}
 .qcount{text-align:center;font-family:Tajawal;font-weight:800;font-size:18px;color:var(--purple);background:var(--soft);border-radius:14px;padding:10px;margin-top:4px}
 /* ---------- الصوت والذكاء الاصطناعي ---------- */
-.voicebtn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;backdrop-filter:blur(6px)}
+.voicebtn{display:inline-flex;align-items:center;gap:8px;margin-top:10px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px;backdrop-filter:blur(6px)}
 .voicebtn span{font-size:12px;font-weight:500;opacity:.8}
 .mic{width:88px;height:88px;border-radius:50%;border:0;background:var(--grad);color:#fff;font-size:36px;box-shadow:0 12px 30px -8px rgba(97,3,141,.6);position:relative;transition:transform .15s}
 .mic:active{transform:scale(.95)}
@@ -431,10 +433,10 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .daylist .r:hover{background:var(--soft)}
 .daylist .r .t{font-family:Tajawal;font-weight:700;color:var(--muted);direction:ltr;text-align:right}
 /* عاداتي: بطاقات خفيفة */
-.hh{display:flex;justify-content:space-between;align-items:flex-end;padding-top:6px}
-.hh-pct{font-family:Tajawal;font-weight:800;font-size:34px;line-height:1}
-.hh-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:13px;opacity:.95}
-.hh-nav .round{width:34px;height:34px}
+.hh{display:flex;justify-content:space-between;align-items:center;padding-top:2px}
+.hh-pct{font-family:Tajawal;font-weight:800;font-size:22px;line-height:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:7px 12px}
+.hh-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:12.5px;opacity:.95}
+.hh-nav .round{width:30px;height:30px}
 .hlist{display:flex;flex-direction:column;gap:10px}
 .hc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 12px 10px;box-shadow:var(--shadow)}
 .hc-top{display:flex;align-items:center;gap:8px}
@@ -466,7 +468,7 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 @media (max-width:360px){.dc .c{width:34px;height:34px}.dc .c>span{width:25px;height:25px}}
 .hd-val{text-align:center;margin-top:10px;font-family:Tajawal;font-weight:800;font-size:16px}
 .dh{display:flex;align-items:center;gap:10px;padding-top:6px}
-.dh-t{font-family:Tajawal;font-weight:800;font-size:26px;flex:1}
+.dh-t{font-family:Tajawal;font-weight:800;font-size:22px;flex:1}
 .dh-tag{font-size:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:3px 10px}
 .dh-back{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:99px;padding:6px 12px;font-weight:700;font-size:13px}
 .dh-sub{font-size:13px;opacity:.8;margin-top:2px}
@@ -780,7 +782,7 @@ async function renderLogin(message, mode) {
   const signup = mode === 'signup';
   app.innerHTML = `
   <div class="login"><div class="box">
-    <div class="top"><img src="feed-logo-white.png" alt=""><h1>فلوسي ✦</h1><p>مداخيلك ومصاريفك، بوضوح، في مكان واحد.</p></div>
+    <div class="top"><img src="feed-logo-white.png" alt=""><h1>Habits360 ✦</h1><p>عاداتك، يومك، وفلوسك في مكان واحد.</p></div>
     <form id="login-form" novalidate>
       ${message ? `<p class="err" style="margin:0 0 12px">${esc(message)}</p>` : ''}
       ${!info.has_users ? '<p class="sub" style="margin:0 0 14px;color:var(--muted);font-size:14px">أول حساب يُنشأ يكون <b>المسؤول</b>: يدير الأنواع والحسابات.</p>' : ''}
@@ -822,7 +824,7 @@ function shell() {
     <span class="spark" style="top:70px;left:16%">✦</span><span class="spark" style="top:150px;right:8%;font-size:11px;opacity:.6">✦</span>
     <div class="wrap">
       <div class="topline">
-        <a class="brand" href="#" title="فلوسي"><img src="feed-logo-white.png" alt=""><span class="tag">فلوسي</span></a>
+        <a class="brand" href="#" title="Habits360"><img src="feed-logo-white.png" alt=""><span class="tag" dir="ltr">Habits360</span></a>
         <button class="me" id="me" aria-haspopup="true"><span>${esc(u.full_name)}</span><b class="av">${esc((u.full_name || '?').trim().charAt(0))}</b></button>
       </div>
       <div id="hero-body"></div>
@@ -1095,7 +1097,7 @@ function bindBanner() {
 function renderCats() {
   const admin = S.user.is_admin, tab = UI.adminTab;
   $('#hero-body').innerHTML = `
-    <div style="padding:10px 0 4px"><div style="font-family:Tajawal;font-weight:800;font-size:26px">${admin ? 'الإدارة' : 'الإعدادات'}</div>
+    <div style="padding:10px 0 4px"><div style="font-family:Tajawal;font-weight:800;font-size:22px">${admin ? 'الإدارة' : 'الإعدادات'}</div>
     <div style="opacity:.8;font-size:14px">${{ money: 'أنواع المداخيل والمصاريف، العملة، والحسابات', habits: 'ترتيب العادات وأنواعها وأهدافها', day: 'الجدول الأساسي، الأسابيع المعدّلة، والمواعيد' }[tab]}</div></div>
     <div class="seg aseg" style="margin-top:14px"><button data-at="money" class="${tab === 'money' ? 'on' : ''}">💰 فلوسي</button><button data-at="habits" class="${tab === 'habits' ? 'on' : ''}">✅ عاداتي</button><button data-at="day" class="${tab === 'day' ? 'on' : ''}">🗓️ جدولي</button></div>`;
   $$('[data-at]').forEach((b) => (b.onclick = () => { UI.adminTab = b.dataset.at; renderCats(); }));
@@ -1444,8 +1446,9 @@ function renderDay() {
   g += '</div></div>';
   const up = upcomingAppts().slice(0, 12);
   $('#main').innerHTML = `<div class="grid">
-    <section class="card span"><div class="card-h"><h2>${base ? 'الجدول الأساسي' : 'جدول الأسبوع'}</h2>
-        <button class="edit-toggle ${UI.editGrid ? 'on' : ''}" id="g-edit" aria-pressed="${UI.editGrid}">${UI.editGrid ? '✓ إنهاء التعديل' : '✏️ تعديل الجدول'}</button></div>
+    <section class="card span"><div class="card-h"><h2>${base ? 'الأساسي' : 'الجدول'}</h2>
+        <span style="display:flex;gap:6px">${base ? '' : '<button class="edit-toggle" id="g-base" title="اجعل جدول هذا الأسبوع هو الجدول الأساسي">⭐ اجعله الأساسي</button>'}
+        <button class="edit-toggle ${UI.editGrid ? 'on' : ''}" id="g-edit" aria-pressed="${UI.editGrid}">${UI.editGrid ? '✓ إنهاء' : '✏️ تعديل'}</button></span></div>
       ${UI.editGrid ? '<div class="edit-bar">✋ اسحب الخانة لتغيير وقتها أو يومها · ↕️ اسحب الحافّة العليا أو السفلى للتكبير والتصغير · ➕ اضغط مكانًا فارغًا للإضافة · اضغط الخانة لتعديل تفاصيلها</div>' : ''}
       ${g}
       ${UI.editGrid ? '' : '<div class="grid-hint"><span>🔒 الجدول مقفل: يمكنك التمرير بحرية. للتعديل اضغط «✏️ تعديل الجدول».</span></div>'}
@@ -1457,6 +1460,10 @@ function renderDay() {
   $('#add-appt').onclick = () => openPlan({ kind: 'appt' });
   $('#v-appt').onclick = () => openVoice('appt');
   $$('.ap').forEach((el) => (el.onclick = (e) => { if (!e.target.closest('.gcal')) openPlan({ appt: S.appts.find((a) => a.id === Number(el.dataset.id)) }); }));
+  $('#g-base') && ($('#g-base').onclick = () => {
+    if (!isMat(wk)) return toast('هذا الأسبوع مطابق للجدول الأساسي أصلًا ✓');
+    weekToBase();
+  });
   $('#g-edit').onclick = () => { UI.editGrid = !UI.editGrid; const sx = $('#gwrap')?.scrollLeft; renderDay(); if ($('#gwrap') && sx != null) $('#gwrap').scrollLeft = sx; };
   bindGrid();
   // أوّل مرة: الجدول يبدأ قرب الساعة الحالية في الهاتف
@@ -1836,8 +1843,8 @@ function renderHabits() {
   const pct = due.length ? Math.round((ok / due.length) * 100) : 0;
   $('#hero-body').innerHTML = `
     <div class="hh">
-      <div><div style="font-family:Tajawal;font-weight:800;font-size:26px">عاداتي</div>
-        <div style="opacity:.85;font-size:13px">اليوم ${ok}/${due.length}${due.length && ok === due.length ? ' · أحسنت 🎉' : ''}</div></div>
+      <div><div style="font-family:Tajawal;font-weight:800;font-size:22px;line-height:1.2">عاداتي</div>
+        <div style="opacity:.85;font-size:12.5px">اليوم ${ok}/${due.length}${due.length && ok === due.length ? ' · أحسنت 🎉' : ''}</div></div>
       <div class="hh-pct">${pct}%</div>
     </div>
     <div class="hh-nav"><button class="round" id="hw-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
