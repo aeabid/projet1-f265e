@@ -261,48 +261,72 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .gbtn{display:flex;justify-content:center;min-height:44px}
 .login .back{display:block;text-align:center;margin-top:14px;font-size:13px;color:var(--muted)}
 
-/* ---------- يومي ---------- */
+/* ---------- يومي: الجدول الأسبوعي ---------- */
 .week{display:flex;gap:6px;margin-top:12px;align-items:center}
 .week .days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;flex:1}
 .week .d{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;border-radius:16px;padding:7px 0 6px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11px;position:relative}
 .week .d b{font-family:Tajawal;font-size:17px;line-height:1.1}
 .week .d.on{background:#fff;color:var(--purple);border-color:#fff;box-shadow:0 6px 16px rgba(20,0,50,.25)}
 .week .d.today::after{content:"";position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--pink)}
+.week .d:disabled{opacity:.35}
+.week .d i{position:absolute;top:-3px;left:-3px;width:14px;height:14px;border-radius:50%;background:var(--pink);color:#fff;font-size:9px;font-style:normal;display:grid;place-items:center;font-weight:800}
 .week .round{width:32px;height:32px;flex:none}
-.nowbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-.nowbar>div{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:10px 12px;min-width:0}
-.nowbar small{display:block;font-size:11.5px;opacity:.75}
-.nowbar b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nowbar span{font-size:12px;opacity:.85}
-.timeline{display:flex;flex-direction:column;gap:2px}
-.slot{display:grid;grid-template-columns:54px 1fr;gap:10px;align-items:stretch}
-.slot .tm{text-align:center;padding-top:12px;font-family:Tajawal;line-height:1.2}
-.slot .tm b{display:block;font-size:16px;font-weight:800}
-.slot .tm small{font-size:11.5px;color:var(--muted)}
-.slot-card{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;background:var(--soft);border-radius:18px;padding:10px;border-inline-start:4px solid var(--c);cursor:pointer;transition:transform .12s,box-shadow .2s;min-width:0}
-.slot-card:hover{box-shadow:0 4px 14px -6px rgba(40,10,80,.25)}
-.slot-card .ico{width:40px;height:40px;font-size:20px;border-radius:13px;background:var(--card)}
-.slot-card b{font-size:14.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.slot-card small{font-size:12px;color:var(--muted)}
-.slot.now .slot-card{background:var(--card);box-shadow:0 0 0 2px var(--c),0 10px 26px -10px rgba(40,10,80,.35)}
-.slot.past{opacity:.55}
-.badge-now{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:var(--pink);border-radius:99px;padding:0 7px;margin-inline-start:6px;vertical-align:1px}
-.nudge{display:flex;gap:4px;direction:ltr}
-.nudge button{border:0;background:var(--card);color:var(--ink);border-radius:10px;font-size:12px;font-weight:700;padding:6px 7px;min-width:38px;font-family:Tajawal}
-.nudge button:active{transform:scale(.94)}
-.gap{margin:2px 0 2px 64px;margin-inline-start:64px;font-size:12px;color:var(--muted);border:1.5px dashed var(--line);border-radius:14px;padding:6px 12px;text-align:center}
-.tchips{display:flex;flex-wrap:wrap;gap:6px}
-.tchips button{border:1.5px solid var(--line);background:none;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
-.tchips button.on{border-color:var(--purple);color:var(--purple);background:var(--soft)}
+.wstatus{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:13px}
+.wstatus .tag{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:3px 11px}
+.wstatus button{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:99px;padding:4px 11px;font-size:12.5px;font-weight:600}
+.nextappt{display:flex;align-items:center;gap:10px;margin-top:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:10px 12px;cursor:pointer}
+.nextappt .e{font-size:22px}
+.nextappt b{display:block;font-size:14.5px}
+.nextappt small{font-size:12px;opacity:.85}
+.gwrap{overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:thin}
+.gwrap::-webkit-scrollbar{height:6px}.gwrap::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+.wgrid{display:grid;grid-template-columns:40px repeat(7,minmax(88px,1fr));min-width:660px;position:relative;user-select:none;-webkit-user-select:none}
+@media (min-width:900px){.wgrid{min-width:0}}
+.wgrid .hd{position:sticky;top:0;z-index:4;background:var(--card);text-align:center;padding:4px 0 8px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.wgrid .hd b{display:block;font-family:Tajawal;font-size:18px;color:var(--ink);line-height:1.2}
+.wgrid .hd.today b{color:#fff;background:var(--purple);border-radius:10px;width:32px;margin:0 auto}
+.wgrid .tcol{position:relative}
+.wgrid .tcol span{position:absolute;inset-inline-end:6px;transform:translateY(-50%);font-size:10.5px;color:var(--muted);font-family:Tajawal;font-weight:700}
+.dcol{position:relative;border-inline-start:1px solid var(--line);background-image:linear-gradient(to bottom,var(--line) 1px,transparent 1px);background-size:100% var(--hp);cursor:copy}
+.dcol.today{background-color:color-mix(in srgb,var(--soft) 70%,transparent)}
+.dcol.drop{background-color:color-mix(in srgb,var(--purple) 8%,transparent)}
+.nowline{position:absolute;inset-inline:0;height:2px;background:var(--pink);z-index:3;pointer-events:none}
+.nowline::before{content:"";position:absolute;inset-inline-start:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--pink)}
+.blk{position:absolute;border-radius:10px;padding:4px 6px 8px;overflow:hidden;cursor:grab;z-index:2;background:color-mix(in srgb,var(--c) 16%,var(--card));border-inline-start:3px solid var(--c);color:var(--ink);font-size:11.5px;line-height:1.25;touch-action:pan-x pan-y;transition:box-shadow .15s}
+.blk:hover{box-shadow:0 4px 14px -6px rgba(40,10,80,.35)}
+.blk b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk small{color:var(--muted);font-family:Tajawal;font-weight:700;font-size:10.5px;direction:ltr;display:block;text-align:right}
+.blk.appt{background:color-mix(in srgb,var(--c) 22%,var(--card));border:1.5px dashed var(--c);border-inline-start-width:3px;border-inline-start-style:solid}
+.blk.short{padding-top:1px;padding-bottom:1px}.blk.short small{display:none}
+.blk .grip{position:absolute;inset-inline:0;bottom:0;height:9px;cursor:ns-resize;touch-action:none}
+.blk .grip::after{content:"";position:absolute;left:50%;bottom:3px;width:18px;height:3px;margin-left:-9px;border-radius:3px;background:var(--c);opacity:.5}
+.blk.dragging{z-index:10;box-shadow:0 14px 30px -8px rgba(40,10,80,.45);cursor:grabbing;opacity:.95}
+.blk.virtual{opacity:.92}
+.grid-hint{font-size:12px;color:var(--muted);margin:8px 2px 0;display:flex;gap:14px;flex-wrap:wrap}
+.appts{display:flex;flex-direction:column;gap:8px}
+.ap{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding:8px;border-radius:16px;background:var(--soft);cursor:pointer}
+.ap .dt{text-align:center;background:var(--card);border-radius:12px;padding:5px 0;line-height:1.15}
+.ap .dt b{display:block;font-family:Tajawal;font-size:20px}
+.ap .dt small{font-size:10.5px;color:var(--muted)}
+.ap .t b{font-size:14px;display:block}
+.ap .t small{font-size:12px;color:var(--muted)}
+.ap .gcal{border:0;background:var(--card);border-radius:10px;padding:6px 9px;font-size:11.5px;font-weight:700;color:var(--purple);text-decoration:none;white-space:nowrap}
+.ap.past{opacity:.55}
+.kindseg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--soft);padding:4px;border-radius:16px;margin-bottom:14px}
+.kindseg button{border:0;background:none;border-radius:12px;padding:9px;font-weight:700;color:var(--muted)}
+.kindseg button.on{background:var(--card);color:var(--purple);box-shadow:0 2px 8px rgba(97,3,141,.15)}
 .times{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:560px){.times{grid-template-columns:1fr}.tbox{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;text-align:start}.tbox .row{margin:0}}
 .tbox{background:var(--soft);border-radius:18px;padding:10px;text-align:center}
 .tbox>span{display:block;font-size:12px;color:var(--muted);font-weight:600}
 .tbox .row{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px}
 .tbox .row button{width:36px;height:36px;border-radius:12px;border:0;background:var(--card);font-weight:800;font-size:18px;color:var(--purple);flex:none}
-.tbox input{border:0;background:none;font-family:Tajawal;font-weight:800;font-size:26px;width:100%;min-width:0;text-align:center;color:var(--ink);padding:0;direction:ltr}
+.tbox input{border:0;background:none;font-family:Tajawal;font-weight:800;font-size:24px;width:100%;min-width:0;text-align:center;color:var(--ink);padding:0;direction:ltr}
 .tbox input:focus{outline:0}
 .tbox.off input{opacity:.35}
+.tchips{display:flex;flex-wrap:wrap;gap:6px}
+.tchips button{border:1.5px solid var(--line);background:none;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+.tchips button.on{border-color:var(--purple);color:var(--purple);background:var(--soft)}
 .daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px}
 .daypick button{border:1.5px solid var(--line);background:none;border-radius:12px;padding:8px 0;font-size:12px;font-weight:700}
 .daypick button.on{background:var(--purple);border-color:var(--purple);color:#fff}
@@ -310,39 +334,70 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .icons-row::-webkit-scrollbar{display:none}
 .icons-row button{flex:none;border:0;background:var(--soft);border-radius:12px;font-size:20px;width:42px;height:42px}
 .icons-row button.on{box-shadow:0 0 0 2px var(--purple);background:var(--card)}
-.pre{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.pre button{border:0;background:var(--soft);border-radius:999px;padding:5px 11px;font-size:12.5px}
+.check-line{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:14px;padding:10px 12px;font-size:13.5px;cursor:pointer}
+.check-line input{width:20px;height:20px;accent-color:var(--purple);flex:none}
+.check-line small{display:block;color:var(--muted);font-size:12px}
 
 /* ---------- عاداتي ---------- */
 .ring-wrap{display:flex;align-items:center;gap:16px;margin-top:14px}
-.ring{position:relative;width:96px;height:96px;flex:none}
+.ring{position:relative;width:92px;height:92px;flex:none}
 .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring circle{fill:none;stroke-width:10;stroke-linecap:round}
 .ring .c{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-family:Tajawal;font-weight:800;font-size:22px;line-height:1}
 .ring .c small{font-size:11px;font-weight:600;opacity:.75;font-family:"IBM Plex Sans Arabic"}
 .ring-wrap .msg b{font-family:Tajawal;font-size:19px;display:block}
 .ring-wrap .msg span{font-size:13px;opacity:.85}
-.habit{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:10px 6px;border-bottom:1px solid var(--line)}
-.habit:last-child{border-bottom:0}
-.hcheck{width:48px;height:48px;border-radius:16px;border:2.5px solid var(--c);background:none;display:grid;place-items:center;font-size:22px;transition:all .2s;position:relative}
-.hcheck.done{background:var(--c);border-color:var(--c)}
-.hcheck.done::after{content:"✓";position:absolute;bottom:-5px;left:-5px;width:20px;height:20px;border-radius:50%;background:#fff;color:var(--c);font-size:13px;font-weight:900;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.2)}
-.hcheck:active{transform:scale(.92)}
-.habit .nm{cursor:pointer;min-width:0}
-.habit .nm b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.habit .nm small{font-size:12px;color:var(--muted)}
-.habit.off{opacity:.5}
-.dots{display:flex;gap:4px}
-.dots button{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--line);background:none;padding:0;font-size:9px;color:var(--muted);font-weight:700;display:grid;place-items:center}
-.dots button.done{background:var(--c);border-color:var(--c);color:#fff}
-.dots button.na{opacity:.3;border-style:dashed}
-.dots button.cur{box-shadow:0 0 0 2px var(--soft),0 0 0 3.5px var(--c)}
-@media (max-width:520px){.habit{grid-template-columns:48px 1fr;row-gap:6px}.habit .dots{grid-column:2}.dots button{width:24px;height:24px}}
-.mrow{display:grid;grid-template-columns:28px 1fr 44px;gap:10px;align-items:center;padding:6px 0}
-.mrow .bar{margin:0;height:8px}
-.mrow b{font-family:Tajawal;text-align:left}
-.suggest{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
-.suggest button{border:1.5px dashed var(--line);background:none;border-radius:999px;padding:7px 13px;font-size:13px}
+.hcard{border-bottom:1px solid var(--line);padding:12px 2px 14px}
+.hcard:last-child{border-bottom:0}
+.hhead{display:flex;align-items:center;gap:10px;cursor:pointer}
+.hhead .ico{width:40px;height:40px;font-size:20px;border-radius:13px;background:color-mix(in srgb,var(--c) 14%,var(--card))}
+.hhead b{display:block;font-size:15px}
+.hhead small{font-size:12px;color:var(--muted)}
+.hhead .st{margin-inline-start:auto;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--muted)}
+.hctl{margin:10px 0 0}
+.bigcheck{width:100%;border:2px solid var(--c);background:none;color:var(--c);border-radius:14px;padding:11px;font-weight:800;font-size:15px;transition:all .2s}
+.bigcheck.done{background:var(--c);color:#fff}
+.slotsrow{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:6px}
+.slotsrow button{border:2px solid var(--line);background:none;border-radius:14px;padding:8px 0 7px;font-size:12px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .15s}
+.slotsrow button i{font-style:normal;font-size:16px;line-height:1}
+.slotsrow button.on{background:var(--c);border-color:var(--c);color:#fff}
+.counter{display:flex;align-items:center;gap:10px}
+.counter .n{font-family:Tajawal;font-weight:800;font-size:30px;min-width:56px;text-align:center;line-height:1}
+.counter .n small{display:block;font-size:11px;font-family:"IBM Plex Sans Arabic";color:var(--muted);font-weight:600}
+.counter .minus{width:44px;height:44px;border-radius:14px;border:1.5px solid var(--line);background:none;font-size:20px;font-weight:800;color:var(--muted)}
+.counter .plus{flex:1;height:48px;border-radius:14px;border:0;background:var(--c);color:#fff;font-weight:800;font-size:16px}
+.counter .plus:active,.bigcheck:active,.slotsrow button:active{transform:scale(.97)}
+.counter .info{font-size:12px;color:var(--muted);line-height:1.5}
+.qline{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:14px;padding:10px 12px}
+.qline .t{flex:1;font-size:13.5px;line-height:1.5}
+.qline .t small{display:block;color:var(--muted);font-size:12px}
+.hist{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
+.hist button{border:1.5px solid var(--line);background:none;border-radius:12px;padding:4px 0 5px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:10.5px;color:var(--muted);line-height:1.2}
+.hist button b{font-family:Tajawal;font-size:13px;color:var(--ink)}
+.hist button em{font-style:normal;font-size:11px;font-weight:800;min-height:14px}
+.hist button.ok{background:color-mix(in srgb,var(--c) 16%,transparent);border-color:color-mix(in srgb,var(--c) 45%,transparent)}
+.hist button.ok em{color:var(--c)}
+.hist button.bad em{color:#e11d48}
+.hist button.sel{box-shadow:0 0 0 2px var(--c)}
+.hist button.na{opacity:.4;border-style:dashed}
+.hist button:disabled{opacity:.3}
+.mrow{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.mrow:last-child{border-bottom:0}
+.mrow .bar{margin:4px 0 0;height:7px}
+.mrow .v{font-family:Tajawal;font-weight:800;text-align:left;font-size:15px;white-space:nowrap}
+.mrow .v small{display:block;font-family:"IBM Plex Sans Arabic";font-weight:500;font-size:11px;color:var(--muted)}
+.spark{display:flex;align-items:flex-end;gap:2px;height:30px;margin-top:5px}
+.spark i{flex:1;background:var(--c);border-radius:2px 2px 0 0;min-height:2px;opacity:.85}
+.spark i.z{background:var(--line)}
+.kinds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kinds button{border:1.5px solid var(--line);background:none;border-radius:16px;padding:10px;text-align:start;display:flex;gap:8px;align-items:flex-start}
+.kinds button span{font-size:20px;line-height:1}
+.kinds button b{display:block;font-size:13.5px}
+.kinds button small{font-size:11.5px;color:var(--muted);line-height:1.4;display:block}
+.kinds button.on{border-color:var(--purple);background:var(--soft);box-shadow:0 0 0 3px var(--ring)}
+.qsel{display:grid;grid-template-columns:1fr 90px;gap:8px}
+.qsel select{width:100%}
+.qcount{text-align:center;font-family:Tajawal;font-weight:800;font-size:18px;color:var(--purple);background:var(--soft);border-radius:14px;padding:10px;margin-top:4px}
 .update-card{text-align:center;padding:28px 16px}
 .update-card .big{font-size:36px;display:block;margin-bottom:6px}
 
@@ -376,23 +431,29 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
   </form>
 </dialog>
 
-<!-- نشاط في جدولي اليومي -->
+<!-- خانة في الجدول أو موعد -->
 <dialog class="sheet" id="sheet-plan">
   <div class="grab"></div>
   <form class="in" id="form-plan" novalidate>
-    <h3><span id="plan-title">نشاط جديد</span><button type="button" class="x" data-close aria-label="إغلاق">✕</button></h3>
-    <div class="pre" id="p-pre"></div>
-    <div class="field"><input class="input" id="p-title" maxlength="60" placeholder="ماذا ستفعل؟ (مثلاً: رياضة)"></div>
+    <h3><span id="plan-title">إضافة</span><button type="button" class="x" data-close aria-label="إغلاق">✕</button></h3>
+    <div class="kindseg" id="p-kind"><button type="button" data-k="slot">🗓️ نشاط في الجدول</button><button type="button" data-k="appt">📌 موعد</button></div>
+    <div class="field"><input class="input" id="p-title" maxlength="80" placeholder="ماذا؟ (مثلاً: رياضة، طبيب الأسنان…)"></div>
+    <div class="field" id="p-datebox"><span>التاريخ</span>
+      <div class="dates" id="p-dates"><button type="button" data-d="0">اليوم</button><button type="button" data-d="1">غدًا</button><input type="date" class="input" id="p-date"></div>
+    </div>
     <div class="field"><div class="times">
       <div class="tbox"><span>من</span><div class="row"><button type="button" data-t="start" data-d="-15" aria-label="ناقص ربع ساعة">−</button><input type="time" id="p-start" step="300"><button type="button" data-t="start" data-d="15" aria-label="زائد ربع ساعة">+</button></div></div>
       <div class="tbox" id="p-endbox"><span>إلى</span><div class="row"><button type="button" data-t="end" data-d="-15" aria-label="ناقص ربع ساعة">−</button><input type="time" id="p-end" step="300"><button type="button" data-t="end" data-d="15" aria-label="زائد ربع ساعة">+</button></div></div>
     </div></div>
     <div class="field"><span>المدّة</span><div class="tchips" id="p-durs"></div></div>
-    <div class="field"><span>الأيام</span>
+    <div class="field" id="p-daysbox"><span id="p-days-label">الأيام</span>
       <div class="daypick" id="p-days"></div>
       <div class="tchips" id="p-daypre"><button type="button" data-m="127">كل يوم</button><button type="button" data-m="62">من الاثنين إلى الجمعة</button><button type="button" data-m="65">السبت والأحد</button></div>
     </div>
+    <div class="field" id="p-notebox"><span>ملاحظة (اختياري)</span><input class="input" id="p-note" maxlength="300" placeholder="العنوان، ماذا تحمل معك…"></div>
     <div class="field"><span>الرمز واللون</span><div class="icons-row" id="p-icons"></div><div class="colors" id="p-colors" style="margin-top:6px"></div></div>
+    <label class="check-line" id="p-basebox"><input type="checkbox" id="p-base"><span><b>طبّق أيضًا على الجدول الأساسي</b><small>فتظهر في كل الأسابيع القادمة</small></span></label>
+    <a class="btn light" id="p-gcal" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:12px;text-decoration:none">🔔 أضف إلى تقويم Google (للتذكير على الهاتف)</a>
     <p class="err" id="p-err" hidden></p>
     <div class="actions">
       <button type="button" class="btn danger" id="p-del" hidden>حذف</button>
@@ -406,8 +467,11 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
   <div class="grab"></div>
   <form class="in" id="form-habit" novalidate>
     <h3><span id="habit-title">عادة جديدة</span><button type="button" class="x" data-close aria-label="إغلاق">✕</button></h3>
-    <div class="pre" id="h-pre"></div>
-    <div class="field"><input class="input" id="h-name" maxlength="50" placeholder="العادة (مثلاً: قراءة 10 صفحات)"></div>
+    <div class="field"><input class="input" id="h-name" maxlength="50" placeholder="اسم العادة"></div>
+    <div class="field"><span>كيف تُسجَّل؟</span><div class="kinds" id="h-kinds"></div></div>
+    <div class="field" id="h-targetbox"><span id="h-target-label">الهدف اليومي</span>
+      <div class="row2"><input class="input" id="h-target" type="number" min="0" max="1000" inputmode="numeric"><input class="input" id="h-unit" maxlength="20" placeholder="الوحدة (مثلاً: صلاة، مرّة)"></div>
+    </div>
     <div class="field"><span>في أيّ أيام؟</span>
       <div class="daypick" id="h-days"></div>
       <div class="tchips" id="h-daypre"><button type="button" data-m="127">كل يوم</button><button type="button" data-m="62">من الاثنين إلى الجمعة</button><button type="button" data-m="65">السبت والأحد</button></div>
@@ -416,6 +480,23 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
     <p class="err" id="h-err" hidden></p>
     <div class="actions">
       <button type="button" class="btn danger" id="h-del" hidden>حذف</button>
+      <button type="submit" class="btn">حفظ</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- القرآن: من أين إلى أين -->
+<dialog class="sheet" id="sheet-quran">
+  <div class="grab"></div>
+  <form class="in" id="form-quran" novalidate>
+    <h3><span id="q-title">ورد القرآن</span><button type="button" class="x" data-close aria-label="إغلاق">✕</button></h3>
+    <div class="field"><span>من</span><div class="qsel"><select class="input" id="q-fs"></select><input class="input" id="q-fa" type="number" min="1" inputmode="numeric" placeholder="آية"></div></div>
+    <div class="field"><span>إلى</span><div class="qsel"><select class="input" id="q-ts"></select><input class="input" id="q-ta" type="number" min="1" inputmode="numeric" placeholder="آية"></div>
+      <div class="tchips" style="margin-top:8px"><button type="button" id="q-end">إلى آخر السورة</button><button type="button" id="q-next">إلى آخر السورة الموالية</button></div></div>
+    <div class="qcount" id="q-count"></div>
+    <p class="err" id="q-err" hidden></p>
+    <div class="actions">
+      <button type="button" class="btn danger" id="q-del" hidden>حذف التسجيل</button>
       <button type="submit" class="btn">حفظ</button>
     </div>
   </form>
@@ -660,7 +741,7 @@ function shell() {
   </nav>`;
   $$('.dock .tab').forEach((b) => (b.onclick = () => go(b.dataset.view)));
   $('#dock-add').onclick = () => {
-    if (UI.view === 'day' && S.lifeReady) return openPlan(null);
+    if (UI.view === 'day' && S.lifeReady) return openPlan({});
     if (UI.view === 'habits' && S.lifeReady) return openHabit(null);
     openTx('expense');
   };
@@ -1137,7 +1218,7 @@ function daysLabel(m) {
 const dur = (p) => (p.end == null ? null : (p.end - p.start + 1440) % 1440 || 1440);
 function lifeMissing() {
   return `<section class="card update-card"><span class="big">🛠️</span><b>هذا القسم يحتاج تحديث قاعدة البيانات</b>
-    <p style="color:var(--muted);font-size:14px;margin:6px 0 0">نفّذ الملف <span dir="ltr">002_day_habits.sql</span> مرة واحدة في Supabase ← SQL Editor.</p></section>`;
+    <p style="color:var(--muted);font-size:14px;margin:6px 0 0">نفّذ الملف <span dir="ltr">003_week_table_habit_kinds.sql</span> مرة واحدة في Supabase ← SQL Editor.</p></section>`;
 }
 function dayPicker(el, mask, onChange) {
   el.innerHTML = WEEK_ORDER.map((i) => `<button type="button" data-b="${i}" class="${mask & (1 << i) ? 'on' : ''}" aria-label="${DAYS[i]}">${DAYS_SHORT[i]}</button>`).join('');
@@ -1155,271 +1236,676 @@ function colorRow(el, cur, onPick) {
   $$('button', el).forEach((b) => (b.onclick = () => onPick(b.dataset.c)));
 }
 
-/* ================= يومي: الجدول اليومي ================= */
-UI.dayDate = today();
-const planFor = (d) => S.plan.filter((p) => p.days & bit(d)).sort((a, b) => a.start - b.start || a.id - b.id);
-function isNow(p, m) {
-  if (p.end == null) return false;
-  return p.end > p.start ? m >= p.start && m < p.end : m >= p.start || m < p.end;
+/* ================= يومي: جدول أسبوعي (سحب وإفلات) + مواعيد ================= */
+const HP = 48; // ارتفاع الساعة في الجدول
+UI.dayWeek = startOfWeek(today());
+UI.dayMode = 'week'; // 'week' = أسبوع بعينه، 'base' = الجدول الأساسي
+const isMat = (wk) => S.weeks.has(wk);
+const curWeekKey = () => (UI.dayMode === 'base' ? null : ymd(UI.dayWeek));
+function weekSlots(wk) {
+  if (wk === null) return S.slots.filter((s) => s.week == null);
+  if (isMat(wk)) return S.slots.filter((s) => s.week === wk);
+  return S.slots.filter((s) => s.week == null).map((s) => ({ ...s, virtual: true, source: s.id }));
 }
+const slotKey = (s) => (s.virtual ? `v${s.source}-${s.day}` : String(s.id));
+const weekDate = (wkD, day) => addDays(wkD, (day + 6) % 7);
+const fmtT = (m) => (m === 1440 ? '24:00' : fmtTime(m));
+function apptsInWeek(wkD) { const a = ymd(wkD), b = ymd(addDays(wkD, 6)); return S.appts.filter((x) => x.date >= a && x.date <= b); }
+function upcomingAppts() {
+  const t = ymd(today()), m = nowMin();
+  return S.appts.filter((a) => !a.done && (a.date > t || (a.date === t && (a.end ?? a.start + 30) > m)))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+}
+function relDay(ds) {
+  const n = dayCount(today(), parse(ds)) - 1;
+  return n === 0 ? 'اليوم' : n === 1 ? 'غدًا' : n === 2 ? 'بعد غد' : n > 0 ? `بعد ${n} أيام` : n === -1 ? 'البارحة' : `منذ ${-n} أيام`;
+}
+function gcalUrl(a) {
+  const d = a.date.replace(/-/g, ''), T = (m) => `${pad(Math.floor(m / 60) % 24)}${pad(m % 60)}00`;
+  const end = a.end ?? Math.min(a.start + 60, 1440);
+  const ed = end >= 1440 ? ymd(addDays(parse(a.date), 1)).replace(/-/g, '') : d;
+  let tz = 'Africa/Tunis';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e) {}
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${a.icon || ''} ${a.title}`.trim())}`
+    + `&dates=${d}T${T(a.start)}/${ed}T${T(end % 1440)}&details=${encodeURIComponent(a.note || '')}&ctz=${encodeURIComponent(tz)}`;
+}
+// توزيع الخانات المتداخلة جنبًا إلى جنب
+function layoutLanes(items) {
+  const sorted = [...items].sort((a, b) => a.s - b.s || b.e - a.e);
+  let cluster = [], end = -1;
+  const flush = () => { const n = Math.max(...cluster.map((c) => c.lane)) + 1; cluster.forEach((c) => (c.n = n)); cluster = []; end = -1; };
+  for (const it of sorted) {
+    if (cluster.length && it.s >= end) flush();
+    const used = cluster.filter((c) => c.e > it.s).map((c) => c.lane);
+    let l = 0; while (used.includes(l)) l++;
+    it.lane = l; cluster.push(it); end = Math.max(end, it.e);
+  }
+  if (cluster.length) flush();
+  return sorted;
+}
+
 function renderDay() {
-  const sel = UI.dayDate, t = today(), isToday = ymd(sel) === ymd(t);
-  const wk = startOfWeek(sel), m = nowMin();
-  const items = S.lifeReady ? planFor(sel) : [];
-  const cur = isToday ? items.find((p) => isNow(p, m)) : null;
-  const next = isToday ? items.find((p) => p.start > m && p !== cur) : null;
+  const t = today(), wkD = UI.dayWeek, wk = ymd(wkD), base = UI.dayMode === 'base';
+  const ready = S.lifeReady;
+  const slots = ready ? weekSlots(base ? null : wk) : [];
+  const appts = ready && !base ? apptsInWeek(wkD) : [];
+  const mat = !base && isMat(wk), nxt = ready ? upcomingAppts()[0] : null;
+  const thisWk = ymd(startOfWeek(t)), wkRel = wk === thisWk ? 'هذا الأسبوع' : wk === ymd(addDays(startOfWeek(t), 7)) ? 'الأسبوع القادم' : wk === ymd(addDays(startOfWeek(t), -7)) ? 'الأسبوع الماضي' : 'الأسبوع';
   $('#hero-body').innerHTML = `
-    <div style="padding:6px 0 0;display:flex;justify-content:space-between;align-items:flex-end;gap:10px">
-      <div><div style="font-family:Tajawal;font-weight:800;font-size:26px">يومي</div>
-      <div style="opacity:.8;font-size:13.5px">${isToday ? 'اليوم · ' : ''}${fmtDay(sel)}</div></div>
-      ${isToday ? '' : '<button class="btn sm light" id="d-today" style="background:rgba(255,255,255,.15);color:#fff">اليوم</button>'}
-    </div>
-    <div class="week"><button class="round" id="w-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
-      <div class="days">${[0, 1, 2, 3, 4, 5, 6].map((i) => { const d = addDays(wk, i);
-        return `<button class="d ${ymd(d) === ymd(sel) ? 'on' : ''} ${ymd(d) === ymd(t) ? 'today' : ''}" data-d="${ymd(d)}">${DAYS_SHORT[d.getDay()]}<b>${d.getDate()}</b></button>`; }).join('')}</div>
-      <button class="round" id="w-next" aria-label="الأسبوع الموالي">${icon('next')}</button></div>
-    ${isToday && items.length ? `<div class="nowbar">
-      <div><small>الآن</small><b>${cur ? `${esc(cur.icon)} ${esc(cur.title)}` : 'وقت حرّ ☕'}</b><span>${cur && cur.end != null ? `حتى ${fmtTime(cur.end)} · بقي ${fmtDur((cur.end - m + 1440) % 1440)}` : '&nbsp;'}</span></div>
-      <div><small>التالي</small><b>${next ? `${esc(next.icon)} ${esc(next.title)}` : '—'}</b><span>${next ? `${fmtTime(next.start)} · بعد ${fmtDur(next.start - m)}` : 'لا شيء بعد اليوم'}</span></div>
-    </div>` : ''}`;
-  $$('.week .d').forEach((b) => (b.onclick = () => { UI.dayDate = parse(b.dataset.d); renderDay(); }));
-  $('#w-prev').onclick = () => { UI.dayDate = addDays(sel, -7); renderDay(); };
-  $('#w-next').onclick = () => { UI.dayDate = addDays(sel, 7); renderDay(); };
-  $('#d-today') && ($('#d-today').onclick = () => { UI.dayDate = today(); renderDay(); });
+    <div style="padding:6px 0 0"><div style="font-family:Tajawal;font-weight:800;font-size:26px">يومي</div></div>
+    <div class="seg" style="margin-top:8px"><button data-dm="week" class="${base ? '' : 'on'}">🗓️ جدول الأسابيع</button><button data-dm="base" class="${base ? 'on' : ''}">⭐ الجدول الأساسي</button></div>
+    ${base ? `<div class="wstatus"><span>هذا الجدول يُنسخ في كل أسبوع. أيّ تعديل هنا يظهر في كل الأسابيع التي لم تعدّلها وحدها.</span></div>`
+      : `<div class="pnav"><button class="round" id="w-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
+          <div class="lab">${fmtShort(wkD)} — ${fmtShort(addDays(wkD, 6))}<small>${wkRel}</small></div>
+          <button class="round" id="w-next" aria-label="الأسبوع الموالي">${icon('next')}</button></div>
+        <div class="wstatus">${mat ? `<span class="tag">✏️ أسبوع معدَّل وحده</span><button id="w-reset">إرجاعه إلى الأساسي</button><button id="w-tobase">اجعله الجدول الأساسي</button>`
+          : `<span class="tag">⭐ نسخة من الجدول الأساسي</span><span style="opacity:.8">عدّل أيّ خانة فيصير لهذا الأسبوع جدوله الخاص</span>`}
+          ${wk !== thisWk ? '<button id="w-today">هذا الأسبوع</button>' : ''}</div>`}
+    ${nxt ? `<div class="nextappt" id="nextappt"><span class="e">${esc(nxt.icon)}</span><div><small>موعدك القادم</small><b>${esc(nxt.title)}</b><small>${relDay(nxt.date)} · ${DAYS[parse(nxt.date).getDay()]} ${fmtT(nxt.start)}</small></div></div>` : ''}`;
+  $$('[data-dm]').forEach((b) => (b.onclick = () => { UI.dayMode = b.dataset.dm; renderDay(); }));
+  if (!base) {
+    $('#w-prev').onclick = () => { UI.dayWeek = addDays(wkD, -7); renderDay(); };
+    $('#w-next').onclick = () => { UI.dayWeek = addDays(wkD, 7); renderDay(); };
+    $('#w-today') && ($('#w-today').onclick = () => { UI.dayWeek = startOfWeek(t); renderDay(); });
+    $('#w-reset') && ($('#w-reset').onclick = weekReset);
+    $('#w-tobase') && ($('#w-tobase').onclick = weekToBase);
+  }
+  $('#nextappt') && ($('#nextappt').onclick = () => openPlan({ appt: nxt }));
+  if (!ready) return ($('#main').innerHTML = lifeMissing());
 
-  if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
-  let html = '';
-  if (!items.length) {
-    html = `<div class="empty"><span class="big">🗓️</span>${S.plan.length ? 'لا شيء في هذا اليوم' : 'جدولك فارغ. أضف نشاطك الأول بزرّ <b>+</b>'}
-      ${S.plan.length ? '' : '<div class="suggest"><button id="tpl">✨ ابدأ بجدول جاهز وعدّله</button></div>'}</div>`;
-  } else {
-    let prevEnd = null;
-    for (const p of items) {
-      if (prevEnd != null && p.start - prevEnd >= 30) html += `<div class="gap">وقت حرّ · ${fmtDur(p.start - prevEnd)}</div>`;
-      const d = dur(p), now = p === cur, past = isToday && !now && (p.end != null ? (p.end > p.start && p.end <= m) : p.start < m);
-      html += `<div class="slot ${now ? 'now' : ''} ${past ? 'past' : ''}" style="--c:${p.color}">
-        <div class="tm"><b>${fmtTime(p.start)}</b>${p.end != null ? `<small>${fmtTime(p.end)}</small>` : ''}</div>
-        <div class="slot-card" data-id="${p.id}">
-          <span class="ico">${esc(p.icon)}</span>
-          <span style="min-width:0"><b>${esc(p.title)}${now ? '<span class="badge-now">الآن</span>' : ''}</b><small>${d ? fmtDur(d) + ' · ' : ''}${daysLabel(p.days)}</small></span>
-          <span class="nudge"><button data-shift="-15" data-id="${p.id}" aria-label="أبكر بربع ساعة">−15</button><button data-shift="15" data-id="${p.id}" aria-label="أخّر بربع ساعة">+15</button></span>
-        </div></div>`;
-      if (p.end != null && p.end > p.start) prevEnd = Math.max(prevEnd ?? 0, p.end);
-      else if (p.end == null) prevEnd = Math.max(prevEnd ?? 0, p.start);
+  const minStart = Math.min(...slots.map((s) => s.start), ...appts.map((a) => a.start), 360);
+  const hStart = Math.floor(minStart / 60), H = (24 - hStart) * HP;
+  UI.gridH = hStart;
+  const top = (m) => ((m - hStart * 60) / 60) * HP;
+  let g = `<div class="gwrap" id="gwrap"><div class="wgrid" id="wgrid" style="--hp:${HP}px"><div class="hd"></div>`;
+  g += WEEK_ORDER.map((d) => {
+    const dt = weekDate(wkD, d), td = !base && ymd(dt) === ymd(t);
+    return `<div class="hd ${td ? 'today' : ''}">${base ? `<b style="font-size:14px">${DAYS[d].replace(/^ال/, '')}</b>` : `${DAYS_SHORT[d]}<b>${dt.getDate()}</b>`}</div>`;
+  }).join('');
+  g += `<div class="tcol" style="height:${H}px">${Array.from({ length: 24 - hStart - 1 }, (_, i) => `<span style="top:${(i + 1) * HP}px">${pad(hStart + i + 1)}:00</span>`).join('')}</div>`;
+  for (const d of WEEK_ORDER) {
+    const dt = weekDate(wkD, d), td = !base && ymd(dt) === ymd(t);
+    const items = [
+      ...slots.filter((s) => s.day === d).map((s) => ({ kind: 'slot', key: slotKey(s), o: s, s: s.start, e: Math.min(s.end ?? s.start + 30, 1440) })),
+      ...appts.filter((a) => parse(a.date).getDay() === d).map((a) => ({ kind: 'appt', key: String(a.id), o: a, s: a.start, e: Math.min(a.end ?? a.start + 30, 1440) })),
+    ];
+    g += `<div class="dcol ${td ? 'today' : ''}" data-day="${d}" style="height:${H}px">`;
+    for (const it of layoutLanes(items)) {
+      const o = it.o, h = Math.max(18, top(it.e) - top(it.s) - 2);
+      g += `<div class="blk ${it.kind === 'appt' ? 'appt' : ''} ${o.virtual ? 'virtual' : ''} ${h < 34 ? 'short' : ''}" data-kind="${it.kind}" data-key="${it.key}"
+        data-s="${it.s}" data-e="${o.end ?? ''}" data-day="${d}" title="${esc(o.title)}"
+        style="--c:${o.color};top:${top(it.s) + 1}px;height:${h}px;inset-inline-start:calc(${(it.lane * 100) / it.n}% + 2px);width:calc(${100 / it.n}% - 4px)">
+        <b>${esc(o.icon)} ${esc(o.title)}</b><small>${fmtT(it.s)}${o.end != null ? '–' + fmtT(o.end) : ''}</small><span class="grip"></span></div>`;
     }
+    if (td) g += `<div class="nowline" style="top:${top(nowMin())}px"></div>`;
+    g += '</div>';
   }
-  $('#main').innerHTML = `<div class="grid"><section class="card span">
-      <div class="card-h"><h2>${isToday ? 'برنامج اليوم' : `برنامج ${DAYS[sel.getDay()]}`}</h2><span class="sub">${items.length ? `${items.length} نشاط · اضغط لتعديل الوقت` : ''}</span></div>
-      <div class="timeline">${html}</div></section></div>`;
-  $$('.slot-card').forEach((c) => (c.onclick = (e) => { if (!e.target.closest('.nudge')) openPlan(S.plan.find((p) => p.id === Number(c.dataset.id))); }));
-  $$('[data-shift]').forEach((b) => (b.onclick = () => nudgePlan(Number(b.dataset.id), Number(b.dataset.shift))));
-  $('#tpl') && ($('#tpl').onclick = addTemplate);
+  g += '</div></div>';
+  const up = upcomingAppts().slice(0, 12);
+  $('#main').innerHTML = `<div class="grid">
+    <section class="card span"><div class="card-h"><h2>${base ? 'الجدول الأساسي' : 'جدول الأسبوع'}</h2><span class="sub">${slots.length + appts.length ? '' : 'اضغط على أيّ مكان فارغ لإضافة نشاط'}</span></div>
+      ${g}
+      <div class="grid-hint"><span>✋ اسحب الخانة لتغيير وقتها أو يومها</span><span>↕️ اسحب حافّتها السفلى لتغيير المدّة</span><span>➕ اضغط مكانًا فارغًا للإضافة</span></div>
+    </section>
+    <section class="card span"><div class="card-h"><h2>مواعيدي القادمة</h2><button class="btn sm" id="add-appt">+ موعد</button></div>
+      ${up.length ? `<div class="appts">${up.map(apptRow).join('')}</div>` : '<div class="empty"><span class="big">📌</span>لا مواعيد قادمة. أضف موعدك حتى لا تنساه.</div>'}
+    </section></div>`;
+  $('#add-appt').onclick = () => openPlan({ kind: 'appt' });
+  $$('.ap').forEach((el) => (el.onclick = (e) => { if (!e.target.closest('.gcal')) openPlan({ appt: S.appts.find((a) => a.id === Number(el.dataset.id)) }); }));
+  bindGrid();
+  // أوّل مرة: الجدول يبدأ قرب الساعة الحالية في الهاتف
+  const wrap = $('#gwrap');
+  if (wrap && !base && wk === thisWk) {
+    const col = $(`.dcol[data-day="${t.getDay()}"]`);
+    if (col && col.offsetLeft) wrap.scrollLeft = col.offsetLeft - wrap.clientWidth / 2;
+  }
 }
-// تقديم أو تأخير نشاط بربع ساعة بنقرة (البداية والنهاية معًا)
-async function nudgePlan(id, delta) {
-  const p = S.plan.find((x) => x.id === id); if (!p) return;
-  const old = { start: p.start, end: p.end };
-  p.start = (p.start + delta + 1440) % 1440;
-  if (p.end != null) p.end = ((p.end + delta + 1440) % 1440) || 1440;
-  renderDay();
-  try { await rpc('plan_save', { p_id: p.id, p_title: p.title, p_icon: p.icon, p_color: p.color, p_start: p.start, p_end: p.end, p_days: p.days }); }
-  catch (err) { Object.assign(p, old); renderDay(); onAuthError(err) || toast(err.message, true); }
+function apptRow(a) {
+  const d = parse(a.date);
+  return `<div class="ap" data-id="${a.id}" style="--c:${a.color}">
+    <div class="dt"><b>${d.getDate()}</b><small>${MONTHS[d.getMonth()]}</small></div>
+    <div class="t"><b>${esc(a.icon)} ${esc(a.title)}</b><small>${relDay(a.date)} · ${DAYS[d.getDay()]} ${fmtT(a.start)}${a.end != null ? '–' + fmtT(a.end) : ''}${a.note ? ' · ' + esc(a.note) : ''}</small></div>
+    <a class="gcal" href="${esc(gcalUrl(a))}" target="_blank" rel="noopener" title="أضف إلى تقويم Google للتذكير">🔔 تذكير</a></div>`;
 }
-async function addTemplate() {
-  const T = [['صلاة الفجر', '🕌', '#20149a', 330, 350], ['فطور', '🍳', '#f59e0b', 420, 450], ['عمل', '💼', '#61038d', 480, 960, 62],
-    ['غداء', '🍽️', '#f97316', 780, 840], ['رياضة', '🏃', '#10b981', 1080, 1140], ['عشاء', '🥗', '#ef207a', 1200, 1245],
-    ['قراءة', '📖', '#0ea5e9', 1290, 1320], ['نوم', '😴', '#64748b', 1380, 330]];
-  $('#tpl').disabled = true;
+
+/* ---------- السحب والإفلات (فأرة ولمس) ---------- */
+let DRAG = null;
+function bindGrid() {
+  const grid = $('#wgrid'); if (!grid) return;
+  grid.onpointerdown = (e) => {
+    const blk = e.target.closest('.blk'); if (!blk || e.button > 0) return;
+    const resize = !!e.target.closest('.grip');
+    DRAG = { blk, resize, x0: e.clientX, y0: e.clientY, pid: e.pointerId, touch: e.pointerType !== 'mouse', started: false };
+    if (resize) startDrag(); else if (DRAG.touch) DRAG.timer = setTimeout(() => DRAG && startDrag(), 260);
+  };
+  $$('.dcol', grid).forEach((col) => (col.onclick = (e) => {
+    if (e.target !== col) return;
+    const r = col.getBoundingClientRect();
+    const m = Math.min(1410, UI.gridH * 60 + Math.floor(((e.clientY - r.top) / HP) * 2) * 30);
+    openPlan({ kind: 'slot', day: Number(col.dataset.day), start: m });
+  }));
+}
+function startDrag() {
+  const d = DRAG; if (!d || d.started) return;
+  d.started = true;
+  const b = d.blk;
+  d.s = Number(b.dataset.s); d.e = b.dataset.e === '' ? null : Number(b.dataset.e); d.day = Number(b.dataset.day);
+  d.len = (d.e ?? d.s + 30) - d.s;
+  d.cols = $$('.dcol').map((c) => ({ c, day: Number(c.dataset.day), r: c.getBoundingClientRect() }));
+  d.res = { day: d.day, s: d.s, e: d.e };
+  b.classList.add('dragging');
+  if (!d.resize) { b.style.insetInlineStart = '2px'; b.style.width = 'calc(100% - 4px)'; }
+  try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
+}
+function moveDrag(e) {
+  const d = DRAG, b = d.blk, dm = Math.round(((e.clientY - d.y0) / HP) * 4) * 15;
+  if (d.resize) {
+    const base = d.e ?? d.s + 30;
+    d.res.e = Math.max(d.s + 15, Math.min(1440, base + dm));
+    b.style.height = `${Math.max(18, ((d.res.e - d.s) / 60) * HP - 2)}px`;
+  } else {
+    d.res.s = Math.max(0, Math.min(1440 - Math.min(d.len, 1440), d.s + dm));
+    d.res.e = d.e == null ? null : d.res.s + d.len;
+    const col = d.cols.find((c) => e.clientX >= c.r.left && e.clientX <= c.r.right);
+    if (col && col.day !== d.res.day) { d.res.day = col.day; col.c.appendChild(b); }
+    d.cols.forEach((c) => c.c.classList.toggle('drop', c.day === d.res.day));
+    b.style.top = `${((d.res.s - UI.gridH * 60) / 60) * HP + 1}px`;
+  }
+  b.querySelector('small').textContent = `${fmtT(d.res.s)}${d.res.e != null ? '–' + fmtT(d.res.e) : ''}`;
+}
+document.addEventListener('pointermove', (e) => {
+  const d = DRAG; if (!d || e.pointerId !== d.pid) return;
+  if (!d.started) {
+    if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 6) return;
+    if (d.touch) { clearTimeout(d.timer); DRAG = null; return; } // تمرير عادي
+    startDrag();
+  }
+  e.preventDefault();
+  moveDrag(e);
+});
+document.addEventListener('touchmove', (e) => { if (DRAG && DRAG.started) e.preventDefault(); }, { passive: false });
+document.addEventListener('pointerup', (e) => {
+  const d = DRAG; if (!d || e.pointerId !== d.pid) return;
+  clearTimeout(d.timer); DRAG = null;
+  $$('.dcol.drop').forEach((c) => c.classList.toggle('drop', false));
+  if (!d.started) return openFromBlock(d.blk);
+  const r = d.res;
+  if (r.day === d.day && r.s === d.s && r.e === d.e) return renderDay();
+  if (d.blk.dataset.kind === 'appt') {
+    const a = S.appts.find((x) => x.id === Number(d.blk.dataset.key));
+    return saveAppt({ ...a, date: ymd(weekDate(UI.dayWeek, r.day)), start: r.s, end: r.e }, true);
+  }
+  saveSlot(d.blk.dataset.key, { day: r.day, start: r.s, end: r.e });
+});
+document.addEventListener('pointercancel', () => { if (DRAG) { clearTimeout(DRAG.timer); const st = DRAG.started; DRAG = null; if (st) renderDay(); } });
+function openFromBlock(b) {
+  if (b.dataset.kind === 'appt') return openPlan({ appt: S.appts.find((a) => a.id === Number(b.dataset.key)) });
+  const wk = curWeekKey(), key = b.dataset.key;
+  const s = key.startsWith('v') ? weekSlots(wk).find((x) => slotKey(x) === key) : S.slots.find((x) => x.id === Number(key));
+  if (s) openPlan({ slot: s, key });
+}
+
+/* ---------- حفظ الخانات والمواعيد ---------- */
+function upsertSlot(s) { if (!s) return; const i = S.slots.findIndex((x) => x.id === s.id); i < 0 ? S.slots.push(s) : (S.slots[i] = s); }
+async function ensureWeek(wk) {
+  if (wk === null || isMat(wk)) return false;
+  const rows = await rpc('week_materialize', { p_week: wk });
+  S.slots = S.slots.filter((s) => s.week !== wk).concat(rows);
+  S.weeks.add(wk);
+  return true;
+}
+function resolveSlot(key, wk) {
+  if (key == null) return null;
+  if (String(key).startsWith('v')) {
+    const [src, day] = key.slice(1).split('-').map(Number);
+    return S.slots.find((s) => s.week === wk && s.source === src && s.day === day);
+  }
+  return S.slots.find((s) => s.id === Number(key));
+}
+// تعديل خانة. في أسبوع لم يُعدَّل بعد: يُنسخ الأساسي أولًا، إلا إن طُلب التطبيق على الأساسي فقط
+async function saveSlot(key, patch, alsoBase = false) {
+  let wk = curWeekKey(), fresh = false;
   try {
-    for (const [title, ic, color, start, end, days] of T)
-      S.plan.push(await rpc('plan_save', { p_id: null, p_title: title, p_icon: ic, p_color: color, p_start: start, p_end: end, p_days: days || 127 }));
-    toast('تمّ ✓ عدّل الأوقات كما يناسبك');
-  } catch (err) { onAuthError(err) || toast(err.message, true); }
+    let cur;
+    if (wk !== null && !isMat(wk) && alsoBase) { // الأسبوع نسخة من الأساسي: نعدّل الأساسي مباشرة
+      cur = key && key.startsWith('v') ? S.slots.find((s) => s.id === Number(key.slice(1).split('-')[0])) : null;
+      wk = null; alsoBase = false;
+    } else {
+      fresh = await ensureWeek(wk);
+      cur = resolveSlot(key, wk);
+    }
+    const x = { ...(cur || {}), ...patch };
+    const r = await rpc('slot_save', { p_id: cur ? cur.id : null, p_week: wk, p_day: x.day, p_title: x.title, p_icon: x.icon, p_color: x.color,
+      p_start: x.start, p_end: x.end, p_also_base: alsoBase });
+    upsertSlot(r.slot); upsertSlot(r.base);
+    if (fresh) toast('صار لهذا الأسبوع جدوله الخاص ✓ والجدول الأساسي لم يتغيّر');
+  } catch (err) { if (!onAuthError(err)) toast(err.message, true); }
+  renderDay();
+}
+async function removeSlot(key, alsoBase) {
+  let wk = curWeekKey();
+  try {
+    if (wk !== null && !isMat(wk) && alsoBase) {
+      const src = Number(key.slice(1).split('-')[0]);
+      await rpc('slot_delete', { p_id: src, p_also_base: false });
+      S.slots = S.slots.filter((s) => s.id !== src);
+    } else {
+      await ensureWeek(wk);
+      const cur = resolveSlot(key, wk);
+      if (cur) {
+        await rpc('slot_delete', { p_id: cur.id, p_also_base: alsoBase });
+        S.slots = S.slots.filter((s) => s.id !== cur.id && !(alsoBase && s.id === cur.source));
+      }
+    }
+    toast('تمّ الحذف');
+  } catch (err) { if (!onAuthError(err)) toast(err.message, true); }
+  renderDay();
+}
+async function saveAppt(a, quiet) {
+  try {
+    const r = await rpc('appt_save', { p_id: a.id ?? null, p_date: a.date, p_start: a.start, p_end: a.end, p_title: a.title, p_note: a.note ?? null,
+      p_icon: a.icon, p_color: a.color, p_done: !!a.done });
+    const i = S.appts.findIndex((x) => x.id === r.id);
+    i < 0 ? S.appts.push(r) : (S.appts[i] = r);
+    if (!quiet) toast(a.id ? 'تمّ التعديل ✓' : 'تمّت إضافة الموعد ✓');
+    renderDay();
+    return r;
+  } catch (err) { if (!onAuthError(err)) toast(err.message, true); renderDay(); throw err; }
+}
+async function weekReset() {
+  if (!confirm('إرجاع هذا الأسبوع إلى الجدول الأساسي؟ ستضيع تعديلات هذا الأسبوع.')) return;
+  const wk = ymd(UI.dayWeek);
+  try { await rpc('week_reset', { p_week: wk }); S.slots = S.slots.filter((s) => s.week !== wk); S.weeks.delete(wk); toast('رجع الأسبوع إلى الجدول الأساسي'); }
+  catch (err) { if (!onAuthError(err)) toast(err.message, true); }
+  renderDay();
+}
+async function weekToBase() {
+  if (!confirm('جعل جدول هذا الأسبوع هو الجدول الأساسي؟ سيُنسخ في كل الأسابيع التي لم تعدّلها.')) return;
+  try { await rpc('week_to_base', { p_week: ymd(UI.dayWeek) }); await loadLife(); toast('صار هذا الجدول هو الأساسي ✓'); }
+  catch (err) { if (!onAuthError(err)) toast(err.message, true); }
   renderDay();
 }
 
-const PLAN_PRESETS = [['رياضة', '🏃'], ['عمل', '💼'], ['دراسة', '📚'], ['قراءة', '📖'], ['صلاة', '🕌'], ['أكل', '🍽️'], ['مشي', '🚶'], ['نوم', '😴'], ['عائلة', '👨‍👩‍👧'], ['قهوة', '☕']];
-const PLAN_ICONS = ['⏰', '🏃', '💼', '📚', '📖', '🕌', '🍳', '🍽️', '☕', '🚶', '😴', '👨‍👩‍👧', '🧘', '💻', '🛒', '🚗', '🧹', '🎧', '📞', '✍️', '🎯', '🩺', '🏊', '⚽'];
+/* ---------- نافذة الإضافة / التعديل ---------- */
+const PLAN_ICONS = ['⏰', '🏃', '💼', '📚', '📖', '🕌', '🍳', '🍽️', '☕', '🚶', '😴', '👨‍👩‍👧', '🧘', '💻', '🛒', '🚗', '🧹', '🎧', '📞', '✍️', '🎯', '🩺', '🏊', '⚽', '📌', '🦷', '🏦', '✈️', '🎂', '🤝'];
 let PE = null;
-function openPlan(p) {
-  if (p) PE = { ...p };
-  else {
-    const day = planFor(UI.dayDate), last = day[day.length - 1];
-    let s = ymd(UI.dayDate) === ymd(today()) ? Math.ceil((nowMin() + 1) / 15) * 15 : 480;
-    if (last && last.end != null && last.end > last.start && last.end > s - 60) s = last.end;
-    s %= 1440;
-    PE = { id: null, title: '', icon: '⏰', color: COLORS[S.plan.length % COLORS.length], start: s, end: (s + 60) % 1440 || 1440, days: 127 };
+function openPlan(o = {}) {
+  const t = today(), wk = curWeekKey();
+  if (o.slot) {
+    const s = o.slot;
+    PE = { kind: 'slot', key: o.key, edit: true, title: s.title, icon: s.icon, color: s.color, start: s.start, end: s.end, mask: 1 << s.day, alsoBase: false };
+  } else if (o.appt) {
+    const a = o.appt;
+    PE = { kind: 'appt', id: a.id, edit: true, title: a.title, icon: a.icon, color: a.color, start: a.start, end: a.end, date: a.date, note: a.note || '', done: a.done };
+  } else {
+    let s = o.start ?? (Math.ceil((nowMin() + 1) / 30) * 30) % 1440;
+    if (s > 1380) s = 1380;
+    const day = o.day ?? t.getDay();
+    const date = wk === null ? ymd(t) : ymd(weekDate(UI.dayWeek, day)) < ymd(t) ? ymd(t) : ymd(weekDate(UI.dayWeek, day));
+    PE = { kind: o.kind || 'slot', edit: false, title: '', icon: o.kind === 'appt' ? '📌' : '⏰', color: o.kind === 'appt' ? '#ef207a' : COLORS[S.slots.length % COLORS.length],
+      start: s, end: Math.min(s + 60, 1440), mask: 1 << day, date, note: '', alsoBase: false };
   }
-  $('#plan-title').textContent = p ? 'تعديل النشاط' : 'نشاط جديد';
   $('#p-title').value = PE.title;
-  $('#p-del').hidden = !p;
+  $('#p-note').value = PE.note || '';
   $('#p-err').hidden = true;
-  $('#p-pre').innerHTML = p ? '' : PLAN_PRESETS.map(([t, i]) => `<button type="button" data-t="${t}" data-i="${i}">${i} ${t}</button>`).join('');
-  $$('#p-pre button').forEach((b) => (b.onclick = () => { PE.title = b.dataset.t; PE.icon = b.dataset.i; $('#p-title').value = PE.title; paintPlan(); }));
+  $('#p-del').hidden = !PE.edit;
+  $('#p-base').checked = false;
   paintPlan();
   $('#sheet-plan').showModal();
+  if (!PE.edit) setTimeout(() => $('#p-title').focus(), 80);
 }
 function paintPlan() {
+  const appt = PE.kind === 'appt', wk = curWeekKey();
+  $('#plan-title').textContent = PE.edit ? (appt ? 'تعديل الموعد' : 'تعديل النشاط') : 'إضافة';
+  $('#p-kind').hidden = PE.edit || UI.dayMode === 'base';
+  $$('#p-kind button').forEach((b) => b.classList.toggle('on', b.dataset.k === PE.kind));
+  $('#p-datebox').hidden = !appt;
+  $('#p-notebox').hidden = !appt;
+  $('#p-daysbox').hidden = appt;
+  $('#p-daypre').hidden = PE.edit;
+  $('#p-days-label').textContent = PE.edit ? 'اليوم' : 'الأيام (يمكن اختيار أكثر من يوم)';
+  $('#p-basebox').hidden = appt || wk === null;
+  $('#p-gcal').hidden = !appt || !PE.edit;
+  if (appt && PE.edit) $('#p-gcal').href = gcalUrl(PE);
+  $('#p-date').value = PE.date || '';
+  const t = ymd(today()), tm = ymd(addDays(today(), 1));
+  $$('#p-dates [data-d]').forEach((b) => b.classList.toggle('on', (b.dataset.d === '0' ? t : tm) === PE.date));
   $('#p-start').value = fmtTime(PE.start);
-  $('#p-end').value = PE.end == null ? '' : fmtTime(PE.end);
+  $('#p-end').value = PE.end == null ? '' : fmtTime(PE.end % 1440);
   $('#p-endbox').classList.toggle('off', PE.end == null);
-  const D = [[15, '15د'], [30, '30د'], [45, '45د'], [60, '1س'], [90, '1س30'], [120, '2س'], [null, 'دون نهاية']];
-  const cd = dur(PE);
+  const D = [[15, '15د'], [30, '30د'], [45, '45د'], [60, '1س'], [90, '1س30'], [120, '2س'], [180, '3س'], [null, 'دون نهاية']];
+  const cd = PE.end == null ? null : PE.end - PE.start;
   $('#p-durs').innerHTML = D.map(([v, l]) => `<button type="button" data-v="${v}" class="${v === cd ? 'on' : ''}">${l}</button>`).join('');
   $$('#p-durs button').forEach((b) => (b.onclick = () => {
     const v = b.dataset.v === 'null' ? null : Number(b.dataset.v);
-    PE.end = v == null ? null : ((PE.start + v) % 1440) || 1440;
+    PE.end = v == null ? null : Math.min(PE.start + v, 1440);
     paintPlan();
   }));
-  dayPicker($('#p-days'), PE.days, (n) => { PE.days = n; paintPlan(); });
-  $$('#p-daypre button').forEach((b) => b.classList.toggle('on', Number(b.dataset.m) === PE.days));
+  $('#p-days').innerHTML = WEEK_ORDER.map((i) => `<button type="button" data-b="${i}" class="${PE.mask & (1 << i) ? 'on' : ''}">${DAYS_SHORT[i]}</button>`).join('');
+  $$('#p-days button').forEach((b) => (b.onclick = () => {
+    const bt = 1 << Number(b.dataset.b);
+    if (PE.edit) PE.mask = bt; else if (PE.mask ^ bt) PE.mask ^= bt;
+    paintPlan();
+  }));
+  $$('#p-daypre button').forEach((b) => b.classList.toggle('on', Number(b.dataset.m) === PE.mask));
   iconRow($('#p-icons'), PLAN_ICONS.includes(PE.icon) ? PLAN_ICONS : [PE.icon, ...PLAN_ICONS], PE.icon, (i) => { PE.icon = i; paintPlan(); });
   colorRow($('#p-colors'), PE.color, (c) => { PE.color = c; paintPlan(); });
 }
-$$('#p-daypre button').forEach((b) => (b.onclick = () => { PE.days = Number(b.dataset.m); paintPlan(); }));
+$$('#p-kind button').forEach((b) => (b.onclick = () => {
+  PE.kind = b.dataset.k;
+  if (PE.kind === 'appt' && PE.icon === '⏰') { PE.icon = '📌'; PE.color = '#ef207a'; }
+  if (PE.kind === 'slot' && PE.icon === '📌') PE.icon = '⏰';
+  paintPlan();
+}));
+$$('#p-daypre button').forEach((b) => (b.onclick = () => { PE.mask = Number(b.dataset.m); paintPlan(); }));
+$$('#p-dates [data-d]').forEach((b) => (b.onclick = () => { PE.date = ymd(addDays(today(), Number(b.dataset.d))); paintPlan(); }));
+$('#p-date').onchange = (e) => { if (e.target.value) { PE.date = e.target.value; paintPlan(); } };
 $('#p-title').oninput = (e) => (PE.title = e.target.value);
-// − / + : ربع ساعة. تحريك البداية يحرّك النهاية معها (نفس المدّة)
+$('#p-note').oninput = (e) => (PE.note = e.target.value);
 $$('#sheet-plan [data-t]').forEach((b) => (b.onclick = () => {
   const d = Number(b.dataset.d);
   if (b.dataset.t === 'start') {
-    const len = dur(PE);
-    PE.start = (PE.start + d + 1440) % 1440;
-    if (len != null) PE.end = ((PE.start + len) % 1440) || 1440;
+    const len = PE.end == null ? null : PE.end - PE.start;
+    PE.start = Math.max(0, Math.min(1425, PE.start + d));
+    if (len != null) PE.end = Math.min(PE.start + len, 1440);
   } else {
-    const base = PE.end == null ? PE.start : PE.end;
-    const n = ((base + d + 1440) % 1440) || 1440;
-    if (n !== PE.start) PE.end = n;
+    PE.end = Math.max(PE.start + 15, Math.min(1440, (PE.end ?? PE.start) + d));
   }
   paintPlan();
 }));
 $('#p-start').onchange = (e) => {
   const v = parseTime(e.target.value); if (v == null) return;
-  const len = dur(PE); PE.start = v;
-  if (len != null) PE.end = ((v + len) % 1440) || 1440;
+  const len = PE.end == null ? null : PE.end - PE.start;
+  PE.start = v;
+  if (len != null) PE.end = Math.min(v + len, 1440);
   paintPlan();
 };
 $('#p-end').onchange = (e) => {
-  const v = parseTime(e.target.value);
-  PE.end = v == null || v === PE.start ? null : v || 1440;
+  let v = parseTime(e.target.value);
+  if (v === 0) v = 1440;
+  PE.end = v == null || v <= PE.start ? null : v;
   paintPlan();
 };
 $('#form-plan').onsubmit = async (e) => {
   e.preventDefault();
   const fail = (m) => { $('#p-err').textContent = m; $('#p-err').hidden = false; };
-  if (!PE.title.trim()) return fail('اكتب اسم النشاط');
-  $('#p-save').disabled = true;
+  if (!PE.title.trim()) return fail(PE.kind === 'appt' ? 'اكتب الموعد' : 'اكتب اسم النشاط');
+  if (PE.end != null && PE.end <= PE.start) return fail('وقت النهاية يجب أن يكون بعد البداية');
+  const btn = $('#p-save'); btn.disabled = true;
   try {
-    const saved = await rpc('plan_save', { p_id: PE.id, p_title: PE.title, p_icon: PE.icon, p_color: PE.color, p_start: PE.start, p_end: PE.end, p_days: PE.days });
-    S.plan = PE.id ? S.plan.map((x) => (x.id === PE.id ? saved : x)) : [...S.plan, saved];
-    if (!(saved.days & bit(UI.dayDate))) UI.dayDate = (() => { let d = today(); while (!(saved.days & bit(d))) d = addDays(d, 1); return d; })();
-    $('#sheet-plan').close(); UI.view = 'day'; render(); toast(PE.id ? 'تمّ التعديل ✓' : 'تمّت الإضافة ✓');
-  } catch (err) { if (onAuthError(err)) $('#sheet-plan').close(); else fail(err.message); }
-  finally { $('#p-save').disabled = false; }
+    if (PE.kind === 'appt') {
+      if (!PE.date) return fail('اختر التاريخ');
+      const r = await saveAppt({ id: PE.id, date: PE.date, start: PE.start, end: PE.end, title: PE.title, note: PE.note, icon: PE.icon, color: PE.color, done: PE.done });
+      if (UI.dayMode === 'week') UI.dayWeek = startOfWeek(parse(r.date));
+    } else {
+      const alsoBase = $('#p-base').checked, x = { title: PE.title, icon: PE.icon, color: PE.color, start: PE.start, end: PE.end };
+      if (PE.edit) await saveSlot(PE.key, { ...x, day: WEEK_ORDER.find((i) => PE.mask & (1 << i)) }, alsoBase);
+      else for (const d of WEEK_ORDER.filter((i) => PE.mask & (1 << i))) await saveSlot(null, { ...x, day: d }, alsoBase);
+      if (!PE.edit) toast('تمّت الإضافة ✓');
+    }
+    $('#sheet-plan').close();
+    UI.view = 'day'; render();
+  } catch (err) { fail(err.message); } finally { btn.disabled = false; }
 };
 $('#p-del').onclick = async () => {
-  if (!confirm(`حذف «${PE.title}» من جدولك؟`)) return;
-  try { await rpc('plan_delete', { p_id: PE.id }); S.plan = S.plan.filter((x) => x.id !== PE.id); $('#sheet-plan').close(); renderDay(); toast('تمّ الحذف'); }
-  catch (err) { onAuthError(err) || toast(err.message, true); }
+  if (PE.kind === 'appt') {
+    if (!confirm(`حذف الموعد «${PE.title}»؟`)) return;
+    try { await rpc('appt_delete', { p_id: PE.id }); S.appts = S.appts.filter((a) => a.id !== PE.id); toast('تمّ الحذف'); }
+    catch (err) { if (!onAuthError(err)) toast(err.message, true); }
+    $('#sheet-plan').close(); return renderDay();
+  }
+  const alsoBase = $('#p-base').checked;
+  if (!confirm(alsoBase ? `حذف «${PE.title}» من هذا الأسبوع ومن الجدول الأساسي؟` : `حذف «${PE.title}»${UI.dayMode === 'base' ? ' من الجدول الأساسي' : ' من هذا الأسبوع فقط'}؟`)) return;
+  $('#sheet-plan').close();
+  removeSlot(PE.key, alsoBase);
 };
-setInterval(() => { if (S.user && UI.view === 'day' && !$('dialog[open]')) renderDay(); }, 60000);
+setInterval(() => { if (S.user && UI.view === 'day' && !DRAG && !$('dialog[open]')) renderDay(); }, 60000);
 
-/* ================= عاداتي: متتبّع العادات ================= */
+/* ================= عاداتي ================= */
+const SURAS = ['الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف', 'الأنفال', 'التوبة', 'يونس', 'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر', 'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه', 'الأنبياء', 'الحج', 'المؤمنون', 'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم', 'لقمان', 'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر', 'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح', 'الحجرات', 'ق', 'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة', 'الحديد', 'المجادلة', 'الحشر', 'الممتحنة', 'الصف', 'الجمعة', 'المنافقون', 'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج', 'نوح', 'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ', 'النازعات', 'عبس', 'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج', 'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد', 'الشمس', 'الليل', 'الضحى', 'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات', 'القارعة', 'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون', 'النصر', 'المسد', 'الإخلاص', 'الفلق', 'الناس'];
+const AYAT = [7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110, 98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83, 182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28, 20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20, 15, 21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6];
+const PRE = AYAT.reduce((a, n, i) => (a.push(a[i] + n), a), [0]); // 6236 آية
+const gidx = (s, a) => PRE[s - 1] + a;
+const qPos = (s, a) => `${SURAS[s - 1]} ${a}`;
+const PRAYERS = ['الصبح', 'الظهر', 'العصر', 'المغرب', 'العشاء'];
+const KINDS = {
+  check: ['✅', 'نعم / لا', 'تمّت أو لم تتمّ'],
+  more: ['🔢', 'عدد: الأكثر أفضل', 'مثل: صلوات الجماعة من 5'],
+  less: ['📉', 'عدد: الأقل أفضل', 'مثل: كم مرة غضبت؟ الهدف التقليل'],
+  quran: ['📖', 'ورد القرآن', 'من أيّ سورة وآية إلى أين'],
+};
 UI.habitDate = today();
-const done = (h, d) => S.logs.has(`${h.id}|${ymd(d)}`);
-const expected = (h, d) => !!(h.days & bit(d)) && ymd(d) >= h.created;
+const logOf = (h, d) => S.logs.get(`${h.id}|${typeof d === 'string' ? d : ymd(d)}`);
+const valOf = (h, d) => logOf(h, d)?.v || 0;
+const expected = (h, d) => !!(h.days & bit(d)) && ymd(d) >= h.created && d <= today();
+const isPrayer = (h) => h.kind === 'more' && h.target === 5 && /صل/.test(h.name + (h.unit || ''));
+function okDay(h, d) {
+  const v = valOf(h, d);
+  if (h.kind === 'more') return v >= (h.target || 1);
+  if (h.kind === 'less') return v <= (h.target || 0);
+  return v > 0;
+}
 function streak(h) {
   let d = today(), n = 0;
-  if (expected(h, d) && !done(h, d)) d = addDays(d, -1); // اليوم لم ينتهِ بعد
+  if (h.kind !== 'less' && expected(h, d) && !okDay(h, d)) d = addDays(d, -1);
   for (let i = 0; i < 400 && ymd(d) >= h.created; i++, d = addDays(d, -1)) {
     if (!(h.days & bit(d))) continue;
-    if (done(h, d)) n++; else break;
+    if (okDay(h, d)) n++; else break;
   }
   return n;
 }
+const sumRange = (h, from, to) => { let s = 0; for (let d = from; d <= to; d = addDays(d, 1)) s += valOf(h, d); return s; };
+function lastQuran(h, beforeOrAt) {
+  let best = null;
+  for (const [k, l] of S.logs) {
+    const [id, dt] = k.split('|');
+    if (Number(id) === h.id && l.data && l.data.ts && (!beforeOrAt || dt <= beforeOrAt) && (!best || dt > best.dt)) best = { dt, ...l.data };
+  }
+  return best;
+}
+const nextAyah = (s, a) => (a < AYAT[s - 1] ? [s, a + 1] : s < 114 ? [s + 1, 1] : [1, 1]);
+const plural = (n, one, two, few, many) => (n === 1 ? one : n === 2 ? two : n >= 3 && n <= 10 ? `${n} ${few}` : `${n} ${many}`);
+
 function renderHabits() {
-  const sel = UI.habitDate, t = today(), isToday = ymd(sel) === ymd(t);
+  const sel = UI.habitDate, t = today(), isToday = ymd(sel) === ymd(t), wkD = startOfWeek(sel);
   const hs = S.lifeReady ? S.habits : [];
-  const due = hs.filter((h) => expected(h, sel)), ok = due.filter((h) => done(h, sel)).length;
+  const due = hs.filter((h) => expected(h, sel)), ok = due.filter((h) => okDay(h, sel)).length;
   const pct = due.length ? ok / due.length : 0, R = 40, C = 2 * Math.PI * R;
-  const msg = !due.length ? (hs.length ? 'لا عادات مبرمجة في هذا اليوم' : 'ابدأ بعادة صغيرة')
-    : ok === due.length ? 'أحسنت! أتممت كل عاداتك 🎉' : ok ? 'واصل، أنت في الطريق الصحيح' : isToday ? 'يوم جديد، بداية جديدة' : 'لم تُسجَّل أي عادة';
+  const msg = !due.length ? (hs.length ? 'لا عادات مبرمجة في هذا اليوم' : 'أضف عادتك الأولى بزرّ +')
+    : ok === due.length ? 'أحسنت! أتممت كل عاداتك 🎉' : ok ? 'واصل، أنت في الطريق الصحيح' : isToday ? 'يوم جديد، بداية جديدة' : 'لم يُسجَّل شيء في هذا اليوم';
+  const dayDone = (d) => { const du = hs.filter((h) => expected(h, d)); return du.length && du.every((h) => okDay(h, d)); };
   $('#hero-body').innerHTML = `
-    <div style="padding:6px 0 0"><div style="font-family:Tajawal;font-weight:800;font-size:26px">عاداتي</div></div>
-    <div class="pnav" style="margin-top:8px"><button class="round" id="h-prev" aria-label="اليوم السابق">${icon('prev')}</button>
-      <div class="lab">${isToday ? 'اليوم' : dayCount(sel, t) === 2 ? 'البارحة' : DAYS[sel.getDay()]}<small>${fmtDay(sel)}</small></div>
-      <button class="round" id="h-next" aria-label="اليوم الموالي" ${isToday ? 'disabled' : ''}>${icon('next')}</button></div>
+    <div style="padding:6px 0 0;display:flex;justify-content:space-between;align-items:flex-end">
+      <div><div style="font-family:Tajawal;font-weight:800;font-size:26px">عاداتي</div>
+      <div style="opacity:.85;font-size:13.5px">${isToday ? 'اليوم · ' : ''}${fmtDay(sel)}</div></div>
+      ${isToday ? '' : '<button class="btn sm" id="h-today" style="background:rgba(255,255,255,.15)">اليوم</button>'}</div>
+    <div class="week"><button class="round" id="hw-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
+      <div class="days">${[0, 1, 2, 3, 4, 5, 6].map((i) => { const d = addDays(wkD, i);
+        return `<button class="d ${ymd(d) === ymd(sel) ? 'on' : ''} ${ymd(d) === ymd(t) ? 'today' : ''}" data-d="${ymd(d)}" ${d > t ? 'disabled' : ''}>${DAYS_SHORT[d.getDay()]}<b>${d.getDate()}</b>${d <= t && dayDone(d) ? '<i>✓</i>' : ''}</button>`; }).join('')}</div>
+      <button class="round" id="hw-next" aria-label="الأسبوع الموالي" ${addDays(wkD, 7) > t ? 'disabled' : ''}>${icon('next')}</button></div>
     <div class="ring-wrap">
       <div class="ring"><svg viewBox="0 0 100 100"><circle r="${R}" cx="50" cy="50" stroke="rgba(255,255,255,.18)"></circle>
         <circle r="${R}" cx="50" cy="50" stroke="#fff" stroke-dasharray="${pct * C} ${C}" style="transition:stroke-dasharray .5s ease"></circle></svg>
         <div class="c">${ok}/${due.length}<small>${Math.round(pct * 100)}%</small></div></div>
-      <div class="msg"><b>${msg}</b><span>${due.length ? `${due.length - ok ? `بقي ${due.length - ok}` : 'لا شيء متبقٍّ'}` : ''}</span></div>
+      <div class="msg"><b>${msg}</b><span>${due.length && due.length - ok ? `بقي ${due.length - ok}` : ''}</span></div>
     </div>`;
-  $('#h-prev').onclick = () => { if (dayCount(sel, t) < 400) { UI.habitDate = addDays(sel, -1); renderHabits(); } };
-  $('#h-next').onclick = () => { if (!isToday) { UI.habitDate = addDays(sel, 1); renderHabits(); } };
+  $$('.week .d').forEach((b) => (b.onclick = () => { UI.habitDate = parse(b.dataset.d); renderHabits(); }));
+  $('#hw-prev').onclick = () => { UI.habitDate = addDays(sel, -7); renderHabits(); };
+  $('#hw-next').onclick = () => { const n = addDays(sel, 7); UI.habitDate = n > t ? t : n; renderHabits(); };
+  $('#h-today') && ($('#h-today').onclick = () => { UI.habitDate = today(); renderHabits(); });
   if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
 
-  const SUG = [['شرب 8 أكواب ماء', '💧', '#0ea5e9'], ['قراءة 10 صفحات', '📖', '#61038d'], ['رياضة 20 دقيقة', '🏃', '#10b981'], ['الصلاة في وقتها', '🕌', '#20149a'], ['نوم قبل 23:00', '😴', '#64748b'], ['دون سكر', '🍬', '#ef207a'], ['تسجيل مصاريفي', '💰', '#f59e0b']]
-    .filter(([n]) => !hs.some((h) => h.name === n));
-  const row = (h) => {
-    const on = expected(h, sel), dn = done(h, sel), st = streak(h);
-    const dots = [6, 5, 4, 3, 2, 1, 0].map((k) => addDays(sel, -k)).map((d) =>
-      `<button data-h="${h.id}" data-d="${ymd(d)}" class="${done(h, d) ? 'done' : ''} ${expected(h, d) ? '' : 'na'} ${ymd(d) === ymd(sel) ? 'cur' : ''}" title="${fmtDay(d)}">${DAYS_MIN[d.getDay()]}</button>`).join('');
-    return `<div class="habit ${on || dn ? '' : 'off'}" style="--c:${h.color}">
-      <button class="hcheck ${dn ? 'done' : ''}" data-h="${h.id}" data-d="${ymd(sel)}" aria-label="${dn ? 'إلغاء' : 'تمّت'}: ${esc(h.name)}">${esc(h.icon)}</button>
-      <div class="nm" data-edit="${h.id}"><b>${esc(h.name)}</b><small>${st ? `🔥 ${st} ${st === 1 ? 'يوم' : st === 2 ? 'يومان' : st <= 10 ? 'أيام' : 'يومًا'} متتالية` : on ? 'ابدأ السلسلة اليوم' : 'ليست مبرمجة في هذا اليوم'}${h.days !== 127 ? ' · ' + daysLabel(h.days) : ''}</small></div>
-      <div class="dots">${dots}</div></div>`;
-  };
-  // هذا الشهر: نسبة الإنجاز من الأيام المبرمجة حتى اليوم
   const m0 = new Date(t.getFullYear(), t.getMonth(), 1);
-  const month = hs.map((h) => {
-    let exp = 0, d0 = 0;
-    for (let d = m0; d <= t; d = addDays(d, 1)) if (expected(h, d)) { exp++; if (done(h, d)) d0++; }
-    return { h, exp, d0, p: exp ? d0 / exp : 0 };
-  });
   $('#main').innerHTML = `<div class="grid">
-    <section class="card span"><div class="card-h"><h2>${isToday ? 'عادات اليوم' : 'عادات ' + DAYS[sel.getDay()]}</h2><span class="sub">${hs.length ? 'اضغط الرمز عند الإنجاز' : ''}</span></div>
-      ${hs.length ? hs.map(row).join('') : `<div class="empty"><span class="big">🌱</span>لا عادات بعد. اختر واحدة للبداية، أو أضف عادتك بزرّ <b>+</b></div>`}
-      ${SUG.length && hs.length < 4 ? `<div class="suggest">${SUG.slice(0, 6).map(([n, i]) => `<button data-sug="${esc(n)}">${i} ${esc(n)}</button>`).join('')}</div>` : ''}
+    <section class="card span"><div class="card-h"><h2>${isToday ? 'عادات اليوم' : `عادات ${DAYS[sel.getDay()]} ${sel.getDate()} ${MONTHS[sel.getMonth()]}`}</h2></div>
+      ${hs.length ? hs.map((h) => habitCard(h, sel)).join('') : '<div class="empty"><span class="big">🌱</span>لا عادات بعد. أضف عادتك الأولى بزرّ <b>+</b> في الأسفل</div>'}
     </section>
-    ${hs.length ? `<section class="card span"><div class="card-h"><h2>${MONTHS[t.getMonth()]}</h2><span class="sub">نسبة الإنجاز هذا الشهر</span></div>
-      ${month.map(({ h, exp, d0, p }) => `<div class="mrow"><span style="font-size:18px">${esc(h.icon)}</span>
-        <span><span style="font-size:13px;font-weight:600;display:flex;justify-content:space-between"><span>${esc(h.name)}</span><small style="color:var(--muted)">${d0}/${exp}</small></span>
-        <span class="bar" style="display:block"><i style="width:${p * 100}%;background:${h.color}"></i></span></span>
-        <b>${Math.round(p * 100)}%</b></div>`).join('')}</section>` : ''}
+    ${hs.length ? `<section class="card span"><div class="card-h"><h2>${MONTHS[t.getMonth()]}</h2><span class="sub">حصيلة الشهر</span></div>
+      ${hs.map((h) => monthRow(h, m0, t)).join('')}</section>` : ''}
   </div>`;
-  $$('.hcheck, .dots button').forEach((b) => (b.onclick = () => toggleHabit(Number(b.dataset.h), b.dataset.d)));
-  $$('[data-edit]').forEach((b) => (b.onclick = () => openHabit(S.habits.find((h) => h.id === Number(b.dataset.edit)))));
-  $$('[data-sug]').forEach((b) => (b.onclick = async () => {
-    const [n, i, c] = SUG.find(([x]) => x === b.dataset.sug);
-    b.disabled = true;
-    try { S.habits.push(await rpc('habit_save', { p_id: null, p_name: n, p_icon: i, p_color: c, p_days: 127 })); renderHabits(); toast('تمّت الإضافة ✓'); }
-    catch (err) { onAuthError(err) || toast(err.message, true); }
+  bindHabits(sel);
+}
+function habitCard(h, sel) {
+  const on = expected(h, sel) || ymd(sel) === ymd(today()), st = streak(h), v = valOf(h, sel), L = logOf(h, sel);
+  const unit = h.unit || (h.kind === 'quran' ? 'آية' : 'مرّة');
+  let sub = '';
+  if (h.kind === 'more') sub = `الهدف: ${h.target} ${unit} في اليوم`;
+  else if (h.kind === 'less') sub = h.target ? `الهدف: لا يتجاوز ${h.target} ${unit} في اليوم` : 'الهدف: ولا مرّة · كل يوم أقل من الذي قبله';
+  else if (h.kind === 'quran') { const q = lastQuran(h); sub = q ? `وصلت إلى: ${qPos(q.ts, q.ta)}` : 'سجّل من أين بدأت'; }
+  else sub = 'نعم / لا';
+  if (h.days !== 127) sub += ` · ${daysLabel(h.days)}`;
+  let ctl = '';
+  if (!(h.days & bit(sel))) ctl += '<div class="note" style="margin-bottom:6px">ليست مبرمجة في هذا اليوم، ويمكنك التسجيل رغم ذلك.</div>';
+  if (h.kind === 'check') {
+    ctl += `<button class="bigcheck ${v ? 'done' : ''}" data-act="check" data-h="${h.id}">${v ? '✓ تمّت' : 'اضغط عند الإنجاز'}</button>`;
+  } else if (h.kind === 'more' && h.target <= 10) {
+    const mask = L?.data?.m ?? (2 ** v - 1);
+    const labels = isPrayer(h) ? PRAYERS : Array.from({ length: h.target }, (_, i) => String(i + 1));
+    ctl += `<div class="slotsrow" style="--n:${h.target}">${labels.map((l, i) => `<button class="${mask & (1 << i) ? 'on' : ''}" data-act="slot" data-h="${h.id}" data-i="${i}"><i>${mask & (1 << i) ? '✓' : '○'}</i>${esc(l)}</button>`).join('')}</div>
+      <div class="note" style="margin-top:6px">${v}/${h.target} ${esc(unit)}${v >= h.target ? ' · أحسنت 🎉' : ''}</div>`;
+  } else if (h.kind === 'more' || h.kind === 'less') {
+    const less = h.kind === 'less', wk = startOfWeek(sel);
+    const thisW = sumRange(h, wk, sel), lastW = sumRange(h, addDays(wk, -7), addDays(sel, -7));
+    const trend = less ? (thisW < lastW ? `▼ أقل من الأسبوع الماضي (${lastW}) 👍` : thisW > lastW ? `▲ أكثر من الأسبوع الماضي (${lastW})` : `مثل الأسبوع الماضي (${lastW})`) : `${thisW} هذا الأسبوع`;
+    ctl += `<div class="counter"><button class="minus" data-act="dec" data-h="${h.id}" aria-label="ناقص واحد" ${v ? '' : 'disabled'}>−</button>
+      <div class="n" style="color:${less && v > (h.target || 0) ? '#e11d48' : 'var(--ink)'}">${v}<small>${less ? 'اليوم' : `من ${h.target}`}</small></div>
+      <button class="plus" data-act="inc" data-h="${h.id}">+1 ${esc(unit)}</button></div>
+      <div class="counter info" style="margin-top:6px">${less ? `هذا الأسبوع: <b>${thisW}</b> · ${trend}` : trend}</div>`;
+  } else if (h.kind === 'quran') {
+    const d = L?.data;
+    ctl += `<div class="qline"><div class="t">${d ? `من <b>${qPos(d.fs, d.fa)}</b> إلى <b>${qPos(d.ts, d.ta)}</b><small>${v} آية</small>` : 'لم تُسجَّل قراءة في هذا اليوم'}</div>
+      <button class="btn sm" data-act="quran" data-h="${h.id}">${d ? 'تعديل' : '📖 سجّل'}</button></div>`;
+  }
+  const hist = [6, 5, 4, 3, 2, 1, 0].map((k) => addDays(sel, -k)).map((d) => {
+    const ex = expected(h, d), val = valOf(h, d), ok = d <= today() && ymd(d) >= h.created && okDay(h, d) && (h.kind !== 'less' || ex);
+    const bad = h.kind === 'less' && val > (h.target || 0);
+    const glyph = h.kind === 'check' ? (val ? '✓' : '') : h.kind === 'more' ? (val ? `${val}/${h.target}` : '') : h.kind === 'less' ? (ymd(d) >= h.created && d <= today() ? String(val) : '') : val ? String(val) : '';
+    return `<button class="${ok ? 'ok' : ''} ${bad ? 'bad' : ''} ${ymd(d) === ymd(sel) ? 'sel' : ''} ${ex || !(d <= today()) ? '' : 'na'}" data-date="${ymd(d)}" ${d > today() ? 'disabled' : ''}>${DAYS_SHORT[d.getDay()]}<b>${d.getDate()}</b><em>${glyph}</em></button>`;
+  }).join('');
+  return `<div class="hcard" style="--c:${h.color}">
+    <div class="hhead" data-edit="${h.id}"><span class="ico">${esc(h.icon)}</span><div style="min-width:0"><b>${esc(h.name)}</b><small>${esc(sub)}</small></div>
+      ${st ? `<span class="st">🔥 ${plural(st, 'يوم', 'يومان', 'أيام', 'يومًا')}</span>` : ''}</div>
+    <div class="hctl" style="${on ? '' : 'opacity:.75'}">${ctl}</div>
+    <div class="hist">${hist}</div></div>`;
+}
+function monthRow(h, m0, t) {
+  let exp = 0, ok = 0, total = 0;
+  for (let d = m0; d <= t; d = addDays(d, 1)) { if (expected(h, d)) { exp++; if (okDay(h, d)) ok++; } total += valOf(h, d); }
+  const p = exp ? ok / exp : 0, unit = h.unit || (h.kind === 'quran' ? 'آية' : 'مرّة');
+  let right = `${Math.round(p * 100)}%<small>${ok}/${exp} يوم</small>`, extra = '';
+  if (h.kind === 'less') {
+    const wk = startOfWeek(t), a = sumRange(h, wk, t), b = sumRange(h, addDays(wk, -7), addDays(wk, -1));
+    right = `${total}<small>${esc(unit)} هذا الشهر</small>`;
+    extra = `<small style="color:var(--muted);font-size:12px">هذا الأسبوع ${a} · الأسبوع الماضي ${b} ${a < b ? '👍' : ''}</small>`;
+  } else if (h.kind === 'more') {
+    extra = `<small style="color:var(--muted);font-size:12px">المعدّل ${exp ? (total / exp).toFixed(1).replace('.0', '') : 0}/${h.target} في اليوم</small>`;
+  } else if (h.kind === 'quran') {
+    const q = lastQuran(h);
+    right = `${total}<small>آية هذا الشهر</small>`;
+    extra = `<small style="color:var(--muted);font-size:12px">${q ? `الختمة: ${Math.round((gidx(q.ts, q.ta) / 6236) * 100)}% · وصلت إلى ${qPos(q.ts, q.ta)}` : 'لا تسجيل بعد'}</small>`;
+  }
+  const bars = h.kind === 'more' || h.kind === 'less'
+    ? (() => { const vals = [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((k) => valOf(h, addDays(t, -k))), mx = Math.max(1, ...vals);
+      return `<div class="spark" title="آخر 14 يومًا">${vals.map((v) => `<i class="${v ? '' : 'z'}" style="height:${Math.max(6, (v / mx) * 100)}%"></i>`).join('')}</div>`; })()
+    : `<span class="bar" style="display:block"><i style="width:${p * 100}%;background:${h.color}"></i></span>`;
+  return `<div class="mrow" style="--c:${h.color}"><span style="font-size:19px">${esc(h.icon)}</span>
+    <div style="min-width:0"><b style="font-size:13.5px;display:block">${esc(h.name)}</b>${bars}${extra ? `<div style="line-height:1.4;margin-top:2px">${extra}</div>` : ''}</div><div class="v">${right}</div></div>`;
+}
+function bindHabits(sel) {
+  const ds = ymd(sel), H = (b) => S.habits.find((h) => h.id === Number(b.dataset.h));
+  $$('[data-act]').forEach((b) => (b.onclick = () => {
+    const h = H(b), v = valOf(h, sel), L = logOf(h, sel);
+    switch (b.dataset.act) {
+      case 'check': return setLog(h, ds, v ? null : 1, null);
+      case 'inc': return setLog(h, ds, v + 1, null);
+      case 'dec': return setLog(h, ds, v - 1 || null, null);
+      case 'slot': {
+        const mask = (L?.data?.m ?? (2 ** v - 1)) ^ (1 << Number(b.dataset.i));
+        const n = mask.toString(2).split('1').length - 1;
+        return setLog(h, ds, n || null, n ? { m: mask } : null);
+      }
+      case 'quran': return openQuran(h, ds);
+    }
   }));
+  $$('.hist button').forEach((b) => (b.onclick = () => { UI.habitDate = parse(b.dataset.date); renderHabits(); }));
+  $$('[data-edit]').forEach((b) => (b.onclick = () => openHabit(S.habits.find((h) => h.id === Number(b.dataset.edit)))));
 }
-async function toggleHabit(id, date) {
-  const key = `${id}|${date}`, on = !S.logs.has(key);
-  on ? S.logs.add(key) : S.logs.delete(key);
+async function setLog(h, date, v, data) {
+  const key = `${h.id}|${date}`, old = S.logs.get(key);
+  v ? S.logs.set(key, { v, data }) : S.logs.delete(key);
   renderHabits();
-  if (on && navigator.vibrate) try { navigator.vibrate(15); } catch (e) {}
-  try { await rpc('habit_check', { p_habit_id: id, p_date: date, p_done: on }); }
-  catch (err) { on ? S.logs.delete(key) : S.logs.add(key); renderHabits(); onAuthError(err) || toast(err.message, true); }
+  if (v && navigator.vibrate) try { navigator.vibrate(12); } catch (e) {}
+  try { await rpc('habit_log', { p_habit_id: h.id, p_date: date, p_value: v || null, p_data: data }); }
+  catch (err) { old ? S.logs.set(key, old) : S.logs.delete(key); renderHabits(); if (!onAuthError(err)) toast(err.message, true); }
 }
-const HABIT_PRESETS = [['شرب الماء', '💧'], ['قراءة', '📖'], ['رياضة', '🏃'], ['صلاة', '🕌'], ['نوم مبكّر', '😴'], ['تأمّل', '🧘'], ['دون هاتف قبل النوم', '📵'], ['مشي', '🚶']];
-const HABIT_ICONS = ['✅', '💧', '📖', '🏃', '🕌', '😴', '🧘', '📵', '🚶', '🥗', '🍬', '💊', '✍️', '🎯', '🧹', '💰', '📞', '🌅', '🦷', '🙏', '🎸', '🗣️', '❤️', '🌱'];
+
+/* ---------- القرآن: من / إلى ---------- */
+let QE = null;
+$('#q-fs').innerHTML = $('#q-ts').innerHTML = SURAS.map((n, i) => `<option value="${i + 1}">${i + 1}. ${n}</option>`).join('');
+function openQuran(h, date) {
+  const L = logOf(h, date);
+  let d = L?.data;
+  if (!d) {
+    const last = lastQuran(h, ymd(addDays(parse(date), -1)));
+    const [fs, fa] = last ? nextAyah(last.ts, last.ta) : [1, 1];
+    d = { fs, fa, ts: fs, ta: AYAT[fs - 1] };
+  }
+  QE = { h, date, ...d, existing: !!L };
+  $('#q-title').textContent = `${h.icon} ${h.name} · ${fmtDay(parse(date))}`;
+  $('#q-del').hidden = !L;
+  $('#q-err').hidden = true;
+  paintQuran();
+  $('#sheet-quran').showModal();
+}
+function paintQuran() {
+  $('#q-fs').value = QE.fs; $('#q-fa').value = QE.fa; $('#q-fa').max = AYAT[QE.fs - 1];
+  $('#q-ts').value = QE.ts; $('#q-ta').value = QE.ta; $('#q-ta').max = AYAT[QE.ts - 1];
+  const n = gidx(QE.ts, QE.ta) - gidx(QE.fs, QE.fa) + 1;
+  $('#q-count').textContent = n > 0 ? `${n} آية · ${QE.fs === QE.ts ? `سورة ${SURAS[QE.fs - 1]}` : `${QE.ts - QE.fs + 1} سور`}` : 'نقطة النهاية قبل البداية';
+}
+$('#q-fs').onchange = (e) => { QE.fs = Number(e.target.value); QE.fa = 1; if (gidx(QE.ts, QE.ta) < gidx(QE.fs, 1)) { QE.ts = QE.fs; QE.ta = AYAT[QE.fs - 1]; } paintQuran(); };
+$('#q-ts').onchange = (e) => { QE.ts = Number(e.target.value); QE.ta = AYAT[QE.ts - 1]; paintQuran(); };
+$('#q-fa').onchange = (e) => { QE.fa = Math.max(1, Math.min(AYAT[QE.fs - 1], Number(e.target.value) || 1)); paintQuran(); };
+$('#q-ta').onchange = (e) => { QE.ta = Math.max(1, Math.min(AYAT[QE.ts - 1], Number(e.target.value) || 1)); paintQuran(); };
+$('#q-end').onclick = () => { QE.ta = AYAT[QE.ts - 1]; paintQuran(); };
+$('#q-next').onclick = () => { if (QE.ts < 114) QE.ts++; QE.ta = AYAT[QE.ts - 1]; paintQuran(); };
+$('#form-quran').onsubmit = (e) => {
+  e.preventDefault();
+  const n = gidx(QE.ts, QE.ta) - gidx(QE.fs, QE.fa) + 1;
+  if (n < 1) { $('#q-err').textContent = 'نقطة النهاية يجب أن تكون بعد البداية'; $('#q-err').hidden = false; return; }
+  $('#sheet-quran').close();
+  setLog(QE.h, QE.date, n, { fs: QE.fs, fa: QE.fa, ts: QE.ts, ta: QE.ta });
+  toast(`تمّ ✓ ${n} آية`);
+};
+$('#q-del').onclick = () => { $('#sheet-quran').close(); setLog(QE.h, QE.date, null, null); };
+
+/* ---------- نافذة العادة ---------- */
+const HABIT_ICONS = ['✅', '🕌', '📖', '😤', '💧', '🏃', '😴', '🧘', '📵', '🚶', '🥗', '🍬', '💊', '✍️', '🎯', '🧹', '💰', '📞', '🌅', '🦷', '🙏', '❤️', '🌱', '🤲'];
 let HE = null;
 function openHabit(h) {
-  HE = h ? { ...h } : { id: null, name: '', icon: '✅', color: COLORS[S.habits.length % COLORS.length], days: 127 };
+  HE = h ? { ...h } : { id: null, name: '', icon: '✅', color: COLORS[S.habits.length % COLORS.length], days: 127, kind: 'check', target: null, unit: '' };
   $('#habit-title').textContent = h ? 'تعديل العادة' : 'عادة جديدة';
   $('#h-name').value = HE.name;
+  $('#h-target').value = HE.target ?? '';
+  $('#h-unit').value = HE.unit || '';
   $('#h-del').hidden = !h;
   $('#h-err').hidden = true;
-  $('#h-pre').innerHTML = h ? '' : HABIT_PRESETS.map(([n, i]) => `<button type="button" data-n="${n}" data-i="${i}">${i} ${n}</button>`).join('');
-  $$('#h-pre button').forEach((b) => (b.onclick = () => { HE.name = b.dataset.n; HE.icon = b.dataset.i; $('#h-name').value = HE.name; paintHabit(); }));
   paintHabit();
   $('#sheet-habit').showModal();
   if (!h) setTimeout(() => $('#h-name').focus(), 80);
 }
 function paintHabit() {
+  $('#h-kinds').innerHTML = Object.entries(KINDS).map(([k, [i, t, s]]) => `<button type="button" data-k="${k}" class="${HE.kind === k ? 'on' : ''}"><span>${i}</span><span style="font-size:inherit"><b>${t}</b><small>${s}</small></span></button>`).join('');
+  $$('#h-kinds button').forEach((b) => (b.onclick = () => {
+    HE.kind = b.dataset.k;
+    if (HE.kind === 'more' && !HE.target) { HE.target = 5; $('#h-target').value = 5; }
+    if (HE.kind === 'less' && HE.target == null) { HE.target = 0; $('#h-target').value = 0; }
+    if (HE.kind === 'quran' && HE.icon === '✅') HE.icon = '📖';
+    if (HE.kind === 'less' && HE.icon === '✅') HE.icon = '😤';
+    paintHabit();
+  }));
+  $('#h-targetbox').hidden = !(HE.kind === 'more' || HE.kind === 'less');
+  $('#h-target-label').textContent = HE.kind === 'less' ? 'الحدّ المقبول في اليوم (0 = ولا مرّة)' : 'الهدف في اليوم (مثلاً 5 صلوات)';
   dayPicker($('#h-days'), HE.days, (n) => { HE.days = n; paintHabit(); });
   $$('#h-daypre button').forEach((b) => b.classList.toggle('on', Number(b.dataset.m) === HE.days));
   iconRow($('#h-icons'), HABIT_ICONS.includes(HE.icon) ? HABIT_ICONS : [HE.icon, ...HABIT_ICONS], HE.icon, (i) => { HE.icon = i; paintHabit(); });
@@ -1427,12 +1913,15 @@ function paintHabit() {
 }
 $$('#h-daypre button').forEach((b) => (b.onclick = () => { HE.days = Number(b.dataset.m); paintHabit(); }));
 $('#h-name').oninput = (e) => (HE.name = e.target.value);
+$('#h-target').oninput = (e) => (HE.target = e.target.value === '' ? null : Number(e.target.value));
+$('#h-unit').oninput = (e) => (HE.unit = e.target.value);
 $('#form-habit').onsubmit = async (e) => {
   e.preventDefault();
   const fail = (m) => { $('#h-err').textContent = m; $('#h-err').hidden = false; };
   if (!HE.name.trim()) return fail('اكتب اسم العادة');
   try {
-    const saved = await rpc('habit_save', { p_id: HE.id, p_name: HE.name, p_icon: HE.icon, p_color: HE.color, p_days: HE.days });
+    const saved = await rpc('habit_save2', { p_id: HE.id, p_name: HE.name, p_icon: HE.icon, p_color: HE.color, p_days: HE.days,
+      p_kind: HE.kind, p_target: HE.kind === 'more' || HE.kind === 'less' ? HE.target : null, p_unit: HE.unit });
     S.habits = HE.id ? S.habits.map((x) => (x.id === HE.id ? saved : x)) : [...S.habits, saved];
     $('#sheet-habit').close(); UI.view = 'habits'; render(); toast(HE.id ? 'تمّ التعديل ✓' : 'تمّت الإضافة ✓');
   } catch (err) { if (onAuthError(err)) $('#sheet-habit').close(); else fail(err.message); }
@@ -1440,7 +1929,7 @@ $('#form-habit').onsubmit = async (e) => {
 $('#h-del').onclick = async () => {
   if (!confirm(`حذف عادة «${HE.name}» وكل سجلّها؟`)) return;
   try { await rpc('habit_delete', { p_id: HE.id }); S.habits = S.habits.filter((x) => x.id !== HE.id); $('#sheet-habit').close(); renderHabits(); toast('تمّ الحذف'); }
-  catch (err) { onAuthError(err) || toast(err.message, true); }
+  catch (err) { if (!onAuthError(err)) toast(err.message, true); }
 };
 
 /* ================= boot ================= */
@@ -1453,11 +1942,13 @@ async function load() {
 async function loadLife() {
   try {
     const d = await rpc('life');
-    S.plan = d.schedule; S.habits = d.habits; S.logs = new Set(d.logs.map(([id, dt]) => `${id}|${dt}`));
+    if (!d.slots) throw new Error('db-not-updated');
+    S.slots = d.slots; S.weeks = new Set(d.weeks); S.appts = d.appointments; S.habits = d.habits;
+    S.logs = new Map(d.logs.map(([id, dt, v, data]) => [`${id}|${dt}`, { v: Number(v), data }]));
     S.lifeReady = true;
   } catch (err) {
     if (err.auth) throw err;
-    S.lifeReady = false; S.plan = []; S.habits = []; S.logs = new Set();
+    S.lifeReady = false; S.slots = []; S.weeks = new Set(); S.appts = []; S.habits = []; S.logs = new Map();
   }
 }
 async function boot() {
