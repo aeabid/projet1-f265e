@@ -465,6 +465,12 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .dc:active .c{transform:scale(.92)}
 @media (max-width:360px){.dc .c{width:34px;height:34px}.dc .c>span{width:25px;height:25px}}
 .hd-val{text-align:center;margin-top:10px;font-family:Tajawal;font-weight:800;font-size:16px}
+.dh{display:flex;align-items:center;gap:10px;padding-top:6px}
+.dh-t{font-family:Tajawal;font-weight:800;font-size:26px;flex:1}
+.dh-tag{font-size:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:3px 10px}
+.dh-back{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:99px;padding:6px 12px;font-weight:700;font-size:13px}
+.dh-sub{font-size:13px;opacity:.8;margin-top:2px}
+.mic-sm{font-size:17px;background:var(--soft)}
 .update-card{text-align:center;padding:28px 16px}
 .update-card .big{font-size:36px;display:block;margin-bottom:6px}
 
@@ -1391,30 +1397,21 @@ function renderDay() {
   const ready = S.lifeReady;
   const slots = ready ? weekSlots(base ? null : wk) : [];
   const appts = ready && !base ? apptsInWeek(wkD) : [];
-  const mat = !base && isMat(wk), nxt = ready ? upcomingAppts()[0] : null;
+  const mat = !base && isMat(wk);
   const thisWk = ymd(startOfWeek(t)), wkRel = wk === thisWk ? 'هذا الأسبوع' : wk === ymd(addDays(startOfWeek(t), 7)) ? 'الأسبوع القادم' : wk === ymd(addDays(startOfWeek(t), -7)) ? 'الأسبوع الماضي' : 'الأسبوع';
-  $('#hero-body').innerHTML = `
-    <div style="padding:6px 0 0"><div style="font-family:Tajawal;font-weight:800;font-size:26px">يومي</div></div>
-    <div class="seg" style="margin-top:8px"><button data-dm="week" class="${base ? '' : 'on'}">🗓️ جدول الأسابيع</button><button data-dm="base" class="${base ? 'on' : ''}">⭐ الجدول الأساسي</button></div>
-    ${base ? `<div class="wstatus"><span>هذا الجدول يُنسخ في كل أسبوع. أيّ تعديل هنا يظهر في كل الأسابيع التي لم تعدّلها وحدها.</span></div>`
-      : `<div class="pnav"><button class="round" id="w-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
-          <div class="lab">${fmtShort(wkD)} — ${fmtShort(addDays(wkD, 6))}<small>${wkRel}</small></div>
-          <button class="round" id="w-next" aria-label="الأسبوع الموالي">${icon('next')}</button></div>
-        <div class="wstatus">${mat ? `<span class="tag">✏️ أسبوع معدَّل وحده</span><button id="w-reset">إرجاعه إلى الأساسي</button><button id="w-tobase">اجعله الجدول الأساسي</button>`
-          : `<span class="tag">⭐ نسخة من الجدول الأساسي</span><span style="opacity:.8">عدّل أيّ خانة فيصير لهذا الأسبوع جدوله الخاص</span>`}
-          ${wk !== thisWk ? '<button id="w-today">هذا الأسبوع</button>' : ''}</div>`}
-    ${ready ? '<button class="voicebtn" id="v-appt">🎙️ موعد بصوتك <span>يضعه في وقته</span></button>' : ''}
-    ${nxt ? `<div class="nextappt" id="nextappt"><span class="e">${esc(nxt.icon)}</span><div><small>موعدك القادم</small><b>${esc(nxt.title)}</b><small>${relDay(nxt.date)} · ${DAYS[parse(nxt.date).getDay()]} ${fmtT(nxt.start)}</small></div></div>` : ''}`;
-  $$('[data-dm]').forEach((b) => (b.onclick = () => { UI.dayMode = b.dataset.dm; renderDay(); }));
-  if (!base) {
+  $('#hero-body').innerHTML = base
+    ? `<div class="dh"><div class="dh-t">⭐ الجدول الأساسي</div><button class="dh-back" id="b-back">→ الأسابيع</button></div>
+       <div class="dh-sub">يُنسخ في كل أسبوع لم تعدّله وحده</div>`
+    : `<div class="dh"><div class="dh-t">يومي</div>${mat ? '<span class="dh-tag" title="هذا الأسبوع معدَّل وحده">✏️ معدَّل</span>' : ''}</div>
+       <div class="pnav"><button class="round" id="w-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
+         <div class="lab" id="w-lab" style="cursor:${wk !== thisWk ? 'pointer' : 'default'}">${fmtShort(wkD)} — ${fmtShort(addDays(wkD, 6))}<small>${wkRel}${wk !== thisWk ? ' · اضغط للعودة إلى هذا الأسبوع' : ''}</small></div>
+         <button class="round" id="w-next" aria-label="الأسبوع الموالي">${icon('next')}</button></div>`;
+  if (base) $('#b-back').onclick = () => { UI.dayMode = 'week'; renderDay(); };
+  else {
     $('#w-prev').onclick = () => { UI.dayWeek = addDays(wkD, -7); renderDay(); };
     $('#w-next').onclick = () => { UI.dayWeek = addDays(wkD, 7); renderDay(); };
-    $('#w-today') && ($('#w-today').onclick = () => { UI.dayWeek = startOfWeek(t); renderDay(); });
-    $('#w-reset') && ($('#w-reset').onclick = weekReset);
-    $('#w-tobase') && ($('#w-tobase').onclick = weekToBase);
+    if (wk !== thisWk) $('#w-lab').onclick = () => { UI.dayWeek = startOfWeek(t); renderDay(); };
   }
-  $('#nextappt') && ($('#nextappt').onclick = () => openPlan({ appt: nxt }));
-  $('#v-appt') && ($('#v-appt').onclick = () => openVoice('appt'));
   if (!ready) return ($('#main').innerHTML = lifeMissing());
 
   const minStart = Math.min(...slots.map((s) => s.start), ...appts.map((a) => a.start), 360);
@@ -1453,10 +1450,12 @@ function renderDay() {
       ${g}
       ${UI.editGrid ? '' : '<div class="grid-hint"><span>🔒 الجدول مقفل: يمكنك التمرير بحرية. للتعديل اضغط «✏️ تعديل الجدول».</span></div>'}
     </section>
-    <section class="card span"><div class="card-h"><h2>مواعيدي القادمة</h2><button class="btn sm" id="add-appt">+ موعد</button></div>
+    <section class="card span"><div class="card-h"><h2>📌 مواعيدي القادمة</h2>
+      <span style="display:flex;gap:6px"><button class="ibtn mic-sm" id="v-appt" aria-label="موعد بصوتك" title="موعد بصوتك">🎙️</button><button class="btn sm" id="add-appt">+ موعد</button></span></div>
       ${up.length ? `<div class="appts">${up.map(apptRow).join('')}</div>` : '<div class="empty"><span class="big">📌</span>لا مواعيد قادمة. أضف موعدك حتى لا تنساه.</div>'}
     </section></div>`;
   $('#add-appt').onclick = () => openPlan({ kind: 'appt' });
+  $('#v-appt').onclick = () => openVoice('appt');
   $$('.ap').forEach((el) => (el.onclick = (e) => { if (!e.target.closest('.gcal')) openPlan({ appt: S.appts.find((a) => a.id === Number(el.dataset.id)) }); }));
   $('#g-edit').onclick = () => { UI.editGrid = !UI.editGrid; const sx = $('#gwrap')?.scrollLeft; renderDay(); if ($('#gwrap') && sx != null) $('#gwrap').scrollLeft = sx; };
   bindGrid();
@@ -1817,6 +1816,16 @@ function lastQuran(h, beforeOrAt) {
   }
   return best;
 }
+// بدايات الأحزاب الستين (سورة، آية) — المصحف برواية حفص
+const HIZB = [[1, 1], [2, 75], [2, 142], [2, 203], [2, 253], [3, 15], [3, 93], [3, 171], [4, 24], [4, 88], [4, 148], [5, 27], [5, 82], [6, 36], [6, 111],
+  [7, 1], [7, 88], [7, 171], [8, 41], [9, 34], [9, 93], [10, 26], [11, 6], [11, 84], [12, 53], [13, 19], [15, 1], [16, 51], [17, 1], [17, 99],
+  [18, 75], [20, 1], [21, 1], [22, 1], [23, 1], [24, 21], [25, 21], [26, 111], [27, 56], [28, 51], [29, 46], [31, 22], [33, 31], [34, 24], [36, 28],
+  [37, 145], [39, 32], [40, 41], [41, 47], [43, 24], [46, 1], [48, 18], [51, 31], [55, 1], [58, 1], [62, 1], [67, 1], [72, 1], [78, 1], [87, 1]];
+const HIDX = [...HIZB.map(([s, a]) => gidx(s, a)), 6237];
+function hizbPos(g) { let k = 0; while (k < 59 && g >= HIDX[k + 1]) k++; return k + (g - HIDX[k]) / (HIDX[k + 1] - HIDX[k]); }
+const ahzab = (d) => (d && d.ts ? Math.max(0, hizbPos(gidx(d.ts, d.ta) + 1) - hizbPos(gidx(d.fs, d.fa))) : 0);
+const fmtH = (x) => String(Math.round(x * 10) / 10);
+const hizbOf = (s, a) => Math.floor(hizbPos(gidx(s, a))) + 1;
 const nextAyah = (s, a) => (a < AYAT[s - 1] ? [s, a + 1] : s < 114 ? [s + 1, 1] : [1, 1]);
 const plural = (n, one, two, few, many) => (n === 1 ? one : n === 2 ? two : n >= 3 && n <= 10 ? `${n} ${few}` : `${n} ${many}`);
 
@@ -1856,7 +1865,11 @@ function habitRow(h, end) {
   else if (h.kind === 'less') {
     const wk = startOfWeek(t), a = sumRange(h, wk, t), b = sumRange(h, addDays(wk, -7), addDays(t, -7));
     info = `${a} هذا الأسبوع ${a < b ? '<span style="color:var(--in)">▼</span>' : a > b ? '<span style="color:#e11d48">▲</span>' : ''}`;
-  } else if (h.kind === 'quran') { const q = lastQuran(h); info = q ? `📍 ${qPos(q.ts, q.ta)}` : ''; }
+  } else if (h.kind === 'quran') {
+    const q = lastQuran(h), wk = startOfWeek(t);
+    let wh = 0; for (let d = wk; d <= t; d = addDays(d, 1)) wh += ahzab(logOf(h, d)?.data);
+    info = `${wh ? `${fmtH(wh)} حزب هذا الأسبوع` : ''}${q ? `${wh ? ' · ' : ''}📍 الحزب ${hizbOf(q.ts, q.ta)} (${qPos(q.ts, q.ta)})` : ''}`;
+  }
   const days = [6, 5, 4, 3, 2, 1, 0].map((k) => addDays(end, -k)).map((d) => {
     const ds = ymd(d), v = valOf(h, d), on = ds >= h.created && d <= t, ex = expected(h, d), isT = ds === ymd(t);
     let cls = '', inner = DAYS_SHORT[d.getDay()], style = '', badge = '';
@@ -1868,7 +1881,7 @@ function habitRow(h, end) {
       } else if (h.kind === 'less') {
         if (ex && v <= (h.target || 0)) cls = 'full soft';
         if (v) badge = `<i class="${v > (h.target || 0) ? 'red' : ''}">${v}</i>`;
-      } else if (v > 0) { cls = 'full'; if (h.kind === 'quran') badge = `<i>${v}</i>`; }
+      } else if (v > 0) { cls = 'full'; if (h.kind === 'quran') { const hz = ahzab(logOf(h, d)?.data); inner = hz ? fmtH(hz) : '✓'; } }
     }
     return `<button class="dc ${cls} ${ex ? '' : 'na'} ${isT ? 'today' : ''}" data-h="${h.id}" data-d="${ds}" ${on ? '' : 'disabled'} aria-label="${fmtDay(d)}">
       <span class="c" style="${style}"><span>${inner}</span>${badge}</span><small>${d.getDate()}</small></button>`;
@@ -1939,7 +1952,10 @@ function openQuran(h, date) {
   if (!d) {
     const last = lastQuran(h, ymd(addDays(parse(date), -1)));
     const [fs, fa] = last ? nextAyah(last.ts, last.ta) : [1, 1];
-    d = { fs, fa, ts: fs, ta: AYAT[fs - 1] };
+    // الاقتراح: حتى نهاية الحزب الحالي (حزب واحد)
+    const g = gidx(fs, fa), k = Math.floor(hizbPos(g)), endG = Math.min(6236, HIDX[k + 1] - 1);
+    let ts = PRE.findIndex((x) => x >= endG); const ta = endG - PRE[ts - 1];
+    d = { fs, fa, ts, ta };
   }
   QE = { h, date, ...d, existing: !!L };
   $('#q-title').textContent = `${h.icon} ${h.name} · ${fmtDay(parse(date))}`;
@@ -1952,7 +1968,7 @@ function paintQuran() {
   $('#q-fs').value = QE.fs; $('#q-fa').value = QE.fa; $('#q-fa').max = AYAT[QE.fs - 1];
   $('#q-ts').value = QE.ts; $('#q-ta').value = QE.ta; $('#q-ta').max = AYAT[QE.ts - 1];
   const n = gidx(QE.ts, QE.ta) - gidx(QE.fs, QE.fa) + 1;
-  $('#q-count').textContent = n > 0 ? `${n} آية · ${QE.fs === QE.ts ? `سورة ${SURAS[QE.fs - 1]}` : `${QE.ts - QE.fs + 1} سور`}` : 'نقطة النهاية قبل البداية';
+  $('#q-count').textContent = n > 0 ? `${fmtH(ahzab(QE))} حزب · ${n} آية` : 'نقطة النهاية قبل البداية';
 }
 $('#q-fs').onchange = (e) => { QE.fs = Number(e.target.value); QE.fa = 1; if (gidx(QE.ts, QE.ta) < gidx(QE.fs, 1)) { QE.ts = QE.fs; QE.ta = AYAT[QE.fs - 1]; } paintQuran(); };
 $('#q-ts').onchange = (e) => { QE.ts = Number(e.target.value); QE.ta = AYAT[QE.ts - 1]; paintQuran(); };
@@ -1966,7 +1982,7 @@ $('#form-quran').onsubmit = (e) => {
   if (n < 1) { $('#q-err').textContent = 'نقطة النهاية يجب أن تكون بعد البداية'; $('#q-err').hidden = false; return; }
   $('#sheet-quran').close();
   setLog(QE.h, QE.date, n, { fs: QE.fs, fa: QE.fa, ts: QE.ts, ta: QE.ta });
-  toast(`تمّ ✓ ${n} آية`);
+  toast(`تمّ ✓ ${fmtH(ahzab(QE))} حزب`);
 };
 $('#q-del').onclick = () => { $('#sheet-quran').close(); setLog(QE.h, QE.date, null, null); };
 
@@ -2197,7 +2213,7 @@ function adminDay() {
     </section>
     <section class="card span"><div class="card-h"><h2>✏️ الأسابيع المعدَّلة وحدها</h2></div>
       ${weeks.length ? weeks.map((w) => { const d = parse(w); return `<div class="set" style="margin-bottom:8px"><span class="t">${fmtShort(d)} — ${fmtShort(addDays(d, 6))}<small>${S.slots.filter((s) => s.week === w).length} نشاط</small></span>
-        <button class="btn sm light" data-wview="${w}">عرض</button><button class="btn sm danger" data-wreset="${w}">إرجاعه إلى الأساسي</button></div>`; }).join('')
+        <button class="btn sm light" data-wview="${w}">عرض</button><button class="btn sm light" data-wbase="${w}">اجعله الأساسي</button><button class="btn sm danger" data-wreset="${w}">إرجاع</button></div>`; }).join('')
         : '<div class="empty" style="padding:14px">كل الأسابيع نسخة من الجدول الأساسي</div>'}
     </section>
     <section class="card span"><div class="card-h"><h2>📌 المواعيد</h2><button class="btn sm" id="ad-appt">+ موعد</button></div>
@@ -2210,6 +2226,12 @@ function adminDay() {
   $('#ad-appt').onclick = () => openPlan({ kind: 'appt' });
   $$('[data-bslot]').forEach((r) => (r.onclick = () => asBase(() => { const s = S.slots.find((x) => x.id === Number(r.dataset.bslot)); openPlan({ slot: s, key: String(s.id) }); })));
   $$('[data-wview]').forEach((b) => (b.onclick = () => { UI.dayMode = 'week'; UI.dayWeek = parse(b.dataset.wview); go('day'); }));
+  $$('[data-wbase]').forEach((b) => (b.onclick = async () => {
+    if (!confirm('جعل جدول هذا الأسبوع هو الجدول الأساسي؟ سيُنسخ في كل الأسابيع التي لم تعدّلها.')) return;
+    try { await rpc('week_to_base', { p_week: b.dataset.wbase }); await loadLife(); toast('صار هذا الجدول هو الأساسي ✓'); }
+    catch (err) { onAuthError(err) || toast(err.message, true); }
+    adminDay();
+  }));
   $$('[data-wreset]').forEach((b) => (b.onclick = async () => {
     if (!confirm('إرجاع هذا الأسبوع إلى الجدول الأساسي؟')) return;
     const w = b.dataset.wreset;
