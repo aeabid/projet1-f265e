@@ -292,14 +292,25 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .dcol.drop{background-color:color-mix(in srgb,var(--purple) 8%,transparent)}
 .nowline{position:absolute;inset-inline:0;height:2px;background:var(--pink);z-index:3;pointer-events:none}
 .nowline::before{content:"";position:absolute;inset-inline-start:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--pink)}
-.blk{position:absolute;border-radius:10px;padding:4px 6px 8px;overflow:hidden;cursor:grab;z-index:2;background:color-mix(in srgb,var(--c) 16%,var(--card));border-inline-start:3px solid var(--c);color:var(--ink);font-size:11.5px;line-height:1.25;touch-action:pan-x pan-y;transition:box-shadow .15s}
+.blk{position:absolute;border-radius:10px;padding:4px 6px 8px;overflow:hidden;cursor:grab;z-index:2;background:color-mix(in srgb,var(--c) 16%,var(--card));border-inline-start:3px solid var(--c);color:var(--ink);font-size:11.5px;line-height:1.25;transition:box-shadow .15s}
+.wgrid.locked .blk,.wgrid.locked .dcol{cursor:default}
+.wgrid.locked .blk .grip{display:none}
+.wgrid.editing{outline:2px dashed color-mix(in srgb,var(--purple) 45%,transparent);outline-offset:4px;border-radius:12px}
+.wgrid.editing .blk{touch-action:none;cursor:grab;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--c) 60%,transparent)}
+.edit-toggle{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;white-space:nowrap}
+.edit-toggle.on{background:var(--purple);border-color:var(--purple);color:#fff}
+.edit-bar{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:12px;padding:8px 12px;font-size:12.5px;margin-bottom:10px;line-height:1.5}
 .blk:hover{box-shadow:0 4px 14px -6px rgba(40,10,80,.35)}
 .blk b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .blk small{color:var(--muted);font-family:Tajawal;font-weight:700;font-size:10.5px;direction:ltr;display:block;text-align:right}
 .blk.appt{background:color-mix(in srgb,var(--c) 22%,var(--card));border:1.5px dashed var(--c);border-inline-start-width:3px;border-inline-start-style:solid}
 .blk.short{padding-top:1px;padding-bottom:1px}.blk.short small{display:none}
-.blk .grip{position:absolute;inset-inline:0;bottom:0;height:9px;cursor:ns-resize;touch-action:none}
-.blk .grip::after{content:"";position:absolute;left:50%;bottom:3px;width:18px;height:3px;margin-left:-9px;border-radius:3px;background:var(--c);opacity:.5}
+.blk .grip{position:absolute;inset-inline:0;height:14px;cursor:ns-resize;touch-action:none;z-index:3}
+.blk .grip.bot{bottom:0}.blk .grip.top{top:0}
+.blk .grip::after{content:"";position:absolute;left:50%;width:26px;height:4px;margin-left:-13px;border-radius:3px;background:var(--c);opacity:.8}
+.blk .grip.bot::after{bottom:3px}.blk .grip.top::after{top:3px}
+.wgrid.editing .blk{padding-top:12px;padding-bottom:12px}
+.wgrid.editing .blk.short{padding-top:3px;padding-bottom:3px}
 .blk.dragging{z-index:10;box-shadow:0 14px 30px -8px rgba(40,10,80,.45);cursor:grabbing;opacity:.95}
 .blk.virtual{opacity:.92}
 .grid-hint{font-size:12px;color:var(--muted);margin:8px 2px 0;display:flex;gap:14px;flex-wrap:wrap}
@@ -419,6 +430,41 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .daylist .r{display:grid;grid-template-columns:86px 1fr;gap:8px;align-items:center;padding:7px 8px;border-radius:12px;cursor:pointer;font-size:13.5px}
 .daylist .r:hover{background:var(--soft)}
 .daylist .r .t{font-family:Tajawal;font-weight:700;color:var(--muted);direction:ltr;text-align:right}
+/* عاداتي: بطاقات خفيفة */
+.hh{display:flex;justify-content:space-between;align-items:flex-end;padding-top:6px}
+.hh-pct{font-family:Tajawal;font-weight:800;font-size:34px;line-height:1}
+.hh-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:13px;opacity:.95}
+.hh-nav .round{width:34px;height:34px}
+.hlist{display:flex;flex-direction:column;gap:10px}
+.hc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 12px 10px;box-shadow:var(--shadow)}
+.hc-top{display:flex;align-items:center;gap:8px}
+.hc-top .ic{font-size:18px;line-height:1}
+.hc-top b{flex:1;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc-top .pct{font-family:Tajawal;font-weight:700;color:var(--muted);font-size:14px}
+.hc-top .ib{border:0;background:none;color:var(--muted);width:30px;height:30px;border-radius:10px;display:grid;place-items:center;margin-inline-start:-4px}
+.hc-top .ib:hover{background:var(--soft);color:var(--ink)}
+.hc-top .ib svg{width:16px;height:16px}
+.hc-sub{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--muted);margin:2px 0 8px;min-height:24px}
+.hc-sub .fire{font-weight:700;color:#f59e0b}.hc-sub .fire.off{color:var(--muted);filter:grayscale(1);opacity:.7}
+.hc-sub .qb{margin-inline-start:auto;border:0;background:var(--c);color:#fff;border-radius:999px;padding:3px 12px;font-weight:800;font-size:13px}
+.hc-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dc{border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted)}
+.dc .c{position:relative;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);font-size:11px;font-weight:600;transition:all .15s}
+.dc .c>span{position:relative;z-index:1;background:var(--card);border-radius:50%;width:28px;height:28px;display:grid;place-items:center}
+.dc.full .c{background:var(--c);border-color:var(--c);color:#fff}
+.dc.full .c>span{background:transparent}
+.dc.full.soft .c{background:color-mix(in srgb,var(--c) 22%,var(--card));border-color:color-mix(in srgb,var(--c) 40%,transparent);color:var(--ink)}
+.dc .c i{position:absolute;top:-5px;left:-5px;z-index:2;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--ink);color:var(--card);font-style:normal;font-size:10px;font-weight:800;display:grid;place-items:center}
+.dc .c i.red{background:#e11d48;color:#fff}
+.dc small{font-size:10px;font-family:Tajawal;font-weight:700}
+.dc.today small{color:var(--c);border-bottom:2.5px solid var(--c);padding:0 4px}
+.dc.today .c{font-weight:800;color:var(--ink)}
+.dc.full.today .c{color:#fff}
+.dc.na .c{border-style:dashed;opacity:.55}
+.dc:disabled{opacity:.3}
+.dc:active .c{transform:scale(.92)}
+@media (max-width:360px){.dc .c{width:34px;height:34px}.dc .c>span{width:25px;height:25px}}
+.hd-val{text-align:center;margin-top:10px;font-family:Tajawal;font-weight:800;font-size:16px}
 .update-card{text-align:center;padding:28px 16px}
 .update-card .big{font-size:36px;display:block;margin-bottom:6px}
 
@@ -519,6 +565,15 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
       <button type="submit" class="btn">حفظ</button>
     </div>
   </form>
+</dialog>
+
+<!-- تسجيل يوم لعادة (الصلوات / العدّاد) -->
+<dialog class="sheet" id="sheet-hday">
+  <div class="grab"></div>
+  <div class="in">
+    <h3><span><span id="hd-title"></span><small id="hd-date" style="display:block;font-family:'IBM Plex Sans Arabic';font-weight:500;font-size:12.5px;color:var(--muted)"></small></span><button type="button" class="x" data-close aria-label="إغلاق">✕</button></h3>
+    <div id="hd-body"></div>
+  </div>
 </dialog>
 
 <!-- القرآن: من أين إلى أين -->
@@ -798,6 +853,7 @@ function shell() {
 document.addEventListener('click', (e) => { if (!e.target.closest('.me')) $('.menu')?.remove(); });
 
 function go(view) {
+  if (view === 'day') UI.editGrid = false;
   UI.view = view;
   try { history.replaceState(null, '', view === 'home' ? '#' : '#' + view); } catch (e) {}
   render();
@@ -1365,7 +1421,7 @@ function renderDay() {
   const hStart = Math.floor(minStart / 60), H = (24 - hStart) * HP;
   UI.gridH = hStart;
   const top = (m) => ((m - hStart * 60) / 60) * HP;
-  let g = `<div class="gwrap" id="gwrap"><div class="wgrid" id="wgrid" style="--hp:${HP}px"><div class="hd"></div>`;
+  let g = `<div class="gwrap" id="gwrap"><div class="wgrid ${UI.editGrid ? 'editing' : 'locked'}" id="wgrid" style="--hp:${HP}px"><div class="hd"></div>`;
   g += WEEK_ORDER.map((d) => {
     const dt = weekDate(wkD, d), td = !base && ymd(dt) === ymd(t);
     return `<div class="hd ${td ? 'today' : ''}">${base ? `<b style="font-size:14px">${DAYS[d].replace(/^ال/, '')}</b>` : `${DAYS_SHORT[d]}<b>${dt.getDate()}</b>`}</div>`;
@@ -1383,7 +1439,7 @@ function renderDay() {
       g += `<div class="blk ${it.kind === 'appt' ? 'appt' : ''} ${o.virtual ? 'virtual' : ''} ${h < 34 ? 'short' : ''}" data-kind="${it.kind}" data-key="${it.key}"
         data-s="${it.s}" data-e="${o.end ?? ''}" data-day="${d}" title="${esc(o.title)}"
         style="--c:${o.color};top:${top(it.s) + 1}px;height:${h}px;inset-inline-start:calc(${(it.lane * 100) / it.n}% + 2px);width:calc(${100 / it.n}% - 4px)">
-        <b>${esc(o.icon)} ${esc(o.title)}</b><small>${fmtT(it.s)}${o.end != null ? '–' + fmtT(o.end) : ''}</small><span class="grip"></span></div>`;
+        <b>${esc(o.icon)} ${esc(o.title)}</b><small>${fmtT(it.s)}${o.end != null ? '–' + fmtT(o.end) : ''}</small><span class="grip top" data-g="top"></span><span class="grip bot" data-g="bot"></span></div>`;
     }
     if (td) g += `<div class="nowline" style="top:${top(nowMin())}px"></div>`;
     g += '</div>';
@@ -1391,15 +1447,18 @@ function renderDay() {
   g += '</div></div>';
   const up = upcomingAppts().slice(0, 12);
   $('#main').innerHTML = `<div class="grid">
-    <section class="card span"><div class="card-h"><h2>${base ? 'الجدول الأساسي' : 'جدول الأسبوع'}</h2><span class="sub">${slots.length + appts.length ? '' : 'اضغط على أيّ مكان فارغ لإضافة نشاط'}</span></div>
+    <section class="card span"><div class="card-h"><h2>${base ? 'الجدول الأساسي' : 'جدول الأسبوع'}</h2>
+        <button class="edit-toggle ${UI.editGrid ? 'on' : ''}" id="g-edit" aria-pressed="${UI.editGrid}">${UI.editGrid ? '✓ إنهاء التعديل' : '✏️ تعديل الجدول'}</button></div>
+      ${UI.editGrid ? '<div class="edit-bar">✋ اسحب الخانة لتغيير وقتها أو يومها · ↕️ اسحب الحافّة العليا أو السفلى للتكبير والتصغير · ➕ اضغط مكانًا فارغًا للإضافة · اضغط الخانة لتعديل تفاصيلها</div>' : ''}
       ${g}
-      <div class="grid-hint"><span>✋ اسحب الخانة لتغيير وقتها أو يومها</span><span>↕️ اسحب حافّتها السفلى لتغيير المدّة</span><span>➕ اضغط مكانًا فارغًا للإضافة</span></div>
+      ${UI.editGrid ? '' : '<div class="grid-hint"><span>🔒 الجدول مقفل: يمكنك التمرير بحرية. للتعديل اضغط «✏️ تعديل الجدول».</span></div>'}
     </section>
     <section class="card span"><div class="card-h"><h2>مواعيدي القادمة</h2><button class="btn sm" id="add-appt">+ موعد</button></div>
       ${up.length ? `<div class="appts">${up.map(apptRow).join('')}</div>` : '<div class="empty"><span class="big">📌</span>لا مواعيد قادمة. أضف موعدك حتى لا تنساه.</div>'}
     </section></div>`;
   $('#add-appt').onclick = () => openPlan({ kind: 'appt' });
   $$('.ap').forEach((el) => (el.onclick = (e) => { if (!e.target.closest('.gcal')) openPlan({ appt: S.appts.find((a) => a.id === Number(el.dataset.id)) }); }));
+  $('#g-edit').onclick = () => { UI.editGrid = !UI.editGrid; const sx = $('#gwrap')?.scrollLeft; renderDay(); if ($('#gwrap') && sx != null) $('#gwrap').scrollLeft = sx; };
   bindGrid();
   // أوّل مرة: الجدول يبدأ قرب الساعة الحالية في الهاتف
   const wrap = $('#gwrap');
@@ -1421,13 +1480,14 @@ let DRAG = null;
 function bindGrid() {
   const grid = $('#wgrid'); if (!grid) return;
   grid.onpointerdown = (e) => {
+    if (!UI.editGrid) return; // الجدول مقفل: لا شيء يتغيّر بالضغط
     const blk = e.target.closest('.blk'); if (!blk || e.button > 0) return;
-    const resize = !!e.target.closest('.grip');
-    DRAG = { blk, resize, x0: e.clientX, y0: e.clientY, pid: e.pointerId, touch: e.pointerType !== 'mouse', started: false };
-    if (resize) startDrag(); else if (DRAG.touch) DRAG.timer = setTimeout(() => DRAG && startDrag(), 260);
+    const g = e.target.closest('.grip');
+    DRAG = { blk, resize: g ? g.dataset.g : null, x0: e.clientX, y0: e.clientY, pid: e.pointerId, started: false };
+    if (DRAG.resize) startDrag();
   };
   $$('.dcol', grid).forEach((col) => (col.onclick = (e) => {
-    if (e.target !== col) return;
+    if (!UI.editGrid || e.target !== col) return;
     const r = col.getBoundingClientRect();
     const m = Math.min(1410, UI.gridH * 60 + Math.floor(((e.clientY - r.top) / HP) * 2) * 30);
     openPlan({ kind: 'slot', day: Number(col.dataset.day), start: m });
@@ -1447,10 +1507,16 @@ function startDrag() {
 }
 function moveDrag(e) {
   const d = DRAG, b = d.blk, dm = Math.round(((e.clientY - d.y0) / HP) * 4) * 15;
-  if (d.resize) {
+  if (d.resize === 'bot') {
     const base = d.e ?? d.s + 30;
     d.res.e = Math.max(d.s + 15, Math.min(1440, base + dm));
     b.style.height = `${Math.max(18, ((d.res.e - d.s) / 60) * HP - 2)}px`;
+  } else if (d.resize === 'top') {
+    const end = d.e ?? d.s + 30;
+    d.res.s = Math.max(0, Math.min(end - 15, d.s + dm));
+    if (d.e == null) d.res.e = end; // خانة دون نهاية: تصير لها نهاية عند التكبير من الأعلى
+    b.style.top = `${((d.res.s - UI.gridH * 60) / 60) * HP + 1}px`;
+    b.style.height = `${Math.max(18, ((end - d.res.s) / 60) * HP - 2)}px`;
   } else {
     d.res.s = Math.max(0, Math.min(1440 - Math.min(d.len, 1440), d.s + dm));
     d.res.e = d.e == null ? null : d.res.s + d.len;
@@ -1465,7 +1531,6 @@ document.addEventListener('pointermove', (e) => {
   const d = DRAG; if (!d || e.pointerId !== d.pid) return;
   if (!d.started) {
     if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 6) return;
-    if (d.touch) { clearTimeout(d.timer); DRAG = null; return; } // تمرير عادي
     startDrag();
   }
   e.preventDefault();
@@ -1756,133 +1821,110 @@ const nextAyah = (s, a) => (a < AYAT[s - 1] ? [s, a + 1] : s < 114 ? [s + 1, 1] 
 const plural = (n, one, two, few, many) => (n === 1 ? one : n === 2 ? two : n >= 3 && n <= 10 ? `${n} ${few}` : `${n} ${many}`);
 
 function renderHabits() {
-  const sel = UI.habitDate, t = today(), isToday = ymd(sel) === ymd(t), wkD = startOfWeek(sel);
+  const t = today(), end = UI.habitDate > t ? t : UI.habitDate, isNow = ymd(end) === ymd(t);
   const hs = S.lifeReady ? S.habits : [];
-  const due = hs.filter((h) => expected(h, sel)), ok = due.filter((h) => okDay(h, sel)).length;
-  const pct = due.length ? ok / due.length : 0, R = 40, C = 2 * Math.PI * R;
-  const msg = !due.length ? (hs.length ? 'لا عادات مبرمجة في هذا اليوم' : 'أضف عادتك الأولى بزرّ +')
-    : ok === due.length ? 'أحسنت! أتممت كل عاداتك 🎉' : ok ? 'واصل، أنت في الطريق الصحيح' : isToday ? 'يوم جديد، بداية جديدة' : 'لم يُسجَّل شيء في هذا اليوم';
-  const dayDone = (d) => { const du = hs.filter((h) => expected(h, d)); return du.length && du.every((h) => okDay(h, d)); };
+  const due = hs.filter((h) => expected(h, t)), ok = due.filter((h) => okDay(h, t)).length;
+  const pct = due.length ? Math.round((ok / due.length) * 100) : 0;
   $('#hero-body').innerHTML = `
-    <div style="padding:6px 0 0;display:flex;justify-content:space-between;align-items:flex-end">
+    <div class="hh">
       <div><div style="font-family:Tajawal;font-weight:800;font-size:26px">عاداتي</div>
-      <div style="opacity:.85;font-size:13.5px">${isToday ? 'اليوم · ' : ''}${fmtDay(sel)}</div></div>
-      ${isToday ? '' : '<button class="btn sm" id="h-today" style="background:rgba(255,255,255,.15)">اليوم</button>'}</div>
-    <div class="week"><button class="round" id="hw-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
-      <div class="days">${[0, 1, 2, 3, 4, 5, 6].map((i) => { const d = addDays(wkD, i);
-        return `<button class="d ${ymd(d) === ymd(sel) ? 'on' : ''} ${ymd(d) === ymd(t) ? 'today' : ''}" data-d="${ymd(d)}" ${d > t ? 'disabled' : ''}>${DAYS_SHORT[d.getDay()]}<b>${d.getDate()}</b>${d <= t && dayDone(d) ? '<i>✓</i>' : ''}</button>`; }).join('')}</div>
-      <button class="round" id="hw-next" aria-label="الأسبوع الموالي" ${addDays(wkD, 7) > t ? 'disabled' : ''}>${icon('next')}</button></div>
-    <div class="ring-wrap">
-      <div class="ring"><svg viewBox="0 0 100 100"><circle r="${R}" cx="50" cy="50" stroke="rgba(255,255,255,.18)"></circle>
-        <circle r="${R}" cx="50" cy="50" stroke="#fff" stroke-dasharray="${pct * C} ${C}" style="transition:stroke-dasharray .5s ease"></circle></svg>
-        <div class="c">${ok}/${due.length}<small>${Math.round(pct * 100)}%</small></div></div>
-      <div class="msg"><b>${msg}</b><span>${due.length && due.length - ok ? `بقي ${due.length - ok}` : ''}</span></div>
-    </div>`;
-  $$('.week .d').forEach((b) => (b.onclick = () => { UI.habitDate = parse(b.dataset.d); renderHabits(); }));
-  $('#hw-prev').onclick = () => { UI.habitDate = addDays(sel, -7); renderHabits(); };
-  $('#hw-next').onclick = () => { const n = addDays(sel, 7); UI.habitDate = n > t ? t : n; renderHabits(); };
-  $('#h-today') && ($('#h-today').onclick = () => { UI.habitDate = today(); renderHabits(); });
+        <div style="opacity:.85;font-size:13px">اليوم ${ok}/${due.length}${due.length && ok === due.length ? ' · أحسنت 🎉' : ''}</div></div>
+      <div class="hh-pct">${pct}%</div>
+    </div>
+    <div class="hh-nav"><button class="round" id="hw-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
+      <span>${fmtShort(addDays(end, -6))} — ${fmtShort(end)}</span>
+      <button class="round" id="hw-next" aria-label="الأسبوع الموالي" ${isNow ? 'disabled' : ''}>${icon('next')}</button></div>`;
+  $('#hw-prev').onclick = () => { UI.habitDate = addDays(end, -7); renderHabits(); };
+  $('#hw-next').onclick = () => { const n = addDays(end, 7); UI.habitDate = n > t ? t : n; renderHabits(); };
   if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
-
-  const m0 = new Date(t.getFullYear(), t.getMonth(), 1);
-  $('#main').innerHTML = `<div class="grid">
-    <section class="card span"><div class="card-h"><h2>${isToday ? 'عادات اليوم' : `عادات ${DAYS[sel.getDay()]} ${sel.getDate()} ${MONTHS[sel.getMonth()]}`}</h2></div>
-      ${hs.length ? hs.map((h) => habitCard(h, sel)).join('') : '<div class="empty"><span class="big">🌱</span>لا عادات بعد. أضف عادتك الأولى بزرّ <b>+</b> في الأسفل</div>'}
-    </section>
-    ${hs.length ? `<section class="card span"><div class="card-h"><h2>${MONTHS[t.getMonth()]}</h2><span class="sub">حصيلة الشهر</span></div>
-      ${hs.map((h) => monthRow(h, m0, t)).join('')}</section>` : ''}
-  </div>`;
-  bindHabits(sel);
+  $('#main').innerHTML = hs.length
+    ? `<div class="hlist">${hs.map((h) => habitRow(h, end)).join('')}</div>`
+    : '<section class="card"><div class="empty"><span class="big">🌱</span>لا عادات بعد. أضف عادتك الأولى بزرّ <b>+</b> في الأسفل</div></section>';
+  bindHabits();
 }
-function habitCard(h, sel) {
-  const on = expected(h, sel) || ymd(sel) === ymd(today()), st = streak(h), v = valOf(h, sel), L = logOf(h, sel);
-  const unit = h.unit || (h.kind === 'quran' ? 'آية' : 'مرّة');
-  let sub = '';
-  if (h.kind === 'more') sub = `الهدف: ${h.target} ${unit} في اليوم`;
-  else if (h.kind === 'less') sub = h.target ? `الهدف: لا يتجاوز ${h.target} ${unit} في اليوم` : 'الهدف: ولا مرّة · كل يوم أقل من الذي قبله';
-  else if (h.kind === 'quran') { const q = lastQuran(h); sub = q ? `وصلت إلى: ${qPos(q.ts, q.ta)}` : 'سجّل من أين بدأت'; }
-  else sub = 'نعم / لا';
-  if (h.days !== 127) sub += ` · ${daysLabel(h.days)}`;
-  let ctl = '';
-  if (!(h.days & bit(sel))) ctl += '<div class="note" style="margin-bottom:6px">ليست مبرمجة في هذا اليوم، ويمكنك التسجيل رغم ذلك.</div>';
-  if (h.kind === 'check') {
-    ctl += `<button class="bigcheck ${v ? 'done' : ''}" data-act="check" data-h="${h.id}">${v ? '✓ تمّت' : 'اضغط عند الإنجاز'}</button>`;
-  } else if (h.kind === 'more' && h.target <= 10) {
+// نسبة الشهر الحالي (أيام ناجحة / أيام مبرمجة)
+function monthPct(h) {
+  const t = today();
+  let exp = 0, ok = 0;
+  for (let d = new Date(t.getFullYear(), t.getMonth(), 1); d <= t; d = addDays(d, 1)) if (expected(h, d)) { exp++; if (okDay(h, d)) ok++; }
+  return exp ? Math.round((ok / exp) * 100) : 0;
+}
+function habitRow(h, end) {
+  const st = streak(h), t = today();
+  let info = '';
+  if (h.kind === 'more') info = `🎯 ${h.target} ${esc(h.unit || '')}`;
+  else if (h.kind === 'less') {
+    const wk = startOfWeek(t), a = sumRange(h, wk, t), b = sumRange(h, addDays(wk, -7), addDays(t, -7));
+    info = `${a} هذا الأسبوع ${a < b ? '<span style="color:var(--in)">▼</span>' : a > b ? '<span style="color:#e11d48">▲</span>' : ''}`;
+  } else if (h.kind === 'quran') { const q = lastQuran(h); info = q ? `📍 ${qPos(q.ts, q.ta)}` : ''; }
+  const days = [6, 5, 4, 3, 2, 1, 0].map((k) => addDays(end, -k)).map((d) => {
+    const ds = ymd(d), v = valOf(h, d), on = ds >= h.created && d <= t, ex = expected(h, d), isT = ds === ymd(t);
+    let cls = '', inner = DAYS_SHORT[d.getDay()], style = '', badge = '';
+    if (on) {
+      if (h.kind === 'more') {
+        const p = Math.min(1, v / (h.target || 1));
+        if (p >= 1) cls = 'full'; else if (p > 0) style = `background:conic-gradient(var(--c) ${p * 360}deg, transparent 0)`;
+        if (v) badge = `<i>${v}</i>`;
+      } else if (h.kind === 'less') {
+        if (ex && v <= (h.target || 0)) cls = 'full soft';
+        if (v) badge = `<i class="${v > (h.target || 0) ? 'red' : ''}">${v}</i>`;
+      } else if (v > 0) { cls = 'full'; if (h.kind === 'quran') badge = `<i>${v}</i>`; }
+    }
+    return `<button class="dc ${cls} ${ex ? '' : 'na'} ${isT ? 'today' : ''}" data-h="${h.id}" data-d="${ds}" ${on ? '' : 'disabled'} aria-label="${fmtDay(d)}">
+      <span class="c" style="${style}"><span>${inner}</span>${badge}</span><small>${d.getDate()}</small></button>`;
+  }).join('');
+  const quick = h.kind === 'less' ? `<button class="qb" data-plus="${h.id}" aria-label="+1 اليوم">+1</button>` : '';
+  return `<div class="hc" style="--c:${h.color}">
+    <div class="hc-top"><span class="ic">${esc(h.icon)}</span><b>${esc(h.name)}</b>
+      <span class="pct">${h.kind === 'less' ? '' : monthPct(h) + '%'}</span>
+      <button class="ib" data-edit="${h.id}" aria-label="تعديل العادة">${icon('edit')}</button></div>
+    <div class="hc-sub"><span class="${st ? 'fire' : 'fire off'}">🔥 ${st}</span>${info ? `<span>${info}</span>` : ''}${quick}</div>
+    <div class="hc-days">${days}</div></div>`;
+}
+function bindHabits() {
+  const H = (id) => S.habits.find((h) => h.id === Number(id));
+  $$('.dc').forEach((b) => (b.onclick = () => {
+    const h = H(b.dataset.h), ds = b.dataset.d;
+    if (h.kind === 'check') return setLog(h, ds, valOf(h, ds) ? null : 1, null);
+    if (h.kind === 'quran') return openQuran(h, ds);
+    openHabitDay(h, ds);
+  }));
+  $$('[data-plus]').forEach((b) => (b.onclick = () => { const h = H(b.dataset.plus), ds = ymd(today()); setLog(h, ds, valOf(h, ds) + 1, null); toast(`${h.icon} ${valOf(h, ds)} اليوم`); }));
+  $$('[data-edit]').forEach((b) => (b.onclick = () => openHabit(H(b.dataset.edit))));
+}
+// نافذة صغيرة لتسجيل يوم: الصلوات / العدّاد
+let HD = null;
+function openHabitDay(h, ds) { HD = { h, ds }; paintHabitDay(); $('#sheet-hday').showModal(); }
+function paintHabitDay() {
+  if (!HD) return;
+  const { h, ds } = HD, d = parse(ds), v = valOf(h, ds), L = logOf(h, ds), unit = h.unit || 'مرّة';
+  $('#hd-title').textContent = `${h.icon} ${h.name}`;
+  $('#hd-date').textContent = `${dayCount(d, today()) === 1 ? 'اليوم · ' : ''}${fmtDay(d)}`;
+  let html = '';
+  if (h.kind === 'more' && h.target <= 10) {
     const mask = L?.data?.m ?? (2 ** v - 1);
     const labels = isPrayer(h) ? PRAYERS : Array.from({ length: h.target }, (_, i) => String(i + 1));
-    ctl += `<div class="slotsrow" style="--n:${h.target}">${labels.map((l, i) => `<button class="${mask & (1 << i) ? 'on' : ''}" data-act="slot" data-h="${h.id}" data-i="${i}"><i>${mask & (1 << i) ? '✓' : '○'}</i>${esc(l)}</button>`).join('')}</div>
-      <div class="note" style="margin-top:6px">${v}/${h.target} ${esc(unit)}${v >= h.target ? ' · أحسنت 🎉' : ''}</div>`;
-  } else if (h.kind === 'more' || h.kind === 'less') {
-    const less = h.kind === 'less', wk = startOfWeek(sel);
-    const thisW = sumRange(h, wk, sel), lastW = sumRange(h, addDays(wk, -7), addDays(sel, -7));
-    const trend = less ? (thisW < lastW ? `▼ أقل من الأسبوع الماضي (${lastW}) 👍` : thisW > lastW ? `▲ أكثر من الأسبوع الماضي (${lastW})` : `مثل الأسبوع الماضي (${lastW})`) : `${thisW} هذا الأسبوع`;
-    ctl += `<div class="counter"><button class="minus" data-act="dec" data-h="${h.id}" aria-label="ناقص واحد" ${v ? '' : 'disabled'}>−</button>
-      <div class="n" style="color:${less && v > (h.target || 0) ? '#e11d48' : 'var(--ink)'}">${v}<small>${less ? 'اليوم' : `من ${h.target}`}</small></div>
-      <button class="plus" data-act="inc" data-h="${h.id}">+1 ${esc(unit)}</button></div>
-      <div class="counter info" style="margin-top:6px">${less ? `هذا الأسبوع: <b>${thisW}</b> · ${trend}` : trend}</div>`;
-  } else if (h.kind === 'quran') {
-    const d = L?.data;
-    ctl += `<div class="qline"><div class="t">${d ? `من <b>${qPos(d.fs, d.fa)}</b> إلى <b>${qPos(d.ts, d.ta)}</b><small>${v} آية</small>` : 'لم تُسجَّل قراءة في هذا اليوم'}</div>
-      <button class="btn sm" data-act="quran" data-h="${h.id}">${d ? 'تعديل' : '📖 سجّل'}</button></div>`;
+    html = `<div class="slotsrow" style="--n:${h.target};--c:${h.color}">${labels.map((l, i) => `<button class="${mask & (1 << i) ? 'on' : ''}" data-slot="${i}"><i>${mask & (1 << i) ? '✓' : '○'}</i>${esc(l)}</button>`).join('')}</div>
+      <div class="hd-val">${v}/${h.target} ${esc(unit)}</div>`;
+  } else {
+    const less = h.kind === 'less';
+    html = `<div class="counter" style="--c:${h.color}"><button class="minus" data-dec ${v ? '' : 'disabled'} aria-label="ناقص واحد">−</button>
+      <div class="n" style="color:${less && v > (h.target || 0) ? '#e11d48' : 'var(--ink)'}">${v}<small>${less ? esc(unit) : `من ${h.target}`}</small></div>
+      <button class="plus" data-inc>+1</button></div>`;
   }
-  const hist = [6, 5, 4, 3, 2, 1, 0].map((k) => addDays(sel, -k)).map((d) => {
-    const ex = expected(h, d), val = valOf(h, d), ok = d <= today() && ymd(d) >= h.created && okDay(h, d) && (h.kind !== 'less' || ex);
-    const bad = h.kind === 'less' && val > (h.target || 0);
-    const glyph = h.kind === 'check' ? (val ? '✓' : '') : h.kind === 'more' ? (val ? `${val}/${h.target}` : '') : h.kind === 'less' ? (ymd(d) >= h.created && d <= today() ? String(val) : '') : val ? String(val) : '';
-    return `<button class="${ok ? 'ok' : ''} ${bad ? 'bad' : ''} ${ymd(d) === ymd(sel) ? 'sel' : ''} ${ex || !(d <= today()) ? '' : 'na'}" data-date="${ymd(d)}" ${d > today() ? 'disabled' : ''}>${DAYS_SHORT[d.getDay()]}<b>${d.getDate()}</b><em>${glyph}</em></button>`;
-  }).join('');
-  return `<div class="hcard" style="--c:${h.color}">
-    <div class="hhead" data-edit="${h.id}"><span class="ico">${esc(h.icon)}</span><div style="min-width:0"><b>${esc(h.name)}</b><small>${esc(sub)}</small></div>
-      ${st ? `<span class="st">🔥 ${plural(st, 'يوم', 'يومان', 'أيام', 'يومًا')}</span>` : ''}</div>
-    <div class="hctl" style="${on ? '' : 'opacity:.75'}">${ctl}</div>
-    <div class="hist">${hist}</div></div>`;
-}
-function monthRow(h, m0, t) {
-  let exp = 0, ok = 0, total = 0;
-  for (let d = m0; d <= t; d = addDays(d, 1)) { if (expected(h, d)) { exp++; if (okDay(h, d)) ok++; } total += valOf(h, d); }
-  const p = exp ? ok / exp : 0, unit = h.unit || (h.kind === 'quran' ? 'آية' : 'مرّة');
-  let right = `${Math.round(p * 100)}%<small>${ok}/${exp} يوم</small>`, extra = '';
-  if (h.kind === 'less') {
-    const wk = startOfWeek(t), a = sumRange(h, wk, t), b = sumRange(h, addDays(wk, -7), addDays(wk, -1));
-    right = `${total}<small>${esc(unit)} هذا الشهر</small>`;
-    extra = `<small style="color:var(--muted);font-size:12px">هذا الأسبوع ${a} · الأسبوع الماضي ${b} ${a < b ? '👍' : ''}</small>`;
-  } else if (h.kind === 'more') {
-    extra = `<small style="color:var(--muted);font-size:12px">المعدّل ${exp ? (total / exp).toFixed(1).replace('.0', '') : 0}/${h.target} في اليوم</small>`;
-  } else if (h.kind === 'quran') {
-    const q = lastQuran(h);
-    right = `${total}<small>آية هذا الشهر</small>`;
-    extra = `<small style="color:var(--muted);font-size:12px">${q ? `الختمة: ${Math.round((gidx(q.ts, q.ta) / 6236) * 100)}% · وصلت إلى ${qPos(q.ts, q.ta)}` : 'لا تسجيل بعد'}</small>`;
-  }
-  const bars = h.kind === 'more' || h.kind === 'less'
-    ? (() => { const vals = [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((k) => valOf(h, addDays(t, -k))), mx = Math.max(1, ...vals);
-      return `<div class="spark" title="آخر 14 يومًا">${vals.map((v) => `<i class="${v ? '' : 'z'}" style="height:${Math.max(6, (v / mx) * 100)}%"></i>`).join('')}</div>`; })()
-    : `<span class="bar" style="display:block"><i style="width:${p * 100}%;background:${h.color}"></i></span>`;
-  return `<div class="mrow" style="--c:${h.color}"><span style="font-size:19px">${esc(h.icon)}</span>
-    <div style="min-width:0"><b style="font-size:13.5px;display:block">${esc(h.name)}</b>${bars}${extra ? `<div style="line-height:1.4;margin-top:2px">${extra}</div>` : ''}</div><div class="v">${right}</div></div>`;
-}
-function bindHabits(sel) {
-  const ds = ymd(sel), H = (b) => S.habits.find((h) => h.id === Number(b.dataset.h));
-  $$('[data-act]').forEach((b) => (b.onclick = () => {
-    const h = H(b), v = valOf(h, sel), L = logOf(h, sel);
-    switch (b.dataset.act) {
-      case 'check': return setLog(h, ds, v ? null : 1, null);
-      case 'inc': return setLog(h, ds, v + 1, null);
-      case 'dec': return setLog(h, ds, v - 1 || null, null);
-      case 'slot': {
-        const mask = (L?.data?.m ?? (2 ** v - 1)) ^ (1 << Number(b.dataset.i));
-        const n = mask.toString(2).split('1').length - 1;
-        return setLog(h, ds, n || null, n ? { m: mask } : null);
-      }
-      case 'quran': return openQuran(h, ds);
-    }
+  $('#hd-body').innerHTML = html;
+  $$('#hd-body [data-slot]').forEach((b) => (b.onclick = () => {
+    const mask = (L?.data?.m ?? (2 ** v - 1)) ^ (1 << Number(b.dataset.slot)), n = mask.toString(2).split('1').length - 1;
+    setLog(h, ds, n || null, n ? { m: mask } : null);
   }));
-  $$('.hist button').forEach((b) => (b.onclick = () => { UI.habitDate = parse(b.dataset.date); renderHabits(); }));
-  $$('[data-edit]').forEach((b) => (b.onclick = () => openHabit(S.habits.find((h) => h.id === Number(b.dataset.edit)))));
+  $('#hd-body [data-inc]') && ($('#hd-body [data-inc]').onclick = () => setLog(h, ds, v + 1, null));
+  $('#hd-body [data-dec]') && ($('#hd-body [data-dec]').onclick = () => setLog(h, ds, v - 1 || null, null));
 }
 async function setLog(h, date, v, data) {
   const key = `${h.id}|${date}`, old = S.logs.get(key);
   v ? S.logs.set(key, { v, data }) : S.logs.delete(key);
   renderHabits();
+  if ($('#sheet-hday').open) paintHabitDay();
   if (v && navigator.vibrate) try { navigator.vibrate(12); } catch (e) {}
   try { await rpc('habit_log', { p_habit_id: h.id, p_date: date, p_value: v || null, p_data: data }); }
   catch (err) { old ? S.logs.set(key, old) : S.logs.delete(key); renderHabits(); if (!onAuthError(err)) toast(err.message, true); }
