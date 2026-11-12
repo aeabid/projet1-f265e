@@ -32,7 +32,7 @@
 [hidden]{display:none!important}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;font-size:15px;line-height:1.55;min-height:100vh;padding-bottom:calc(110px + env(safe-area-inset-bottom))}
-button,input,select{font:inherit;color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 .num{font-family:Tajawal,"IBM Plex Sans Arabic",sans-serif;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
 .wrap{max-width:980px;margin:0 auto;padding:0 16px}
@@ -398,6 +398,27 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .qsel{display:grid;grid-template-columns:1fr 90px;gap:8px}
 .qsel select{width:100%}
 .qcount{text-align:center;font-family:Tajawal;font-weight:800;font-size:18px;color:var(--purple);background:var(--soft);border-radius:14px;padding:10px;margin-top:4px}
+/* ---------- الصوت والذكاء الاصطناعي ---------- */
+.voicebtn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;backdrop-filter:blur(6px)}
+.voicebtn span{font-size:12px;font-weight:500;opacity:.8}
+.mic{width:88px;height:88px;border-radius:50%;border:0;background:var(--grad);color:#fff;font-size:36px;box-shadow:0 12px 30px -8px rgba(97,3,141,.6);position:relative;transition:transform .15s}
+.mic:active{transform:scale(.95)}
+.mic.on{animation:pulse 1.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,32,122,.55)}70%{box-shadow:0 0 0 22px rgba(239,32,122,0)}100%{box-shadow:0 0 0 0 rgba(239,32,122,0)}}
+.v-status{font-size:13px;color:var(--muted);margin-top:10px;min-height:20px}
+.v-items{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.v-item{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;background:var(--soft);border-radius:16px;padding:10px}
+.v-item .ico{width:40px;height:40px;font-size:20px;border-radius:13px;background:var(--card)}
+.v-item b{display:block;font-size:14px}
+.v-item small{font-size:12px;color:var(--muted)}
+.v-item .b{display:flex;gap:4px}
+.v-item.undone{opacity:.45;text-decoration:line-through}
+.v-ok{font-size:13px;font-weight:700;color:var(--in);margin:4px 0 8px}
+.aseg{display:grid;grid-template-columns:repeat(3,1fr)}
+.daylist h4{margin:12px 2px 4px;font-size:13px;color:var(--muted)}
+.daylist .r{display:grid;grid-template-columns:86px 1fr;gap:8px;align-items:center;padding:7px 8px;border-radius:12px;cursor:pointer;font-size:13.5px}
+.daylist .r:hover{background:var(--soft)}
+.daylist .r .t{font-family:Tajawal;font-weight:700;color:var(--muted);direction:ltr;text-align:right}
 .update-card{text-align:center;padding:28px 16px}
 .update-card .big{font-size:36px;display:block;margin-bottom:6px}
 
@@ -428,6 +449,21 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
       <button type="button" class="btn danger" id="f-del" hidden>حذف</button>
       <button type="submit" class="btn" id="f-save">حفظ</button>
     </div>
+  </form>
+</dialog>
+
+<!-- الإضافة بالصوت والذكاء الاصطناعي -->
+<dialog class="sheet" id="sheet-voice">
+  <div class="grab"></div>
+  <form class="in" id="form-voice" novalidate>
+    <h3><span id="v-title">بصوتك</span><button type="button" class="x" data-close aria-label="إغلاق">✕</button></h3>
+    <p class="note" id="v-hint" style="margin:0 0 14px;line-height:1.6"></p>
+    <div style="text-align:center"><button type="button" class="mic" id="v-mic" aria-label="تكلّم">🎙️</button>
+      <div class="v-status" id="v-status"></div></div>
+    <div class="field" style="margin-top:12px"><textarea class="input" id="v-text" rows="3" maxlength="600" placeholder="أو اكتب طلبك هنا…" style="resize:vertical"></textarea></div>
+    <div id="v-result"></div>
+    <p class="err" id="v-err" hidden></p>
+    <div class="actions"><button type="submit" class="btn" id="v-send">✨ أضف بالذكاء الاصطناعي</button></div>
   </form>
 </dialog>
 
@@ -799,7 +835,9 @@ function renderHome() {
     <div class="flows">
       <div class="flow in"><div class="ic">${icon('in')}</div><div><div class="t">المداخيل</div><div class="a num">${money(inc)}</div><div class="d">${delta(inc, total(prev, 'income'))}</div></div></div>
       <div class="flow out"><div class="ic">${icon('out')}</div><div><div class="t">المصاريف</div><div class="a num">${money(out)}</div><div class="d">${delta(out, total(prev, 'expense'))}</div></div></div>
-    </div>`;
+    </div>
+    <div style="text-align:center"><button class="voicebtn" id="v-money">🎙️ أضف بصوتك <span>الذكاء الاصطناعي يسجّلها</span></button></div>`;
+  $('#v-money').onclick = () => openVoice('money');
   $$('.seg button').forEach((b) => (b.onclick = () => {
     P.mode = b.dataset.m;
     if (P.mode === 'custom' && !P.from) { const [f, t] = range('month'); P.from = ymd(f); P.to = ymd(t); }
@@ -993,16 +1031,21 @@ function bindBanner() {
 
 /* ---------- categories admin ---------- */
 function renderCats() {
+  const admin = S.user.is_admin, tab = UI.adminTab;
+  $('#hero-body').innerHTML = `
+    <div style="padding:10px 0 4px"><div style="font-family:Tajawal;font-weight:800;font-size:26px">${admin ? 'الإدارة' : 'الإعدادات'}</div>
+    <div style="opacity:.8;font-size:14px">${{ money: 'أنواع المداخيل والمصاريف، العملة، والحسابات', habits: 'ترتيب العادات وأنواعها وأهدافها', day: 'الجدول الأساسي، الأسابيع المعدّلة، والمواعيد' }[tab]}</div></div>
+    <div class="seg aseg" style="margin-top:14px"><button data-at="money" class="${tab === 'money' ? 'on' : ''}">💰 فلوسي</button><button data-at="habits" class="${tab === 'habits' ? 'on' : ''}">✅ عاداتي</button><button data-at="day" class="${tab === 'day' ? 'on' : ''}">🗓️ جدولي</button></div>`;
+  $$('[data-at]').forEach((b) => (b.onclick = () => { UI.adminTab = b.dataset.at; renderCats(); }));
+  if (tab === 'habits') return adminHabits();
+  if (tab === 'day') return adminDay();
+  adminMoney();
+}
+function adminMoney() {
   const type = UI.manageType, admin = S.user.is_admin;
   const used = new Map();
   S.tx.forEach((x) => used.set(x.category_id, (used.get(x.category_id) || 0) + 1));
   const active = activeCats(type), archived = S.cats.filter((c) => c.type === type && c.archived);
-  $('#hero-body').innerHTML = `
-    <div style="padding:10px 0 4px"><div style="font-family:Tajawal;font-weight:800;font-size:26px">${admin ? 'الإدارة' : 'الأنواع والإعدادات'}</div>
-    <div style="opacity:.8;font-size:14px">${admin ? 'الأنواع: أضف، غيّر الاسم أو الرمز أو اللون، رتّب، أو أوقف نوعًا. والحسابات.' : 'الأنواع يديرها المسؤول.'}</div></div>
-    <div class="seg" style="margin-top:14px"><button data-mt="expense" class="${type === 'expense' ? 'on' : ''}">المصاريف (${activeCats('expense').length})</button>
-      <button data-mt="income" class="${type === 'income' ? 'on' : ''}">المداخيل (${activeCats('income').length})</button></div>`;
-  $$('[data-mt]').forEach((b) => (b.onclick = () => { UI.manageType = b.dataset.mt; renderCats(); }));
   const row = (c, i) => `<div class="manage-row">
       ${c.archived || !admin ? '<span style="width:30px"></span>' : `<div class="move"><button data-up="${c.id}" ${i === 0 ? 'disabled' : ''} aria-label="فوق">${icon('up')}</button><button data-down="${c.id}" ${i === active.length - 1 ? 'disabled' : ''} aria-label="تحت">${icon('down')}</button></div>`}
       <span class="ico" style="background:${c.color}1f;box-shadow:inset 0 0 0 1.5px ${c.color}55">${esc(c.icon)}</span>
@@ -1010,7 +1053,9 @@ function renderCats() {
       ${!admin ? '' : c.archived ? `<button class="btn sm light" data-restore="${c.id}">${icon('restore')} إرجاع</button>` : `<button class="ibtn" data-edit="${c.id}" aria-label="تعديل">${icon('edit')}</button>`}
     </div>`;
   $('#main').innerHTML = `<div class="grid"><section class="card span">
-      <div class="card-h"><h2>${type === 'expense' ? 'أنواع المصاريف' : 'أنواع المداخيل'}</h2>${admin ? '<button class="btn sm" id="add-cat">+ نوع جديد</button>' : ''}</div>
+      <div class="card-h"><h2>الأنواع</h2>${admin ? '<button class="btn sm" id="add-cat">+ نوع جديد</button>' : ''}</div>
+      <div class="tabs" style="margin-bottom:10px;width:max-content"><button data-mt="expense" class="${type === 'expense' ? 'on' : ''}">المصاريف (${activeCats('expense').length})</button><button data-mt="income" class="${type === 'income' ? 'on' : ''}">المداخيل (${activeCats('income').length})</button></div>
+      ${admin ? '' : '<p class="note" style="margin:0 2px 8px">الأنواع يديرها المسؤول.</p>'}
       ${active.map(row).join('')}
       ${archived.length && admin ? `<div class="arch-h">موقوفة (تبقى في الإحصائيات القديمة ولا تظهر عند الإضافة)</div>${archived.map(row).join('')}` : ''}
     </section>
@@ -1022,6 +1067,7 @@ function renderCats() {
         : S.googleClientId ? `<div class="set"><span class="t">ربط حسابي بـ Google<small>لتدخل بنقرة واحدة</small></span><div id="glink" style="min-width:200px"></div></div>` : ''}
     </div></section>
     ${admin ? accountsCard() : ''}</div>`;
+  $$('[data-mt]').forEach((b) => (b.onclick = () => { UI.manageType = b.dataset.mt; renderCats(); }));
   $('#add-cat') && ($('#add-cat').onclick = () => openCat(null));
   $('#pass').onclick = changePassword;
   if ($('#glink')) googleButton($('#glink'), S.googleClientId, async (credential) => {
@@ -1171,7 +1217,7 @@ $('#form-tx').onsubmit = async (e) => {
     if (TE.id) S.tx = S.tx.map((x) => (x.id === TE.id ? transaction : x));
     else S.tx.push(transaction);
     $('#sheet-tx').close(); toast(TE.id ? 'تمّ التعديل ✓' : 'تمّت الإضافة ✓');
-    if (UI.view !== 'home') UI.view = 'home';
+    if (UI.view !== 'home' && UI.view !== 'cats') UI.view = 'home';
     render();
   } catch (err) { if (onAuthError(err)) $('#sheet-tx').close(); else fail(err.message); } finally { btn.disabled = false; }
 };
@@ -1301,6 +1347,7 @@ function renderDay() {
         <div class="wstatus">${mat ? `<span class="tag">✏️ أسبوع معدَّل وحده</span><button id="w-reset">إرجاعه إلى الأساسي</button><button id="w-tobase">اجعله الجدول الأساسي</button>`
           : `<span class="tag">⭐ نسخة من الجدول الأساسي</span><span style="opacity:.8">عدّل أيّ خانة فيصير لهذا الأسبوع جدوله الخاص</span>`}
           ${wk !== thisWk ? '<button id="w-today">هذا الأسبوع</button>' : ''}</div>`}
+    ${ready ? '<button class="voicebtn" id="v-appt">🎙️ موعد بصوتك <span>يضعه في وقته</span></button>' : ''}
     ${nxt ? `<div class="nextappt" id="nextappt"><span class="e">${esc(nxt.icon)}</span><div><small>موعدك القادم</small><b>${esc(nxt.title)}</b><small>${relDay(nxt.date)} · ${DAYS[parse(nxt.date).getDay()]} ${fmtT(nxt.start)}</small></div></div>` : ''}`;
   $$('[data-dm]').forEach((b) => (b.onclick = () => { UI.dayMode = b.dataset.dm; renderDay(); }));
   if (!base) {
@@ -1311,6 +1358,7 @@ function renderDay() {
     $('#w-tobase') && ($('#w-tobase').onclick = weekToBase);
   }
   $('#nextappt') && ($('#nextappt').onclick = () => openPlan({ appt: nxt }));
+  $('#v-appt') && ($('#v-appt').onclick = () => openVoice('appt'));
   if (!ready) return ($('#main').innerHTML = lifeMissing());
 
   const minStart = Math.min(...slots.map((s) => s.start), ...appts.map((a) => a.start), 360);
@@ -1480,7 +1528,7 @@ async function saveSlot(key, patch, alsoBase = false) {
     upsertSlot(r.slot); upsertSlot(r.base);
     if (fresh) toast('صار لهذا الأسبوع جدوله الخاص ✓ والجدول الأساسي لم يتغيّر');
   } catch (err) { if (!onAuthError(err)) toast(err.message, true); }
-  renderDay();
+  render();
 }
 async function removeSlot(key, alsoBase) {
   let wk = curWeekKey();
@@ -1499,7 +1547,7 @@ async function removeSlot(key, alsoBase) {
     }
     toast('تمّ الحذف');
   } catch (err) { if (!onAuthError(err)) toast(err.message, true); }
-  renderDay();
+  render();
 }
 async function saveAppt(a, quiet) {
   try {
@@ -1508,9 +1556,9 @@ async function saveAppt(a, quiet) {
     const i = S.appts.findIndex((x) => x.id === r.id);
     i < 0 ? S.appts.push(r) : (S.appts[i] = r);
     if (!quiet) toast(a.id ? 'تمّ التعديل ✓' : 'تمّت إضافة الموعد ✓');
-    renderDay();
+    render();
     return r;
-  } catch (err) { if (!onAuthError(err)) toast(err.message, true); renderDay(); throw err; }
+  } catch (err) { if (!onAuthError(err)) toast(err.message, true); render(); throw err; }
 }
 async function weekReset() {
   if (!confirm('إرجاع هذا الأسبوع إلى الجدول الأساسي؟ ستضيع تعديلات هذا الأسبوع.')) return;
@@ -1644,7 +1692,8 @@ $('#form-plan').onsubmit = async (e) => {
       if (!PE.edit) toast('تمّت الإضافة ✓');
     }
     $('#sheet-plan').close();
-    UI.view = 'day'; render();
+    if (UI.view !== 'cats') UI.view = 'day';
+    render();
   } catch (err) { fail(err.message); } finally { btn.disabled = false; }
 };
 $('#p-del').onclick = async () => {
@@ -1652,7 +1701,7 @@ $('#p-del').onclick = async () => {
     if (!confirm(`حذف الموعد «${PE.title}»؟`)) return;
     try { await rpc('appt_delete', { p_id: PE.id }); S.appts = S.appts.filter((a) => a.id !== PE.id); toast('تمّ الحذف'); }
     catch (err) { if (!onAuthError(err)) toast(err.message, true); }
-    $('#sheet-plan').close(); return renderDay();
+    $('#sheet-plan').close(); return render();
   }
   const alsoBase = $('#p-base').checked;
   if (!confirm(alsoBase ? `حذف «${PE.title}» من هذا الأسبوع ومن الجدول الأساسي؟` : `حذف «${PE.title}»${UI.dayMode === 'base' ? ' من الجدول الأساسي' : ' من هذا الأسبوع فقط'}؟`)) return;
@@ -1923,14 +1972,212 @@ $('#form-habit').onsubmit = async (e) => {
     const saved = await rpc('habit_save2', { p_id: HE.id, p_name: HE.name, p_icon: HE.icon, p_color: HE.color, p_days: HE.days,
       p_kind: HE.kind, p_target: HE.kind === 'more' || HE.kind === 'less' ? HE.target : null, p_unit: HE.unit });
     S.habits = HE.id ? S.habits.map((x) => (x.id === HE.id ? saved : x)) : [...S.habits, saved];
-    $('#sheet-habit').close(); UI.view = 'habits'; render(); toast(HE.id ? 'تمّ التعديل ✓' : 'تمّت الإضافة ✓');
+    $('#sheet-habit').close(); if (UI.view !== 'cats') UI.view = 'habits'; render(); toast(HE.id ? 'تمّ التعديل ✓' : 'تمّت الإضافة ✓');
   } catch (err) { if (onAuthError(err)) $('#sheet-habit').close(); else fail(err.message); }
 };
 $('#h-del').onclick = async () => {
   if (!confirm(`حذف عادة «${HE.name}» وكل سجلّها؟`)) return;
-  try { await rpc('habit_delete', { p_id: HE.id }); S.habits = S.habits.filter((x) => x.id !== HE.id); $('#sheet-habit').close(); renderHabits(); toast('تمّ الحذف'); }
+  try { await rpc('habit_delete', { p_id: HE.id }); S.habits = S.habits.filter((x) => x.id !== HE.id); $('#sheet-habit').close(); render(); toast('تمّ الحذف'); }
   catch (err) { if (!onAuthError(err)) toast(err.message, true); }
 };
+
+/* ================= الإضافة بالصوت والذكاء الاصطناعي ================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let REC = null, VM = null;
+const VOICE = {
+  money: ['💰 أضف فلوس بصوتك', 'قل مثلاً: «صرفت عشرين ألف في القهوة والفطور» أو «خذيت الشهرية ألف وثمنمية دينار» أو «البارح شريت دواء بخمسة آلاف». يُضاف وحده إلى فلوسي.'],
+  appt: ['📌 موعد بصوتك', 'قل مثلاً: «عندي طبيب الأسنان غدوة على العشرة» أو «اجتماع الأولياء الخميس الجاي على الخمسة ونص ساعة». يُضاف وحده إلى جدولك.'],
+};
+function openVoice(mode) {
+  VM = { mode, done: false, items: [] };
+  $('#v-title').textContent = VOICE[mode][0];
+  $('#v-hint').textContent = VOICE[mode][1];
+  $('#v-text').value = '';
+  $('#v-result').innerHTML = '';
+  $('#v-err').hidden = true;
+  $('#v-send').hidden = false;
+  $('#v-mic').hidden = !SR;
+  $('#v-status').textContent = SR ? 'اضغط الميكروفون وتكلّم' : 'متصفحك لا يدعم الإملاء الصوتي هنا: اكتب طلبك، أو استعمل ميكروفون لوحة المفاتيح.';
+  $('#sheet-voice').showModal();
+  if (SR) startRec(); else setTimeout(() => $('#v-text').focus(), 80);
+}
+function startRec(lang = 'ar-TN') {
+  if (REC) return REC.stop();
+  try { REC = new SR(); } catch (e) { return; }
+  REC.lang = lang; REC.interimResults = true; REC.continuous = false; REC.maxAlternatives = 1;
+  let final = $('#v-text').value ? $('#v-text').value.trim() + ' ' : '';
+  let heard = false;
+  REC.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) final += r[0].transcript + ' '; else interim += r[0].transcript;
+    }
+    heard = true;
+    $('#v-text').value = (final + interim).trim();
+  };
+  REC.onerror = (e) => {
+    if (e.error === 'language-not-supported' && lang !== 'ar-SA') { REC = null; return startRec('ar-SA'); }
+    $('#v-status').textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'اسمح للمتصفح باستعمال الميكروفون، أو اكتب طلبك'
+      : e.error === 'no-speech' ? 'لم أسمع شيئًا. اضغط الميكروفون وأعد المحاولة' : 'تعذّر الاستماع، اكتب طلبك أو أعد المحاولة';
+  };
+  REC.onend = () => {
+    $('#v-mic').classList.toggle('on', false);
+    REC = null;
+    const go = (heard || VM.sendAfter) && $('#v-text').value.trim() && $('#sheet-voice').open && !VM.busy && !VM.done;
+    VM.sendAfter = false;
+    if (go) sendVoice();
+    else if (!heard && $('#v-status').textContent.startsWith('أسمعك')) $('#v-status').textContent = 'اضغط الميكروفون وتكلّم';
+  };
+  try { REC.start(); } catch (e) { REC = null; return; }
+  $('#v-mic').classList.toggle('on', true);
+  $('#v-status').textContent = 'أسمعك… تكلّم الآن، ثم توقّف';
+}
+$('#v-mic').onclick = () => startRec();
+$('#sheet-voice').addEventListener('close', () => { if (REC) try { REC.abort(); } catch (e) {} });
+$('#form-voice').onsubmit = (e) => {
+  e.preventDefault();
+  if (REC) { VM.sendAfter = true; try { REC.stop(); } catch (er) { REC = null; sendVoice(); } } else sendVoice();
+};
+// الكتابة أثناء الاستماع: نوقف الميكروفون حتى لا يمسح ما كُتب
+$('#v-text').addEventListener('input', () => { if (REC && document.activeElement === $('#v-text')) try { REC.abort(); } catch (e) {} });
+async function sendVoice() {
+  const text = $('#v-text').value.trim();
+  const err = $('#v-err');
+  if (!text) { err.textContent = 'قل أو اكتب ما تريد إضافته'; err.hidden = false; return; }
+  if (VM.busy) return;
+  VM.busy = true; err.hidden = true;
+  $('#v-send').disabled = true;
+  $('#v-status').textContent = '✨ أفهم طلبك…';
+  try {
+    const t = new Date();
+    const res = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, mode: VM.mode, text, today: ymd(today()), weekday: DAYS[t.getDay()], now: fmtTime(nowMin()) }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const e2 = new Error(data.error || 'تعذّر الاتصال بالذكاء الاصطناعي'); e2.auth = !!data.auth; throw e2; }
+    if (!data.items.length) throw new Error(data.message || 'لم أجد ما أضيفه. أعد الصياغة بوضوح أكثر.');
+    // الحفظ مباشرة
+    const saved = [];
+    for (const it of data.items) {
+      if (VM.mode === 'money') {
+        const tx = await rpc('tx_save', { p_id: null, p_type: it.type, p_amount: it.amount, p_category_id: it.category_id, p_date: it.date, p_note: it.note });
+        tx.amount = Number(tx.amount); S.tx.push(tx); saved.push({ kind: 'tx', o: tx });
+      } else {
+        const a = await rpc('appt_save', { p_id: null, p_date: it.date, p_start: it.start, p_end: it.end, p_title: it.title, p_note: it.note, p_icon: it.icon, p_color: '#ef207a', p_done: false });
+        S.appts.push(a); saved.push({ kind: 'appt', o: a });
+      }
+    }
+    VM.items = saved; VM.done = true;
+    $('#v-status').textContent = '';
+    $('#v-send').hidden = true;
+    paintVoiceResult(data.message);
+    render();
+    try { navigator.vibrate && navigator.vibrate([15, 40, 15]); } catch (e) {}
+  } catch (e2) {
+    if (onAuthError(e2)) return $('#sheet-voice').close();
+    err.textContent = e2.message; err.hidden = false;
+    $('#v-status').textContent = SR ? 'اضغط الميكروفون لإعادة المحاولة، أو عدّل النص' : '';
+  } finally { VM.busy = false; $('#v-send').disabled = false; }
+}
+function paintVoiceResult(message) {
+  const rows = VM.items.map((x, i) => {
+    if (x.kind === 'tx') {
+      const c = catById(x.o.category_id), inc = x.o.type === 'income';
+      return `<div class="v-item ${x.undone ? 'undone' : ''}"><span class="ico">${esc(c.icon)}</span>
+        <span><b class="num" style="color:${inc ? 'var(--in)' : 'var(--out)'};direction:rtl">${inc ? '+' : '−'}${money(x.o.amount)} ${esc(CUR)}</b><small>${esc(c.name)} · ${relDay(x.o.date)}${x.o.note ? ' · ' + esc(x.o.note) : ''}</small></span>
+        <span class="b">${x.undone ? '' : `<button type="button" class="btn sm light" data-vedit="${i}">تعديل</button><button type="button" class="btn sm danger" data-vundo="${i}">تراجع</button>`}</span></div>`;
+    }
+    const a = x.o, d = parse(a.date);
+    return `<div class="v-item ${x.undone ? 'undone' : ''}"><span class="ico">${esc(a.icon)}</span>
+      <span><b>${esc(a.title)}</b><small>${relDay(a.date)} · ${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${fmtT(a.start)}${a.end != null ? '–' + fmtT(a.end) : ''}${a.note ? ' · ' + esc(a.note) : ''}</small></span>
+      <span class="b">${x.undone ? '' : `<button type="button" class="btn sm light" data-vedit="${i}">تعديل</button><button type="button" class="btn sm danger" data-vundo="${i}">تراجع</button>`}</span></div>`;
+  }).join('');
+  $('#v-result').innerHTML = `<div class="v-ok">✓ تمّت الإضافة${VM.items.length > 1 ? ` (${VM.items.length})` : ''}</div><div class="v-items">${rows}</div>
+    ${message ? `<p class="note" style="margin-top:8px">💡 ${esc(message)}</p>` : ''}
+    <div class="actions"><button type="button" class="btn light" id="v-again">🎙️ إضافة أخرى</button><button type="button" class="btn" data-close-voice>تمّ</button></div>`;
+  $$('[data-vundo]').forEach((b) => (b.onclick = async () => {
+    const x = VM.items[Number(b.dataset.vundo)];
+    try {
+      if (x.kind === 'tx') { await rpc('tx_delete', { p_id: x.o.id }); S.tx = S.tx.filter((t) => t.id !== x.o.id); }
+      else { await rpc('appt_delete', { p_id: x.o.id }); S.appts = S.appts.filter((t) => t.id !== x.o.id); }
+      x.undone = true; paintVoiceResult(message); render(); toast('تمّ التراجع');
+    } catch (e) { onAuthError(e) || toast(e.message, true); }
+  }));
+  $$('[data-vedit]').forEach((b) => (b.onclick = () => {
+    const x = VM.items[Number(b.dataset.vedit)];
+    $('#sheet-voice').close();
+    if (x.kind === 'tx') openTx(null, S.tx.find((t) => t.id === x.o.id));
+    else openPlan({ appt: S.appts.find((t) => t.id === x.o.id) });
+  }));
+  $('#v-again').onclick = () => openVoice(VM.mode);
+  $('[data-close-voice]').onclick = () => $('#sheet-voice').close();
+}
+
+/* ================= الإدارة: ثلاثة أقسام ================= */
+UI.adminTab = 'money';
+function adminHabits() {
+  if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
+  const hs = S.habits;
+  $('#main').innerHTML = `<div class="grid"><section class="card span">
+    <div class="card-h"><h2>عاداتي</h2><button class="btn sm" id="ah-add">+ عادة جديدة</button></div>
+    ${hs.length ? hs.map((h, i) => `<div class="manage-row">
+        <div class="move"><button data-hup="${h.id}" ${i === 0 ? 'disabled' : ''} aria-label="فوق">${icon('up')}</button><button data-hdown="${h.id}" ${i === hs.length - 1 ? 'disabled' : ''} aria-label="تحت">${icon('down')}</button></div>
+        <span class="ico" style="background:${h.color}1f;box-shadow:inset 0 0 0 1.5px ${h.color}55">${esc(h.icon)}</span>
+        <span class="n">${esc(h.name)}<small>${KINDS[h.kind][1]}${h.kind === 'more' || h.kind === 'less' ? ` · ${h.kind === 'less' ? 'حدّ' : 'هدف'} ${h.target ?? 0} ${esc(h.unit || 'مرّة')}` : ''} · ${daysLabel(h.days)}${streak(h) ? ` · 🔥 ${streak(h)}` : ''}</small></span>
+        <button class="ibtn" data-hedit="${h.id}" aria-label="تعديل">${icon('edit')}</button></div>`).join('')
+      : '<div class="empty"><span class="big">🌱</span>لا عادات بعد</div>'}
+    <p class="note" style="margin:10px 2px 0">التسجيل اليومي من صفحة «عاداتي». هنا: الترتيب، النوع، الهدف، الأيام، والحذف (من نافذة التعديل).</p>
+  </section></div>`;
+  $('#ah-add').onclick = () => openHabit(null);
+  $$('[data-hedit]').forEach((b) => (b.onclick = () => openHabit(S.habits.find((h) => h.id === Number(b.dataset.hedit)))));
+  const move = async (id, dir) => {
+    const ids = S.habits.map((h) => h.id), i = ids.indexOf(id);
+    [ids[i], ids[i + dir]] = [ids[i + dir], ids[i]];
+    S.habits = ids.map((x) => S.habits.find((h) => h.id === x));
+    adminHabits();
+    try { await rpc('habit_order', { p_ids: ids }); } catch (err) { onAuthError(err) || toast(err.message, true); }
+  };
+  $$('[data-hup]').forEach((b) => (b.onclick = () => move(Number(b.dataset.hup), -1)));
+  $$('[data-hdown]').forEach((b) => (b.onclick = () => move(Number(b.dataset.hdown), 1)));
+}
+function adminDay() {
+  if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
+  const base = S.slots.filter((s) => s.week == null), t = ymd(today());
+  const weeks = [...S.weeks].sort().reverse();
+  const past = S.appts.filter((a) => a.date < t).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 40);
+  const upcoming = upcomingAppts();
+  $('#main').innerHTML = `<div class="grid">
+    <section class="card span"><div class="card-h"><h2>⭐ الجدول الأساسي</h2>
+      <span style="display:flex;gap:6px"><button class="btn sm light" id="ad-open">فتح في الجدول</button><button class="btn sm" id="ad-add">+ نشاط</button></span></div>
+      <p class="note" style="margin:0 2px 6px">يُنسخ في كل أسبوع. اضغط أيّ نشاط لتعديله أو حذفه.</p>
+      <div class="daylist">${WEEK_ORDER.map((d) => { const its = base.filter((s) => s.day === d).sort((a, b) => a.start - b.start);
+        return `<h4>${DAYS[d]} · ${its.length} نشاط</h4>${its.map((s) => `<div class="r" data-bslot="${s.id}"><span class="t">${fmtT(s.start)}${s.end != null ? '–' + fmtT(s.end) : ''}</span><span>${esc(s.icon)} ${esc(s.title)}</span></div>`).join('') || '<div class="note" style="padding:4px 8px">—</div>'}`; }).join('')}</div>
+    </section>
+    <section class="card span"><div class="card-h"><h2>✏️ الأسابيع المعدَّلة وحدها</h2></div>
+      ${weeks.length ? weeks.map((w) => { const d = parse(w); return `<div class="set" style="margin-bottom:8px"><span class="t">${fmtShort(d)} — ${fmtShort(addDays(d, 6))}<small>${S.slots.filter((s) => s.week === w).length} نشاط</small></span>
+        <button class="btn sm light" data-wview="${w}">عرض</button><button class="btn sm danger" data-wreset="${w}">إرجاعه إلى الأساسي</button></div>`; }).join('')
+        : '<div class="empty" style="padding:14px">كل الأسابيع نسخة من الجدول الأساسي</div>'}
+    </section>
+    <section class="card span"><div class="card-h"><h2>📌 المواعيد</h2><button class="btn sm" id="ad-appt">+ موعد</button></div>
+      <p class="note" style="margin:0 2px 8px">${upcoming.length} موعد قادم · ${past.length ? 'السابقة:' : 'لا مواعيد سابقة'}</p>
+      ${past.length ? `<div class="appts">${past.map((a) => apptRow(a).replace('class="ap"', 'class="ap past"')).join('')}</div>` : ''}
+    </section></div>`;
+  const asBase = (fn) => { UI.restoreMode = UI.dayMode; UI.dayMode = 'base'; fn(); };
+  $('#ad-open').onclick = () => { UI.dayMode = 'base'; go('day'); };
+  $('#ad-add').onclick = () => asBase(() => openPlan({ kind: 'slot' }));
+  $('#ad-appt').onclick = () => openPlan({ kind: 'appt' });
+  $$('[data-bslot]').forEach((r) => (r.onclick = () => asBase(() => { const s = S.slots.find((x) => x.id === Number(r.dataset.bslot)); openPlan({ slot: s, key: String(s.id) }); })));
+  $$('[data-wview]').forEach((b) => (b.onclick = () => { UI.dayMode = 'week'; UI.dayWeek = parse(b.dataset.wview); go('day'); }));
+  $$('[data-wreset]').forEach((b) => (b.onclick = async () => {
+    if (!confirm('إرجاع هذا الأسبوع إلى الجدول الأساسي؟')) return;
+    const w = b.dataset.wreset;
+    try { await rpc('week_reset', { p_week: w }); S.slots = S.slots.filter((s) => s.week !== w); S.weeks.delete(w); toast('تمّ'); }
+    catch (err) { onAuthError(err) || toast(err.message, true); }
+    adminDay();
+  }));
+  $$('.ap').forEach((el) => (el.onclick = (e) => { if (!e.target.closest('.gcal')) openPlan({ appt: S.appts.find((a) => a.id === Number(el.dataset.id)) }); }));
+}
+$('#sheet-plan').addEventListener('close', () => { if (UI.restoreMode) { UI.dayMode = UI.restoreMode; UI.restoreMode = null; } });
 
 /* ================= boot ================= */
 async function load() {

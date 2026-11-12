@@ -1,3 +1,7 @@
-# موقع فلوسي المستقل على Netlify: Base directory = flousi
+# موقع فلوسي المستقل على Netlify (Base directory = flousi)
 [build]
-  publish = "."
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
