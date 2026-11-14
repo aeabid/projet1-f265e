@@ -71,7 +71,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
 
   const STUDENT_SELECT = `SELECT qs.user_id AS id, qs.first_name, qs.last_name, qs.age, qs.level, qs.group_id,
       qs.week_start, qs.weak_reps, qs.lesson_target, qs.memorized, qs.active,
-      u.username, u.full_name, u.phone, u.last_seen, g.name AS group_name
+      u.username, u.full_name, u.phone, u.last_seen, u.photo IS NOT NULL AS has_photo, u.photo_v, g.name AS group_name
     FROM quran_students qs JOIN users u ON u.id = qs.user_id
     LEFT JOIN quran_groups g ON g.id = qs.group_id`;
 
@@ -100,6 +100,10 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
        FROM quran_lessons l WHERE l.student_id = ANY($1::int[]) AND l.assigned_on <= $2 ORDER BY l.student_id, l.assigned_on DESC, l.id DESC`,
       [ids, day]
     );
+    // عدّاد الدرس يبدأ من الصفر كل أسبوع (القديم يبقى في السجلّ)
+    const reps = lessons.length
+      ? await all('SELECT lesson_id, date::text, count FROM quran_lesson_reps WHERE lesson_id = ANY($1::int[]) AND date >= $2', [lessons.map((l) => l.id), minStart])
+      : [];
     const meetings = await all(
       `SELECT DISTINCT ON (student_id) student_id, date::text, attendance, review_eval, hifz_eval, ada_eval FROM quran_meetings
        WHERE student_id = ANY($1::int[]) ORDER BY student_id, date DESC`,
@@ -115,7 +119,10 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
         reviewed_today: Q.sizeOf(items.filter((i) => i.student_id === st.id && i.date === day).map((i) => i.seg_id)),
         solid_hizb: Q.sizeOf(idsOf(st.memorized, 's')),
         weak_hizb: Q.sizeOf(idsOf(st.memorized, 'w')),
-        lesson: lessons.find((l) => l.student_id === st.id) || null,
+        lesson: (() => {
+          const l = lessons.find((x) => x.student_id === st.id);
+          return l ? { ...l, week_total: reps.filter((r) => r.lesson_id === l.id && r.date >= start).reduce((t, r) => t + r.count, 0) } : null;
+        })(),
         last_meeting: meetings.find((m) => m.student_id === st.id) || null,
       });
     }
@@ -280,7 +287,12 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
       [st.id]
     );
     const lesson = lessons.find((l) => l.assigned_on <= day) || null;
-    if (lesson) lesson.reps = await all('SELECT date::text, count FROM quran_lesson_reps WHERE lesson_id = $1 ORDER BY date', [lesson.id]);
+    if (lesson) {
+      lesson.reps = await all('SELECT date::text, count FROM quran_lesson_reps WHERE lesson_id = $1 ORDER BY date', [lesson.id]);
+      const cur = weekStartOf(day, st.week_start);
+      lesson.week_start = cur;
+      lesson.week_total = lesson.reps.filter((r) => r.date >= cur).reduce((t, r) => t + r.count, 0);
+    }
     const meetings = await all(
       `SELECT m.id, m.date::text, m.attendance, m.review_eval, m.hifz_eval, m.ada_eval, m.tajweed_eval, m.note, m.lesson_id,
          l.content AS lesson_content, u.full_name AS by_name
@@ -332,8 +344,9 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     await pool.query('DELETE FROM quran_review_items WHERE student_id = $1 AND date = $2', [st.id, day]);
     if (ids.length) {
       await pool.query(
-        'INSERT INTO quran_review_items (student_id, date, seg_id) SELECT $1, $2, unnest($3::int[]) ON CONFLICT DO NOTHING',
-        [st.id, day, ids]
+        `INSERT INTO quran_review_items (student_id, date, seg_id, kind)
+         SELECT $1, $2, x, ($4::jsonb ->> x::text) FROM unnest($3::int[]) AS x ON CONFLICT DO NOTHING`,
+        [st.id, day, ids, JSON.stringify(st.memorized || {})]
       );
     }
     const start = weekStartOf(day, st.week_start);
@@ -359,7 +372,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
   async function loadLesson(user, id, opts) {
     const l = await one('SELECT id, student_id, assigned_on::text, target, created_by FROM quran_lessons WHERE id = $1', [Number(id) || 0]);
     if (!l) throw new HttpError(404, 'الدرس غير موجود');
-    await loadStudent(user, l.student_id, opts);
+    l.student = await loadStudent(user, l.student_id, opts);
     return l;
   }
   // الطالب يحذف فقط درسًا أضافه هو
@@ -389,8 +402,70 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
       );
     }
     const { total } = await one('SELECT COALESCE(SUM(count), 0)::int AS total FROM quran_lesson_reps WHERE lesson_id = $1', [l.id]);
+    const cur = weekStartOf(today(), l.student.week_start);
+    const { week } = await one('SELECT COALESCE(SUM(count), 0)::int AS week FROM quran_lesson_reps WHERE lesson_id = $1 AND date >= $2', [l.id, cur]);
     const { count } = (await one('SELECT count FROM quran_lesson_reps WHERE lesson_id = $1 AND date = $2', [l.id, day])) || { count: 0 };
-    return { total, day_count: count, target: l.target, reached: total >= l.target };
+    return { total, week_total: week, day_count: count, target: l.target, reached: week >= l.target };
+  });
+
+  // تعديل الدرس: الطالب يصحّح ما تلقّاه (المقطع، الأثمان، التاريخ)، والمشرف أيضًا عدد القراءات
+  q('PUT', '/api/quran/lessons/:id', ['admin', 'talib'], async ({ user, params, body }) => {
+    const l = await loadLesson(user, params.id);
+    const athman = Number(body.athman ?? 1);
+    if (!(athman > 0 && athman <= 16)) throw new HttpError(400, 'عدد الأثمان غير صالح');
+    const target = int(body.target, { min: 1, max: 1000, def: l.target, name: 'عدد القراءات' });
+    const lesson = await one(
+      `UPDATE quran_lessons SET content = $1, athman = $2, assigned_on = $3, target = $4 WHERE id = $5
+       RETURNING id, assigned_on::text, content, athman::float8 AS athman, target`,
+      [text(body.content, { required: true, max: 300, name: 'الدرس' }), athman, body.assigned_on ? date(body.assigned_on) : l.assigned_on,
+        user.role === 'admin' || l.created_by === user.id ? target : l.target, l.id]
+    );
+    return { lesson };
+  });
+
+  // ---------- السجلّ: كل أسابيع السنة (الشهري والسنوي يُجمَعان منها) ----------
+  q('GET', '/api/quran/students/:id/history', ['admin', 'talib'], async ({ user, params, query }) => {
+    const st = await loadStudent(user, params.id);
+    const day = today();
+    const year = /^\d{4}$/.test(query.get('year') || '') ? query.get('year') : day.slice(0, 4);
+    const from = weekStartOf(`${year}-01-01`, st.week_start);
+    const to = `${year}-12-31` < day ? `${year}-12-31` : day;
+    const items = await all('SELECT date::text, seg_id, kind FROM quran_review_items WHERE student_id = $1 AND date BETWEEN $2 AND $3', [st.id, from, addDays(to, 6)]);
+    const reps = await all(
+      `SELECT r.date::text, SUM(r.count)::int AS count FROM quran_lesson_reps r JOIN quran_lessons l ON l.id = r.lesson_id
+       WHERE l.student_id = $1 AND r.date BETWEEN $2 AND $3 GROUP BY r.date`,
+      [st.id, from, addDays(to, 6)]
+    );
+    const lessons = await all(
+      `SELECT l.id, l.assigned_on::text, l.content, l.athman::float8 AS athman, l.target,
+         COALESCE((SELECT SUM(count) FROM quran_lesson_reps r WHERE r.lesson_id = l.id), 0)::int AS total
+       FROM quran_lessons l WHERE l.student_id = $1 AND l.assigned_on BETWEEN $2 AND $3 ORDER BY l.assigned_on`,
+      [st.id, from, addDays(to, 6)]
+    );
+    const meetings = await all(
+      `SELECT date::text, attendance, review_eval, hifz_eval, ada_eval, tajweed_eval, note FROM quran_meetings
+       WHERE student_id = $1 AND date BETWEEN $2 AND $3 ORDER BY date`,
+      [st.id, from, addDays(to, 6)]
+    );
+    const weeks = [];
+    for (let w = from; w <= to; w = addDays(w, 7)) {
+      const e = addDays(w, 6);
+      const its = items.filter((i) => i.date >= w && i.date <= e);
+      const kindOf = (i) => i.kind || st.memorized[i.seg_id] || '';
+      const size = (list) => Math.round(list.reduce((t, i) => t + (Q.segments[i.seg_id]?.size || 0), 0) * 100) / 100;
+      weeks.push({
+        start: w,
+        solid: size(its.filter((i) => kindOf(i) === 's')),
+        weak: size(its.filter((i) => kindOf(i) === 'w')),
+        other: size(its.filter((i) => !kindOf(i))),
+        days: new Set(its.map((i) => i.date)).size,
+        label: Q.rangeLabel([...new Set(its.map((i) => i.seg_id))].map((id) => Q.segments[id])),
+        reps: reps.filter((r) => r.date >= w && r.date <= e).reduce((t, r) => t + r.count, 0),
+        lessons: lessons.filter((l) => l.assigned_on >= w && l.assigned_on <= e),
+        meetings: meetings.filter((m) => m.date >= w && m.date <= e),
+      });
+    }
+    return { year, student: { id: st.id, full_name: st.full_name, week_start: st.week_start }, weeks: weeks.reverse() };
   });
 
   // ---------- اللقاء: الحضور والتقييم والملاحظة ----------

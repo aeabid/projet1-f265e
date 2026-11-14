@@ -391,3 +391,25 @@ body.no-scroll { overflow: hidden; }
 .q-ov tr.q-off { opacity: .55; }
 .card .q-filters { margin-bottom: .6rem; }
 @media (max-width: 640px) { .q-ov tr.is-absent, .q-ov tr.is-excused { border-inline-start: 4px solid var(--danger); padding-inline-start: .5rem; } .q-ov tr.is-excused { border-color: var(--q-weak); } .q-ov tr.is-absent td, .q-ov tr.is-excused td { background: none; } }
+
+/* الصورة الشخصية */
+img.avatar { object-fit: cover; background: var(--soft); }
+.avatar.xl { width: 92px; height: 92px; font-size: 2.2rem; }
+.me-photo { display: flex; align-items: center; gap: 1rem; margin: .4rem 0 1rem; }
+.me-photo > div { display: flex; flex-direction: column; gap: .3rem; }
+.file-btn { cursor: pointer; margin: 0; }
+#who-photo a { display: inline-flex; }
+@media (max-width: 899px) { .who #who-photo { order: -1; } }
+
+/* السجلّ */
+.h-tot { display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); gap: .5rem; margin: .4rem 0 .6rem; }
+.h-tot span { background: var(--soft); border-radius: 12px; padding: .5rem .6rem; display: flex; flex-direction: column; }
+.h-tot b { font-size: 1.2rem; color: var(--accent); }
+.h-tot b.in { color: var(--good); } .h-tot b.out { color: var(--danger); }
+.h-tot small { color: var(--muted); font-size: .75rem; }
+.h-month summary { cursor: pointer; font-size: 1.05rem; }
+.h-weeks { list-style: none; margin: 0; padding: 0; }
+.h-week { padding: .6rem 0; border-top: 1px solid var(--border); }
+.h-week-head { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.h-week-body { display: flex; flex-direction: column; gap: .2rem; font-size: .9rem; margin-top: .25rem; }
+.out { color: var(--danger); }

@@ -83,7 +83,7 @@ export function createHandler(pool, {
       throw err;
     }));
 
-  const userById = (id) => one('SELECT id, username, email, full_name, role, phone, disabled, last_seen, google_email FROM users WHERE id = $1', [id]);
+  const userById = (id) => one('SELECT id, username, email, full_name, role, phone, disabled, last_seen, google_email, photo IS NOT NULL AS has_photo, photo_v FROM users WHERE id = $1', [id]);
   const withLabel = (u) => u && { ...u, role_label: ROLE_LABELS[u.role] };
 
   async function startSession(userId, setSession) {
@@ -129,13 +129,46 @@ export function createHandler(pool, {
     await pool.query('DELETE FROM sessions WHERE user_id = $1 AND token <> $2', [user.id, token]);
     return { ok: true };
   });
+  // بياناتي: الطالب (الاسم، اللقب، العمر، الهاتف) والمشرف (الاسم، الهاتف، البريد)
   route('PUT', '/api/me', ANY, async ({ user, body }) => {
-    const email = text(body.email, { max: 120, name: 'البريد الإلكتروني' });
-    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new HttpError(400, 'البريد الإلكتروني غير صالح');
-    await pool.query('UPDATE users SET full_name = $1, phone = $2, email = $3 WHERE id = $4', [
-      text(body.full_name, { required: true, max: 120, name: 'الاسم' }), text(body.phone, { max: 30, name: 'الهاتف' }), email, user.id,
-    ]);
+    const phone = text(body.phone, { max: 30, name: 'الهاتف' });
+    if (user.role === 'talib') {
+      const first = text(body.first_name, { required: true, max: 60, name: 'الاسم' });
+      const last = text(body.last_name, { max: 60, name: 'اللقب' });
+      const age = body.age === '' || body.age === undefined || body.age === null ? null : Number(body.age);
+      if (age !== null && !(Number.isInteger(age) && age >= 3 && age <= 99)) throw new HttpError(400, 'العمر غير صالح');
+      await pool.query('UPDATE quran_students SET first_name = $1, last_name = $2, age = $3 WHERE user_id = $4', [first, last, age, user.id]);
+      await pool.query('UPDATE users SET full_name = $1, phone = $2 WHERE id = $3', [[first, last].filter(Boolean).join(' '), phone, user.id]);
+    } else {
+      const email = text(body.email, { max: 120, name: 'البريد الإلكتروني' });
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new HttpError(400, 'البريد الإلكتروني غير صالح');
+      await pool.query('UPDATE users SET full_name = $1, phone = $2, email = $3 WHERE id = $4', [
+        text(body.full_name, { required: true, max: 120, name: 'الاسم' }), phone, email, user.id,
+      ]);
+    }
     return { user: withLabel(await userById(user.id)) };
+  });
+  route('GET', '/api/me/profile', ANY, async ({ user }) => ({
+    profile: user.role === 'talib' ? await one('SELECT first_name, last_name, age FROM quran_students WHERE user_id = $1', [user.id]) : null,
+  }));
+
+  // الصورة الشخصية: صورة مصغّرة (JPEG/PNG/WebP) يرسلها الهاتف
+  route('PUT', '/api/me/photo', ANY, async ({ user, body }) => {
+    const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(body.image || ''));
+    if (!m) throw new HttpError(400, 'الصورة غير صالحة');
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > 400 * 1024) throw new HttpError(400, 'الصورة كبيرة جدًا');
+    await pool.query('UPDATE users SET photo = $1, photo_type = $2, photo_v = photo_v + 1 WHERE id = $3', [buf, m[1], user.id]);
+    return { user: withLabel(await userById(user.id)) };
+  });
+  route('DELETE', '/api/me/photo', ANY, async ({ user }) => {
+    await pool.query('UPDATE users SET photo = NULL, photo_type = NULL, photo_v = photo_v + 1 WHERE id = $1', [user.id]);
+    return { user: withLabel(await userById(user.id)) };
+  });
+  route('GET', '/api/users/:id/photo', ANY, async ({ params }) => {
+    const row = await one('SELECT photo, photo_type FROM users WHERE id = $1 AND photo IS NOT NULL', [params.id]);
+    if (!row) throw new HttpError(404, 'لا توجد صورة');
+    return new Response(row.photo, { status: 200, headers: { 'Content-Type': row.photo_type, 'Cache-Control': 'private, max-age=31536000' } });
   });
 
   // ---------- Google: الدخول، وتسجيل الطلبة الجدد (يؤكده المشرف) ----------
@@ -143,7 +176,7 @@ export function createHandler(pool, {
 
   // ---------- المشرفون: الشيخ والإدارة، بنفس الصلاحيات ----------
   route('GET', '/api/admins', ['admin'], async () => ({
-    admins: await all(`SELECT id, username, email, full_name, phone, last_seen FROM users WHERE role = 'admin' ORDER BY id`),
+    admins: await all(`SELECT id, username, email, full_name, phone, last_seen, photo IS NOT NULL AS has_photo, photo_v FROM users WHERE role = 'admin' ORDER BY id`),
   }));
   route('POST', '/api/admins', ['admin'], async ({ body }) => {
     const username = clean(text(body.username, { required: true, max: 50, name: 'اسم المستخدم' }));
@@ -220,6 +253,7 @@ export function createHandler(pool, {
       const m = url.pathname.match(match.re);
       const params = Object.fromEntries(match.keys.map((k, i) => [k, Number(m[i + 1])]));
       const result = await match.handler({ user, params, query: url.searchParams, body, token, setSession });
+      if (result instanceof Response) return result;
       return Array.isArray(result) ? respond(result[0], result[1]) : respond(200, result);
     } catch (err) {
       const status = err instanceof HttpError ? err.status : 500;

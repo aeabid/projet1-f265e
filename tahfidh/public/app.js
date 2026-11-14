@@ -18,7 +18,24 @@ function today() {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 function avatar(u, cls = '') {
+  if (u.has_photo && u.id) return `<img class="avatar ${cls}" src="/api/users/${u.id}/photo?v=${u.photo_v || 0}" alt="" loading="lazy">`;
   return `<span class="avatar ${cls}">${esc((u.full_name || '?').trim().charAt(0))}</span>`;
+}
+// تصغير الصورة في الهاتف قبل الإرسال (مربّع 320 بكسل، JPEG)
+function resizePhoto(file, size = 320) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const side = Math.min(img.width, img.height);
+      c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => reject(new Error('تعذّرت قراءة الصورة (استعمل JPG أو PNG)'));
+    img.src = URL.createObjectURL(file);
+  });
 }
 
 async function api(method, url, body) {
@@ -109,6 +126,7 @@ const ICON_PATHS = {
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
   grid: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
 };
 const icon = (name) =>
@@ -116,7 +134,7 @@ const icon = (name) =>
 
 const NAV = {
   admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'المجموعات', 'grid'], ['#/account', 'حسابي', 'user']],
-  talib: [['#/home', 'متابعتي', 'home'], ['#/my-review', 'مراجعتي', 'star'], ['#/my-hifz', 'محفوظي', 'book'], ['#/account', 'حسابي', 'user']],
+  talib: [['#/home', 'متابعتي', 'home'], ['#/my-review', 'مراجعتي', 'star'], ['#/my-hifz', 'محفوظي', 'book'], ['#/my-history', 'سجلّي', 'calendar'], ['#/account', 'حسابي', 'user']],
 };
 
 function renderTopbar() {
@@ -136,6 +154,7 @@ function renderTopbar() {
   $('#tabbar').hidden = false;
   $('#tabbar').innerHTML = items.map(([h, l, ic]) => `<a href="${h}" class="${on(h) ? 'on' : ''}">${icon(ic)}<span>${l}</span></a>`).join('');
   $('#who-name').textContent = `${state.user.full_name} · ${state.user.role_label}`;
+  $('#who-photo').innerHTML = `<a href="#/account" title="حسابي">${avatar(state.user, 'sm')}</a>`;
 }
 
 $('#logout').addEventListener('click', async () => {
@@ -185,14 +204,24 @@ function viewLogin(el) {
   });
 }
 
-function viewAccount(el) {
+async function viewAccount(el) {
   const u = state.user;
+  const talib = u.role === 'talib';
+  const p = talib ? (await api('GET', '/api/me/profile')).profile || {} : {};
   el.innerHTML = `<div class="card narrow"><h2>حسابي</h2>
-      <p>${avatar(u, 'md')} <b>${esc(u.full_name)}</b> · ${esc(u.role_label)} · <span dir="ltr" class="muted">${esc(u.username)}</span></p>
-      <form id="me-form"><label>الاسم<input name="full_name" required value="${esc(u.full_name)}"></label>
-        <label>الهاتف<input name="phone" type="tel" value="${esc(u.phone || '')}"></label>
-        ${u.role !== 'talib' ? `<label>البريد الإلكتروني (يمكن الدخول به)<input name="email" type="email" dir="ltr" value="${esc(u.email || '')}"></label>` : ''}
-        <button class="btn" type="submit">حفظ</button></form></div>
+      <div class="me-photo">${avatar(u, 'xl')}
+        <div><b>${esc(u.full_name)}</b><small class="muted">${esc(u.role_label)} · <span dir="ltr">${esc(u.username)}</span></small>
+          <span class="q-actions"><label class="btn small ghost file-btn">📷 تغيير الصورة<input type="file" id="me-photo" accept="image/*" hidden></label>
+          ${u.has_photo ? '<button type="button" class="btn small ghost danger" id="me-photo-del">حذف الصورة</button>' : ''}</span></div></div>
+      <form id="me-form">
+        ${talib ? `<div class="row"><label>الاسم<input name="first_name" required maxlength="60" value="${esc(p.first_name || '')}"></label>
+            <label>اللقب<input name="last_name" maxlength="60" value="${esc(p.last_name || '')}"></label></div>
+          <div class="row"><label>العمر<input name="age" type="number" min="3" max="99" value="${p.age ?? ''}"></label>
+            <label>الهاتف (أو هاتف الولي)<input name="phone" type="tel" value="${esc(u.phone || '')}"></label></div>`
+        : `<label>الاسم<input name="full_name" required value="${esc(u.full_name)}"></label>
+          <label>الهاتف<input name="phone" type="tel" value="${esc(u.phone || '')}"></label>
+          <label>البريد الإلكتروني (يمكن الدخول به)<input name="email" type="email" dir="ltr" value="${esc(u.email || '')}"></label>`}
+        <button class="btn" type="submit">حفظ بياناتي</button></form></div>
     <div class="card narrow"><h3>تغيير كلمة السر</h3>
       <form id="pw-form"><label>كلمة السر الحالية<input name="current" type="password" required autocomplete="current-password"></label>
         <label>كلمة السر الجديدة<input name="next" type="password" required minlength="6" autocomplete="new-password"></label>
@@ -201,11 +230,29 @@ function viewAccount(el) {
     ${u.role === 'admin' ? '<div class="card narrow" id="admins"></div>' : ''}`;
   googleAccountCard($('#g-card'));
   if (u.role === 'admin') adminsCard($('#admins'));
+  const after = (user) => {
+    state.user = user;
+    renderTopbar();
+    viewAccount(el);
+  };
+  $('#me-photo').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      after((await api('PUT', '/api/me/photo', { image: await resizePhoto(f) })).user);
+      toast('تم تغيير الصورة ✓');
+    } catch (err) {
+      toast(err.message, true);
+    }
+  });
+  $('#me-photo-del')?.addEventListener('click', async () => {
+    if (!confirmAction('حذف صورتك؟')) return;
+    after((await api('DELETE', '/api/me/photo')).user);
+  });
   $('#me-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      state.user = (await api('PUT', '/api/me', formData(e.target))).user;
-      renderTopbar();
+      after((await api('PUT', '/api/me', formData(e.target))).user);
       toast('تم الحفظ ✓');
     } catch (err) {
       toast(err.message, true);
@@ -229,7 +276,7 @@ async function adminsCard(box) {
   box.innerHTML = `<div class="section-head"><h3>المشرفون</h3><button type="button" class="btn small" id="adm-add">＋ مشرف</button></div>
     <p class="muted small">كل مشرف (الشيخ أو الإدارة) له نفس الصلاحيات: الطلبة، المجموعات، المحفوظ، المراجعة، التقييم.</p>
     <ul class="levels">${admins
-      .map((a) => `<li><span><b>${esc(a.full_name)}</b> <span class="muted small" dir="ltr">${esc(a.username)}</span>${a.id === state.user.id ? ' <span class="pill">أنت</span>' : ''}</span>
+      .map((a) => `<li><span>${avatar(a, 'sm')} <b>${esc(a.full_name)}</b> <span class="muted small" dir="ltr">${esc(a.username)}</span>${a.id === state.user.id ? ' <span class="pill">أنت</span>' : ''}</span>
         <span class="row-actions"><button type="button" class="btn small ghost" data-edit="${a.id}">تعديل</button>
         ${a.id === state.user.id ? '' : `<button type="button" class="btn small ghost danger" data-del="${a.id}">حذف</button>`}</span></li>`)
       .join('')}</ul>`;

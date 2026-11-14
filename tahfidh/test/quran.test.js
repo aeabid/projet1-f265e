@@ -111,6 +111,29 @@ test('two admins with same rights, students, chosen review, counter, meetings', 
   c = (await talib('PUT', `/api/quran/lessons/${lesson.id}/reps`, { count: 72 })).body;
   assert.deepStrictEqual([c.total, c.reached], [72, true]);
 
+  assert.strictEqual(c.week_total, 72);
+  // عدّاد الأسبوع: قراءات أسبوع سابق لا تُحتسب
+  const old = (await ayoub('POST', `/api/quran/students/${sid}/lessons`, { content: 'قديم', assigned_on: '2026-01-03' })).body.lesson;
+  await talib('PUT', `/api/quran/lessons/${old.id}/reps`, { date: '2026-01-05', count: 40 });
+  const ov0 = (await alaa('GET', '/api/quran/overview')).body.students[0];
+  assert.strictEqual(ov0.lesson.week_total, 72);
+  // الطالب يعدّل الدرس الذي تلقّاه (لا عدد القراءات الذي حدّده الشيخ)
+  const ed = await talib('PUT', `/api/quran/lessons/${lesson.id}`, { content: 'الملك 1-15', athman: 2, target: 5 });
+  assert.deepStrictEqual([ed.body.lesson.content, ed.body.lesson.athman, ed.body.lesson.target], ['الملك 1-15', 2, 70]);
+  // السجلّ: أسابيع السنة، وأسبوع جانفي فيه 40 قراءة
+  const hist = (await talib('GET', `/api/quran/students/${sid}/history?year=2026`)).body;
+  assert.ok(hist.weeks.length > 40);
+  assert.strictEqual(hist.weeks.find((w) => w.start === '2026-01-03').reps, 40);
+  // بياناتي وصورتي
+  const me2 = await talib('PUT', '/api/me', { first_name: 'أحمد', last_name: 'العلوي', age: 13, phone: '20123456' });
+  assert.strictEqual(me2.body.user.full_name, 'أحمد العلوي');
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  const ph = await talib('PUT', '/api/me/photo', { image: png });
+  assert.strictEqual(ph.body.user.has_photo, true);
+  const img = await handle(new Request(`http://localhost/api/users/${sid}/photo`, { headers: { cookie: (await login('alaa', 'admin123').then(() => null)) || '' } }));
+  assert.strictEqual(img.status, 401);
+  assert.strictEqual((await talib('PUT', '/api/me/photo', { image: 'data:text/html;base64,AAAA' })).status, 400);
+
   // الطالب يضيف درسه ويحذفه، ولا يحذف درس الشيخ
   const own = await talib('POST', `/api/quran/students/${sid}/lessons`, { content: 'الملك 15-30', athman: 1 });
   assert.strictEqual(own.status, 201);
