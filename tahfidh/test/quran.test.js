@@ -50,6 +50,15 @@ test('week start and review progress', () => {
   assert.strictEqual(p.percent, 100);
 });
 
+test('short range labels', () => {
+  const S = Q().segments;
+  const L = (f) => Q().rangeLabel(S.filter(f));
+  assert.strictEqual(L((s) => s.juz === 30), 'الجزء 30');
+  assert.strictEqual(L((s) => s.juz >= 28), 'من الجزء 28 إلى الجزء 30');
+  assert.strictEqual(L((s) => s.sura >= 78 && s.sura <= 85), 'من النبأ إلى البروج');
+  assert.strictEqual(L((s) => s.sura === 67), 'الملك');
+});
+
 test('two admins with same rights, students, chosen review, counter, meetings', async () => {
   // الدخول بالبريد أيضًا
   await login('alaa@example.com', 'admin123');
@@ -101,6 +110,17 @@ test('two admins with same rights, students, chosen review, counter, meetings', 
   assert.strictEqual(c.total, 6);
   c = (await talib('PUT', `/api/quran/lessons/${lesson.id}/reps`, { count: 72 })).body;
   assert.deepStrictEqual([c.total, c.reached], [72, true]);
+
+  // الطالب يضيف درسه ويحذفه، ولا يحذف درس الشيخ
+  const own = await talib('POST', `/api/quran/students/${sid}/lessons`, { content: 'الملك 15-30', athman: 1 });
+  assert.strictEqual(own.status, 201);
+  assert.strictEqual((await talib('DELETE', `/api/quran/lessons/${lesson.id}`)).status, 403);
+  assert.strictEqual((await talib('DELETE', `/api/quran/lessons/${own.body.lesson.id}`)).status, 200);
+  assert.strictEqual((await talib('POST', `/api/quran/attendance`, { date: '2026-11-07', marks: {} })).status, 403);
+
+  // الحضور جملة واحدة لكل الطلبة
+  assert.strictEqual((await ayoub('POST', '/api/quran/attendance', { date: '2026-11-08', marks: { [sid]: 'excused' } })).body.saved, 1);
+  assert.deepStrictEqual((await alaa('GET', '/api/quran/attendance?date=2026-11-08')).body.marks, { [sid]: 'excused' });
 
   // اللقاء والتقييم يراه الطالب
   const m = await alaa('POST', `/api/quran/students/${sid}/meetings`, { attendance: 'present', review_eval: 'good', hifz_eval: 'excellent', lesson_id: lesson.id, note: 'بارك الله فيك' });

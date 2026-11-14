@@ -162,6 +162,31 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     await pool.query('DELETE FROM quran_groups WHERE id = $1', [g.id]);
     return { ok: true };
   });
+  // الحضور الجماعي لكل الطلبة في قائمة واحدة
+  q('GET', '/api/quran/attendance', STAFF, async ({ query }) => {
+    const day = date(query.get('date') || today());
+    const rows = await all('SELECT student_id, attendance FROM quran_meetings WHERE date = $1', [day]);
+    return { date: day, marks: Object.fromEntries(rows.map((r) => [r.student_id, r.attendance])) };
+  });
+  q('POST', '/api/quran/attendance', STAFF, async ({ user, body }) => {
+    const day = date(body.date);
+    if (day > today()) throw new HttpError(400, 'لا يمكن تسجيل حضور يوم لم يأت بعد');
+    const marks = body.marks && typeof body.marks === 'object' ? body.marks : {};
+    const ids = (await all('SELECT user_id FROM quran_students')).map((r) => r.user_id);
+    let n = 0;
+    for (const id of ids) {
+      const a = marks[id];
+      if (!ATTENDANCE.includes(a)) continue;
+      await pool.query(
+        `INSERT INTO quran_meetings (student_id, date, attendance, created_by) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (student_id, date) DO UPDATE SET attendance = EXCLUDED.attendance`,
+        [id, day, a, user.id]
+      );
+      n++;
+    }
+    return { saved: n };
+  });
+
   // حضور مجموعة كاملة في لقاء
   q('POST', '/api/quran/groups/:id/attendance', STAFF, async ({ user, params, body }) => {
     const g = await loadGroup(user, params.id);
@@ -249,7 +274,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const end = addDays(start, 6);
     const items = await all(`SELECT date::text, seg_id FROM quran_review_items WHERE student_id = $1 AND date BETWEEN $2 AND $3 ORDER BY seg_id`, [st.id, start, end]);
     const lessons = await all(
-      `SELECT l.id, l.assigned_on::text, l.content, l.athman::float8 AS athman, l.target, u.full_name AS by_name,
+      `SELECT l.id, l.assigned_on::text, l.content, l.athman::float8 AS athman, l.target, l.created_by, u.full_name AS by_name,
          COALESCE((SELECT SUM(count) FROM quran_lesson_reps r WHERE r.lesson_id = l.id), 0)::int AS total
        FROM quran_lessons l LEFT JOIN users u ON u.id = l.created_by WHERE l.student_id = $1 ORDER BY l.assigned_on DESC, l.id DESC LIMIT 30`,
       [st.id]
@@ -318,8 +343,9 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
   });
 
   // ---------- الدرس الجديد وعدّاد القراءات ----------
-  q('POST', '/api/quran/students/:id/lessons', STAFF, async ({ user, params, body }) => {
-    const st = await loadStudent(user, params.id, { write: true });
+  // الدرس الجديد: يضيفه المشرف، أو الطالب نفسه
+  q('POST', '/api/quran/students/:id/lessons', ['admin', 'talib'], async ({ user, params, body }) => {
+    const st = await loadStudent(user, params.id);
     const athman = Number(body.athman ?? 1);
     if (!(athman > 0 && athman <= 16)) throw new HttpError(400, 'عدد الأثمان غير صالح');
     const lesson = await one(
@@ -331,13 +357,15 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     return [201, { lesson }];
   });
   async function loadLesson(user, id, opts) {
-    const l = await one('SELECT id, student_id, assigned_on::text, target FROM quran_lessons WHERE id = $1', [Number(id) || 0]);
+    const l = await one('SELECT id, student_id, assigned_on::text, target, created_by FROM quran_lessons WHERE id = $1', [Number(id) || 0]);
     if (!l) throw new HttpError(404, 'الدرس غير موجود');
     await loadStudent(user, l.student_id, opts);
     return l;
   }
-  q('DELETE', '/api/quran/lessons/:id', STAFF, async ({ user, params }) => {
-    const l = await loadLesson(user, params.id, { write: true });
+  // الطالب يحذف فقط درسًا أضافه هو
+  q('DELETE', '/api/quran/lessons/:id', ['admin', 'talib'], async ({ user, params }) => {
+    const l = await loadLesson(user, params.id);
+    if (user.role === 'talib' && l.created_by !== user.id) throw new HttpError(403, 'هذا الدرس أملاه الشيخ: لا يمكنك حذفه');
     await pool.query('DELETE FROM quran_lessons WHERE id = $1', [l.id]);
     return { ok: true };
   });

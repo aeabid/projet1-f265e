@@ -350,3 +350,22 @@ body.no-scroll { overflow: hidden; }
 .qc-foot { text-align: center; opacity: .85; }
 .q-counter-full.tap .qc-ring { animation: qc-pop .18s ease-out; }
 @keyframes qc-pop { 50% { transform: scale(1.04); } }
+
+/* الرؤية الإجمالية */
+.ov-filter { width: auto; margin: 0; }
+.q-att-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem; background: var(--soft); border-radius: 14px; padding: .6rem .8rem; margin: .4rem 0; }
+.q-ov td { vertical-align: middle; }
+.q-ov td:first-child { min-width: 120px; }
+.q-ov .q-att-opts { flex-wrap: nowrap; }
+.q-mini { display: flex; align-items: center; gap: .4rem; min-width: 110px; }
+.q-mini b { font-size: .82rem; white-space: nowrap; }
+.nowrap { white-space: nowrap; }
+@media (max-width: 640px) {
+  .q-ov thead { display: none; }
+  .q-ov, .q-ov tbody { display: block; }
+  .q-ov tr { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem .8rem; padding: .7rem 0; border-bottom: 1px solid var(--border); }
+  .q-ov td { border: 0; padding: 0; text-align: start; }
+  .q-ov td[data-l]::before { content: attr(data-l); display: block; font-size: .72rem; color: var(--muted); }
+  .q-ov td.ov-name, .q-ov td.ov-att { grid-column: 1 / -1; }
+  .q-ov .q-att-opts { flex-wrap: wrap; }
+}

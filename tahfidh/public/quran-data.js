@@ -39,28 +39,44 @@
     }
   }
 
-  // اسم مقطع أو مجموعة مقاطع متتالية: «البقرة 142–252» أو «الملك ← الناس»
+  // اسم مختصر لمجموعة مقاطع:
+  // جزء كامل ← «الجزء 30»، أجزاء متتالية ← «من الجزء 28 إلى الجزء 30»
+  // سور متتالية ← «من النبأ إلى البروج»، سورة واحدة ← «الملك» أو «البقرة 1–74»
   const suraName = (s) => NAMES[s - 1];
-  const whole = (s, from, to) => from === 1 && to === AYAT[s - 1];
+  const juzIds = {};
+  for (const g of segments) (juzIds[g.juz] ||= []).push(g.id);
   function rangeLabel(segs) {
-    if (!segs.length) return '';
-    const bySura = [];
-    for (const g of segs) {
-      const last = bySura[bySura.length - 1];
-      if (last && last.sura === g.sura && last.to + 1 === g.from) last.to = g.to;
-      else bySura.push({ sura: g.sura, from: g.from, to: g.to });
+    const list = [...new Map(segs.filter(Boolean).map((g) => [g.id, g])).values()].sort((a, b) => a.id - b.id);
+    if (!list.length) return '';
+    const set = new Set(list.map((g) => g.id));
+    const fullJuz = (j) => juzIds[j].every((id) => set.has(id));
+    const tokens = [];
+    let i = 0;
+    while (i < list.length) {
+      const g = list[i];
+      if (g.id === juzIds[g.juz][0] && fullJuz(g.juz)) {
+        let j = g.juz;
+        while (juzIds[j + 1] && fullJuz(j + 1)) j++;
+        tokens.push(j === g.juz ? `الجزء ${j}` : j === g.juz + 1 ? `الجزء ${g.juz} و${j}` : `من الجزء ${g.juz} إلى الجزء ${j}`);
+        const last = juzIds[j][juzIds[j].length - 1];
+        while (i < list.length && list[i].id <= last) i++;
+        continue;
+      }
+      // سلسلة مقاطع متتالية (تتوقف عند بداية جزء كامل)
+      let k = i;
+      while (k + 1 < list.length && list[k + 1].id === list[k].id + 1 && !(list[k + 1].id === juzIds[list[k + 1].juz][0] && fullJuz(list[k + 1].juz))) k++;
+      const a = list[i];
+      const b = list[k];
+      if (a.sura === b.sura) {
+        tokens.push(a.from === 1 && b.to === AYAT[a.sura - 1] ? suraName(a.sura) : `${suraName(a.sura)} ${a.from}–${b.to}`);
+      } else {
+        const start = a.from === 1 ? suraName(a.sura) : `${suraName(a.sura)} ${a.from}`;
+        const end = b.to === AYAT[b.sura - 1] ? suraName(b.sura) : `${suraName(b.sura)} ${b.to}`;
+        tokens.push(`من ${start} إلى ${end}`);
+      }
+      i = k + 1;
     }
-    // سلسلة متصلة من سور كاملة: «من … إلى …»
-    const contiguous = bySura.every((p, i) => i === 0 || (p.sura === bySura[i - 1].sura + 1 && p.from === 1 && bySura[i - 1].to === AYAT[bySura[i - 1].sura - 1]));
-    const part = (p) => (whole(p.sura, p.from, p.to) ? suraName(p.sura) : `${suraName(p.sura)} ${p.from}–${p.to}`);
-    if (bySura.length > 2 && contiguous) {
-      const a = bySura[0];
-      const b = bySura[bySura.length - 1];
-      const start = a.from === 1 ? suraName(a.sura) : `${suraName(a.sura)} ${a.from}`;
-      const end = whole(b.sura, b.from, b.to) || b.from === 1 && b.to === AYAT[b.sura - 1] ? suraName(b.sura) : `${suraName(b.sura)} ${b.to}`;
-      return `${start} ← ${end}`;
-    }
-    return bySura.map(part).join('، ');
+    return tokens.join('، ');
   }
 
   // تقسيم المحفوظ إلى n حصص متوازنة (حسب الحجم)، مع احترام ترتيب المصحف
