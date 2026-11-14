@@ -7,7 +7,12 @@ const PERIODS = { week: 'هذا الأسبوع', month: 'هذا الشهر', all
 const WINDOWS = { 1: 'اليوم فقط (حتى نصف الليل)', 2: 'اليوم وأمس (48 ساعة)', 3: 'آخر 3 أيام', 7: 'آخر أسبوع' };
 const MONTH_NAMES = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const COLORS = ['#61038d', '#20149a', '#e5197d', '#1f9d63', '#c26a00', '#0b7fa6', '#8a2be2', '#b0306a'];
-const avatarColor = (id) => COLORS[Number(id) % COLORS.length];
+const avatarColor = (id) => COLORS[Math.abs(Number(id) || 0) % COLORS.length];
+// صورة المشارك، أو أول حرف من اسمه على لون ثابت
+function avatar(id, name, url, cls = '') {
+  if (url) return `<span class="av ${cls} img" style="background:${avatarColor(id)}"><img src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>`;
+  return `<span class="av ${cls}" style="background:${avatarColor(id)}">${esc(String(name || '?').trim().charAt(0))}</span>`;
+}
 
 // المستويات: المستوى L يبدأ من 25×L×(L−1) نقطة (0، 50، 150، 300، 500، 750…)
 const LEVEL_TITLES = ['مبتدئ', 'مجتهد', 'مثابر', 'مواظب', 'متميّز', 'بطل', 'نجم', 'قدوة', 'فارس', 'أسطورة'];
@@ -231,13 +236,14 @@ function renderAuth() {
         <li><b>🕋</b> الصلوات على وقتها، الأذكار، القرآن</li>
         <li><b>⭐</b> نقاط ومستويات وشارات</li>
         <li><b>🏆</b> ترتيب أسبوعي ومنصّة الأبطال</li>
+        <li><b>✅</b> سجّل الدخول، ثم ينتظر حسابك قبول المشرف</li>
       </ul>
     </section>
     <div class="card" style="display:grid;gap:.8rem">
-      ${S.google ? `<button class="btn google" type="button" id="google">
+      ${S.google ? `<button class="btn google big" type="button" id="google">
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        الدخول بحساب Google</button>
-      <div class="or">أو بالإيميل</div>` : ''}
+        الدخول بحساب Google (الأسهل)</button>
+      <div class="or">أو بالإيميل وكلمة السر</div>` : ''}
       ${reset ? '' : `<div class="seg two"><button type="button" data-mode="login" aria-pressed="${!signup}">دخول</button><button type="button" data-mode="signup" aria-pressed="${signup}">حساب جديد</button></div>`}
       <form id="auth-form" novalidate>
         ${signup ? '<label>اسمك<input id="a-name" maxlength="60" required autocomplete="name"></label>' : ''}
@@ -318,10 +324,9 @@ async function loadMe() {
 }
 
 async function loadMembers() {
-  const { data } = await sb.from('members').select('id, name, joined_on').eq('account_id', S.me.id).order('id');
+  const { data } = await sb.from('members').select('id, name, joined_on, avatar_url').eq('account_id', S.me.id).order('id');
   S.members = data || [];
-  if (!member()) S.memberId = Number(recall('member')) || null;
-  if (!member()) S.memberId = S.members[0]?.id ?? null;
+  S.memberId = S.members[0]?.id ?? null;
 }
 
 async function loadAll() {
@@ -451,13 +456,19 @@ function cleanupPlayers() { players.forEach((p) => { clearInterval(p.timer); try
 
 async function render() {
   cleanupPlayers();
+  if (!S.me.is_admin && S.me.status && S.me.status !== 'approved') return renderPending();
   document.querySelectorAll('#nav button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.tab === S.tab)));
   $('#tab-admin').hidden = !S.me.is_admin;
+  if (S.me.is_admin) sb.rpc('admin_accounts').then(({ data }) => {
+    const n = (data || []).filter((a) => a.status === 'pending').length;
+    $('#admin-dot').hidden = !n;
+    $('#admin-dot').textContent = n || '';
+  });
   const pendingQuests = quests().filter((c) => !onceDone(c) && (!c.end_date || c.end_date >= today())).length;
   $('#quest-dot').hidden = !pendingQuests;
   $('#quest-dot').textContent = pendingQuests || '';
   const v = $('#view');
-  if (S.editMembers || (!S.members.length && S.tab !== 'admin' && S.tab !== 'rules')) v.innerHTML = renderMembers();
+  if (!S.members.length && S.tab !== 'admin' && S.tab !== 'rules') v.innerHTML = renderMembers();
   else if (S.tab === 'today') v.innerHTML = S.openId ? renderMonth(S.challenges.find((c) => c.id === S.openId)) : renderToday();
   else if (S.tab === 'quests') v.innerHTML = renderQuests();
   else if (S.tab === 'board') v.innerHTML = await renderBoard();
@@ -468,26 +479,15 @@ async function render() {
   mountPlayers();
 }
 
-function membersBar() {
-  if (S.members.length < 2) return '';
-  return `<div class="scroller members" role="group" aria-label="المشارك">${S.members
-    .map((m) => `<button class="pill" type="button" data-member="${m.id}" aria-pressed="${m.id === S.memberId}"><span class="av xs" style="background:${avatarColor(m.id)}">${esc(m.name.trim().charAt(0))}</span>${esc(m.name)}</button>`)
-    .join('')}</div>`;
-}
+// كل حساب = مشارك واحد
+const membersBar = () => '';
 
+// حالة نادرة: حساب دون مشارك (يُنشأ عادةً تلقائيًا)
 function renderMembers() {
-  const first = !S.members.length;
   return `<form class="card" id="members-form" style="display:grid;gap:.8rem">
-    <h2>${first ? '👋 مرحبًا! من سيشارك في التحدّي؟' : 'المشاركون في حسابك'}</h2>
-    <p class="muted small" style="margin:0">أضف نفسك أو أبناءك. كل مشارك له نقاطه وشاراته وترتيبه، وتسجّل له من هذا الحساب.</p>
-    ${S.members
-      .map((m) => `<div class="row nowrap"><span class="av sm" style="background:${avatarColor(m.id)}">${esc(m.name.trim().charAt(0))}</span><input data-mname="${m.id}" maxlength="60" value="${esc(m.name)}" style="flex:1;min-width:0">
-        <button class="btn danger small" type="button" data-mdel="${m.id}">حذف</button></div>`)
-      .join('')}
-    <div class="row nowrap"><input id="new-member" maxlength="60" placeholder="اسم المشارك، مثال: سارة" style="flex:1;min-width:0">
-      <button class="btn small" type="button" id="add-member">+ إضافة</button></div>
-    ${confirmBox()}
-    ${first ? '' : '<div class="row"><button class="btn" type="submit">حفظ الأسماء</button><button class="btn ghost" type="button" id="m-done">رجوع</button></div>'}
+    <h2>👋 مرحبًا! ما اسمك في التحدّي؟</h2>
+    <input id="new-member" maxlength="60" value="${esc(S.me.display_name || '')}" required>
+    <button class="btn big" type="submit">ابدأ</button>
   </form>`;
 }
 
@@ -511,7 +511,7 @@ function heroCard() {
   }
   return `<section class="hero">
     <div class="hero-top">
-      <span class="av lg" style="background:${avatarColor(m?.id)}">${esc((m?.name || '?').trim().charAt(0))}</span>
+      <button class="av-btn" type="button" data-goto="me" aria-label="ملفي">${avatar(m?.id, m?.name, m?.avatar_url, 'lg')}</button>
       <div class="hero-who">
         <b>${esc(m?.name || '')}</b>
         <span class="lv-chip" style="--lv:${lv.color}">⭐ المستوى ${lv.level} · ${lv.title}</span>
@@ -744,7 +744,7 @@ async function renderBoard() {
   const top = rows.filter((r) => r.points > 0).slice(0, 3);
   const place = (r, cls) => r ? `<div class="place ${cls} ${r.is_mine && r.member_id === S.memberId ? 'mine' : ''}">
       <span class="crown">${cls === 'first' ? '👑' : ''}</span>
-      <span class="av" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>
+      ${avatar(r.member_id, r.name, r.avatar_url)}
       <span class="pname">${esc(r.name)}</span>
       <span class="ppts">${r.points} <span>نقطة</span></span>
       <span class="step">${MEDALS[r.rank - 1] || r.rank}</span>
@@ -774,7 +774,7 @@ async function renderBoard() {
           return `<div class="lb-row ${mine ? 'mine' : r.is_mine ? 'family' : ''}">
             <span class="lb-rank">${r.points && r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank}</span>
             <span class="star" style="--star:${lv.color}" title="${lv.title}"><b>${lv.level}</b></span>
-            <span class="lb-who"><span class="av sm" style="background:${avatarColor(r.member_id)}">${esc(r.name.trim().charAt(0))}</span>
+            <span class="lb-who">${avatar(r.member_id, r.name, r.avatar_url, 'sm')}
               <span class="lb-info"><span class="lb-name">${esc(r.name)}${mine ? ' <span class="tag">أنت</span>' : r.is_mine ? ' <span class="tag soft">عائلتي</span>' : ''}</span>
                 <small class="lb-meta">${lv.title}${r.streak ? ` · 🔥 ${r.streak}` : ''}${!c && r.perfect ? ` · ✨ ${r.perfect}` : ''}${r.bonus ? ` · 🎁 +${r.bonus}` : ''}</small></span></span>
             <span class="lb-total"><b>${r.points}</b><small>نقطة</small></span>
@@ -793,7 +793,7 @@ function renderMe() {
   const list = badges();
   const got = list.filter((b) => b.got).length;
   const x = badgeStats();
-  return `${membersBar()}
+  return `${profileCard()}
     ${heroCard()}
     <section class="card" style="display:grid;gap:.7rem">
       <div class="row"><h2>🎖️ الشارات</h2><span class="pill-yellow sm">${got}/${list.length}</span></div>
@@ -818,14 +818,65 @@ function renderMe() {
       <div class="ladder">${LEVEL_TITLES.map((t, i) => `<div class="rung ${i + 1 < lv.level ? 'past' : i + 1 === lv.level ? 'now' : ''}" style="--lv:${LEVEL_COLORS[i]}">
         <span class="star" style="--star:${LEVEL_COLORS[i]}"><b>${i + 1}</b></span><b>${t}</b><small>${levelStart(i + 1)}+ نقطة</small></div>`).join('')}</div>
     </section>
-    <section class="card row">
-      <div><b>👨‍👩‍👧 المشاركون في حسابك</b><div class="small muted">${S.members.map((m) => esc(m.name)).join('، ')}</div></div>
-      <button class="btn ghost small" type="button" id="manage-members">إضافة / تعديل</button>
-    </section>
-    <section class="card row">
-      <div><b>✏️ اسم الحساب</b><div class="small muted">${esc(S.me.display_name)}</div></div>
-      <button class="btn ghost small" type="button" id="rename">تعديل</button>
-    </section>`;
+`;
+}
+
+// ملفي: الصورة والاسم
+function profileCard() {
+  const m = member();
+  return `<form class="card profile" id="profile-form">
+    <label class="photo" title="تغيير الصورة">
+      ${avatar(m?.id, m?.name, m?.avatar_url, 'xl')}
+      <span class="photo-cam">📷</span>
+      <input type="file" id="photo" accept="image/*" hidden>
+    </label>
+    <div class="profile-fields">
+      <label>اسمك في الترتيب<input id="pf-name" maxlength="60" value="${esc(m?.name || S.me.display_name)}" required></label>
+      <div class="row nowrap"><button class="btn small" type="submit">حفظ</button>
+        ${m?.avatar_url ? '<button class="btn danger small" type="button" id="photo-del">حذف الصورة</button>' : '<span class="small muted">اضغط على الصورة لتغييرها</span>'}</div>
+    </div>
+  </form>`;
+}
+
+// تصغير الصورة إلى مربّع 320×320 (JPEG) قبل الرفع
+async function squareJpeg(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = url; });
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const c = document.createElement('canvas');
+    c.width = c.height = 320;
+    // قصّ في الوسط، مع ميل للأعلى (الوجه عادةً في الأعلى)
+    const sx = (img.naturalWidth - side) / 2;
+    const sy = Math.max(0, (img.naturalHeight - side) / 3);
+    c.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, 320, 320);
+    return await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.85));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function uploadPhoto(file) {
+  const m = member();
+  if (!m) return;
+  if (!/^image\//.test(file.type) && !/\.(heic|heif)$/i.test(file.name)) return toast('اختر صورة.', true);
+  toast('جاري رفع الصورة…');
+  let blob;
+  try { blob = await squareJpeg(file); } catch { return toast('تعذّرت قراءة الصورة. جرّب صورة JPG أو PNG.', true); }
+  const path = `${S.me.id}/${Date.now()}.jpg`;
+  const { error } = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+  if (error) return toast('تعذّر رفع الصورة.', true);
+  const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+  const old = m.avatar_url;
+  const { error: e2 } = await sb.from('members').update({ avatar_url: url }).eq('id', m.id);
+  if (e2) return toast('تعذّر الحفظ.', true);
+  m.avatar_url = url;
+  // حذف الصورة القديمة إن كانت في مجلّدنا
+  const prefix = '/avatars/' + S.me.id + '/';
+  if (old && old.includes(prefix)) sb.storage.from('avatars').remove([old.slice(old.indexOf(prefix) + 9)]);
+  await loadRanks();
+  toast('تم تحديث صورتك 📸');
+  render();
 }
 
 function renderRules() {
@@ -1009,7 +1060,36 @@ async function renderAdmin() {
           .join('')}</tbody></table></div>`;
   }
   const titles = new Set(S.challenges.map((x) => x.title.trim()));
+  const { data: accounts } = await sb.rpc('admin_accounts');
+  const acc = accounts || [];
+  const waiting = acc.filter((a) => a.status === 'pending');
+  const others = acc.filter((a) => a.status !== 'pending');
+  const accRow = (a) => `<div class="acc ${a.status}">
+      ${avatar(a.member_id || 0, a.member_name || a.display_name, a.avatar_url, 'sm')}
+      <div class="acc-info"><b>${esc(a.member_name || a.display_name)}</b>
+        <small class="muted" dir="ltr">${esc(a.email || '')}</small>
+        <small class="muted">${a.provider === 'google' ? 'Google' : 'إيميل'} · ${new Date(a.created_at).toLocaleDateString('fr-TN')}${a.status === 'rejected' ? ' · <span class="urgent">مرفوض</span>' : ''}</small></div>
+      <div class="row nowrap">${a.status !== 'approved' ? `<button class="btn small" type="button" data-acc="${a.id}" data-st="approved">✓ قبول</button>` : ''}
+        ${a.status !== 'rejected' && !(a.id === S.me.id) ? `<button class="btn danger small" type="button" data-acc="${a.id}" data-st="rejected">${a.status === 'approved' ? 'إيقاف' : 'رفض'}</button>` : ''}</div>
+    </div>`;
+  const link = inviteLink();
   return `${confirmBox(true)}
+    <div class="card" style="display:grid;gap:.6rem">
+      <div class="row"><h2>🙋 طلبات الانضمام</h2>${waiting.length ? `<span class="tag">${waiting.length}</span>` : ''}</div>
+      ${waiting.length ? waiting.map(accRow).join('') : '<p class="muted small" style="margin:0">لا توجد طلبات جديدة.</p>'}
+      ${others.length ? `<details><summary class="small">كل الحسابات (${others.length})</summary>${others.map(accRow).join('')}</details>` : ''}
+    </div>
+    <div class="card invite" style="display:grid;gap:.6rem">
+      <h2>🔗 رابط الدخول</h2>
+      <p class="muted small" style="margin:0">أرسله للمشاركين: يدخلون بـ Google أو بالإيميل، ثم تقبلهم من هنا.</p>
+      <div class="link-box" dir="ltr">${esc(link)}</div>
+      <div class="row">
+        <button class="btn small" type="button" id="copy-link">📋 نسخ</button>
+        <a class="btn small wa" href="https://wa.me/?text=${encodeURIComponent('انضمّ إلى تحدّي «صناعة العادات» 🌙✨: الصلوات على وقتها، الأذكار، القرآن… نقاط وشارات وترتيب!\n' + link)}" target="_blank" rel="noopener">واتساب</a>
+        <button class="btn ghost small" type="button" id="show-qr">▦ رمز QR</button>
+      </div>
+      ${S.showQr ? `<div class="qr">${qrSvg(link)}</div>` : ''}
+    </div>
     <div class="card" style="display:grid;gap:.6rem">
       <div class="row"><h2>📋 المهام</h2><div class="row"><button class="btn small" type="button" data-add="daily">+ يومية</button><button class="btn small yellow" type="button" data-add="once">+ تحدٍّ خاص</button></div></div>
       ${S.challenges
@@ -1041,6 +1121,15 @@ async function renderAdmin() {
       <div class="row"><button class="btn" type="submit">حفظ</button><button class="btn ghost" type="button" data-goto="rules">📜 تعديل القانون</button></div>
     </form>
     ${details}`;
+}
+
+const inviteLink = () => location.origin + location.pathname.replace(/index\.html$/, '');
+function qrSvg(text) {
+  if (typeof qrcode !== 'function') return '';
+  const q = qrcode(0, 'M');
+  q.addData(text);
+  q.make();
+  return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
 }
 
 async function toggle(memberId, cid, day, done, item = 0) {
@@ -1087,58 +1176,43 @@ async function mark(c, d, item, done, el) {
 
 function bind() {
   const v = $('#view');
-  v.querySelectorAll('[data-member]').forEach((b) =>
-    b.addEventListener('click', async () => { S.memberId = Number(b.dataset.member); store('member', String(S.memberId)); S.quiz = {}; await loadAll(); checkRewards(); render(); })
-  );
   v.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => go(b.dataset.goto)));
-  $('#manage-members')?.addEventListener('click', () => { S.editMembers = true; render(); });
-  $('#m-done')?.addEventListener('click', () => { S.editMembers = false; S.pending = null; render(); });
-  $('#add-member')?.addEventListener('click', async () => {
-    const name = $('#new-member').value.trim();
-    if (!name) return toast('اكتب اسم المشارك.', true);
-    const { data, error } = await sb.from('members').insert({ account_id: S.me.id, name }).select('id').single();
-    if (error) return toast(error.code === '42501' ? 'وصلت إلى الحد الأقصى من المشاركين.' : 'تعذّر الإضافة.', true);
-    const first = !S.members.length;
-    await loadMembers();
-    if (first || !S.memberId) S.memberId = data.id;
-    await loadAll();
-    toast('تمت إضافة ' + name);
-    if (first) { S.editMembers = false; celebrate({ icon: '🚀', title: `أهلًا ${name}!`, text: 'بدأت رحلتك. سجّل أول مهمة واربح شارة «أول خطوة» 🌱', btn: 'هيّا نبدأ' }); }
-    render();
-  });
-  $('#new-member')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#add-member').click(); } });
   $('#members-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    for (const inp of v.querySelectorAll('[data-mname]')) {
-      const m = S.members.find((x) => x.id === Number(inp.dataset.mname));
-      const name = inp.value.trim();
-      if (m && name && name !== m.name) {
-        const { error } = await sb.from('members').update({ name }).eq('id', m.id);
-        if (error) return toast('تعذّر الحفظ.', true);
-      }
-    }
+    const name = $('#new-member').value.trim();
+    if (!name) return toast('اكتب اسمك.', true);
+    const { error } = await sb.from('members').insert({ account_id: S.me.id, name });
+    if (error) return toast('تعذّر الحفظ.', true);
     await loadMembers();
+    await loadAll();
+    celebrate({ icon: '🚀', title: `أهلًا ${name}!`, text: 'بدأت رحلتك. سجّل أول مهمة واربح شارة «أول خطوة» 🌱', btn: 'هيّا نبدأ' });
+    render();
+  });
+  $('#photo')?.addEventListener('change', (e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); });
+  $('#photo-del')?.addEventListener('click', async () => {
+    const m = member();
+    const { error } = await sb.from('members').update({ avatar_url: null }).eq('id', m.id);
+    if (error) return toast('تعذّر الحذف.', true);
+    m.avatar_url = null;
     await loadRanks();
-    S.editMembers = false;
+    render();
+  });
+  $('#profile-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('#pf-name').value.trim();
+    const m = member();
+    if (!name || !m) return;
+    const [r1, r2] = await Promise.all([
+      sb.from('members').update({ name }).eq('id', m.id),
+      sb.from('profiles').update({ display_name: name }).eq('id', S.me.id),
+    ]);
+    if (r1.error || r2.error) return toast('تعذّر الحفظ.', true);
+    m.name = name;
+    S.me.display_name = name;
+    await loadRanks();
     toast('تم الحفظ');
     render();
   });
-  v.querySelectorAll('[data-mdel]').forEach((b) =>
-    b.addEventListener('click', () => {
-      const m = S.members.find((x) => x.id === Number(b.dataset.mdel));
-      S.pending = {
-        label: `حذف «${m.name}» وكل أيامه ونقاطه؟`,
-        run: async () => {
-          const { error } = await sb.from('members').delete().eq('id', m.id);
-          if (error) toast('تعذّر الحذف.', true);
-          if (S.memberId === m.id) S.memberId = null;
-          await loadMembers();
-          await loadAll();
-        },
-      };
-      render();
-    })
-  );
   v.querySelectorAll('[data-day]').forEach((b) => b.addEventListener('click', () => { S.day = b.dataset.day; render(); }));
   v.querySelectorAll('.check[data-c]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -1208,13 +1282,26 @@ function bind() {
   );
   v.querySelectorAll('[data-board]').forEach((b) => b.addEventListener('click', () => { S.boardId = Number(b.dataset.board); render(); }));
   v.querySelectorAll('[data-period]').forEach((b) => b.addEventListener('click', () => { S.period = b.dataset.period; render(); }));
-  $('#rename')?.addEventListener('click', renderRename);
   bindAdmin(v);
   $('#p-yes')?.addEventListener('click', async () => { const p = S.pending; S.pending = null; await p.run(); render(); });
   $('#p-no')?.addEventListener('click', () => { S.pending = null; render(); });
 }
 
 function bindAdmin(v) {
+  v.querySelectorAll('[data-acc]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      b.disabled = true;
+      const { error } = await sb.rpc('set_account_status', { p_id: b.dataset.acc, p_status: b.dataset.st });
+      if (error) { b.disabled = false; return toast('تعذّر الحفظ.', true); }
+      toast(b.dataset.st === 'approved' ? 'تم القبول ✓' : 'تم');
+      await loadRanks();
+      render();
+    })
+  );
+  $('#copy-link')?.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(inviteLink()); toast('تم نسخ الرابط'); } catch { toast(inviteLink()); }
+  });
+  $('#show-qr')?.addEventListener('click', () => { S.showQr = !S.showQr; render(); });
   v.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => { S.editing = { start_date: today(), active: true, kind: b.dataset.add, points: b.dataset.add === 'once' ? 20 : 5 }; render(); window.scrollTo({ top: 0 }); }));
   v.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => { S.editing = { ...S.challenges.find((x) => x.id === Number(b.dataset.edit)) }; render(); window.scrollTo({ top: 0 }); }));
   v.querySelectorAll('[data-kind]').forEach((b) => b.addEventListener('click', () => { readForm(); S.editing.kind = b.dataset.kind; render(); }));
@@ -1363,30 +1450,11 @@ function readForm() {
   }
 }
 
-function renderRename() {
-  $('#view').innerHTML = `<form class="card" id="name-form" style="display:grid;gap:.7rem">
-    <h3>اسم الحساب</h3>
-    <input id="nm" maxlength="60" value="${esc(S.me.display_name)}" required>
-    <div class="row"><button class="btn" type="submit">حفظ</button><button class="btn ghost" type="button" id="nm-cancel">إلغاء</button></div></form>`;
-  $('#nm-cancel').addEventListener('click', render);
-  $('#name-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = $('#nm').value.trim();
-    if (!name) return;
-    const { error } = await sb.from('profiles').update({ display_name: name }).eq('id', S.me.id);
-    if (error) return toast(error.message, true);
-    S.me.display_name = name;
-    toast('تم الحفظ');
-    render();
-  });
-}
-
 function go(tab) {
   S.tab = tab;
   S.openId = null;
   S.pending = null;
   S.editing = null;
-  S.editMembers = false;
   render();
   window.scrollTo({ top: 0 });
 }
@@ -1398,6 +1466,41 @@ const soundIcon = () => { $('#sound-btn').textContent = FX.sound ? '🔊' : '�
 soundIcon();
 $('#sound-btn').addEventListener('click', () => { FX.sound = !FX.sound; store('sound', FX.sound ? 'on' : 'off'); soundIcon(); if (FX.sound) FX.chime(); });
 
+// في انتظار قبول المشرف: يمكن وضع الصورة والاسم من الآن
+function renderPending() {
+  $('#nav').hidden = true;
+  document.body.classList.remove('with-nav');
+  const rejected = S.me.status === 'rejected';
+  $('#view').innerHTML = `<div class="auth">
+    <section class="hero center pending">
+      <div class="cel-icon">${rejected ? '🚫' : '⏳'}</div>
+      <h2>${rejected ? 'لم يُقبل طلبك' : 'طلبك وصل إلى المشرف'}</h2>
+      <p>${rejected ? 'تواصل مع المشرف إن كان هناك خطأ.' : 'سيقبل المشرف حسابك قريبًا إن شاء الله، ثم تبدأ التحدّي مع الجميع. في الأثناء ضع صورتك واسمك 👇'}</p>
+      <button class="btn yellow" type="button" id="recheck">🔄 تحقّق من جديد</button>
+    </section>
+    ${rejected ? '' : profileCard()}
+  </div>`;
+  $('#recheck').addEventListener('click', async () => {
+    await loadMe();
+    if (S.me.status === 'approved') { toast('تم قبولك! مرحبًا بك 🎉'); start(); }
+    else toast('ما زال الطلب في الانتظار.');
+  });
+  const v = $('#view');
+  $('#photo')?.addEventListener('change', async (e) => { const f = e.target.files?.[0]; if (f) { await uploadPhoto(f); } });
+  $('#profile-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('#pf-name').value.trim();
+    const m = member();
+    if (!name || !m) return;
+    await Promise.all([sb.from('members').update({ name }).eq('id', m.id), sb.from('profiles').update({ display_name: name }).eq('id', S.me.id)]);
+    m.name = name;
+    S.me.display_name = name;
+    toast('تم الحفظ');
+    renderPending();
+  });
+  void v;
+}
+
 async function start() {
   if (S.recovery) return renderNewPassword();
   if (!S.session) return renderAuth();
@@ -1406,10 +1509,11 @@ async function start() {
     $('#view').innerHTML = '<div class="card error">تعذّر تحميل حسابك. أعد تحميل الصفحة.</div>';
     return;
   }
-  $('#nav').hidden = false;
   $('#top-actions').hidden = false;
-  document.body.classList.add('with-nav');
   await loadMembers();
+  if (!S.me.is_admin && S.me.status && S.me.status !== 'approved') return renderPending();
+  $('#nav').hidden = false;
+  document.body.classList.add('with-nav');
   await loadAll();
   render();
   checkRewards();

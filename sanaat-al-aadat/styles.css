@@ -350,3 +350,27 @@ th.today { color: var(--purple); font-weight: 800; }
 @keyframes up { to { transform: translate(-50%, -70px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media (max-width: 380px) { .brand h1 { font-size: 1.05rem; } .brand img { height: 22px; } .icon-btn { width: 34px; height: 34px; } .hero-stats b { font-size: 1.35rem; } }
+
+/* الصور والملف الشخصي */
+.av.img { overflow: hidden; padding: 0; }
+.av.img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.av.xl { width: 6rem; height: 6rem; font-size: 2.4rem; border-color: var(--yellow); }
+.av-btn { background: none; border: 0; padding: 0; cursor: pointer; border-radius: 50%; }
+.profile { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.photo { position: relative; cursor: pointer; display: block; flex: none; }
+.photo-cam { position: absolute; bottom: 0; inset-inline-start: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--pink); color: #fff; display: grid; place-items: center; font-size: 1rem; border: 3px solid var(--card); }
+.profile-fields { display: grid; gap: .5rem; flex: 1; min-width: 200px; }
+.pending { justify-items: center; }
+.pending h2 { color: #fff; }
+.pending p { margin: 0; opacity: .95; }
+/* الحسابات والدعوة */
+.acc { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .3rem .6rem; align-items: center; border-top: 1px solid var(--line); padding-top: .55rem; margin-top: .3rem; }
+.acc > .row { grid-column: 1 / -1; justify-content: flex-end; }
+.acc-info { display: grid; min-width: 0; line-height: 1.35; }
+.acc-info small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .75rem; }
+.acc.rejected { opacity: .6; }
+details summary { cursor: pointer; color: var(--purple); font-weight: 700; padding-block: .3rem; }
+.link-box { background: var(--soft); border: 1.5px dashed var(--line); border-radius: 12px; padding: .5rem .7rem; font-weight: 700; color: var(--purple); overflow-wrap: anywhere; font-family: ui-monospace, monospace; font-size: .9rem; }
+.btn.wa { background: #25d366; box-shadow: 0 4px 0 #128c4a; }
+.qr { background: #fff; border-radius: 16px; padding: .6rem; width: min(240px, 100%); justify-self: center; }
+.qr svg { width: 100%; height: auto; display: block; }
