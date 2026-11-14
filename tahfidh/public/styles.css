@@ -384,3 +384,10 @@ body.no-scroll { overflow: hidden; }
 .signup-alert b { margin-inline-start: auto; }
 .signup-alert:hover { text-decoration: none; }
 @media (prefers-color-scheme: dark) { .signup-alert { background: #3d1c2b; color: #f59ac2; } }
+.q-att-sum { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; font-size: .88rem; }
+.q-unsaved { color: #b0145a; font-size: .82rem; }
+.q-ov tr.is-absent td { background: rgba(217, 58, 58, .07); }
+.q-ov tr.is-excused td { background: rgba(224, 137, 26, .08); }
+.q-ov tr.q-off { opacity: .55; }
+.card .q-filters { margin-bottom: .6rem; }
+@media (max-width: 640px) { .q-ov tr.is-absent, .q-ov tr.is-excused { border-inline-start: 4px solid var(--danger); padding-inline-start: .5rem; } .q-ov tr.is-excused { border-color: var(--q-weak); } .q-ov tr.is-absent td, .q-ov tr.is-excused td { background: none; } }

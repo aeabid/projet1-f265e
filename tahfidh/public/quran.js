@@ -94,7 +94,8 @@ async function viewQuranHome(el, tab = '') {
   const withReview = active.filter((s) => s.review?.percent !== null && s.review?.percent !== undefined);
   const avg = withReview.length ? Math.round(withReview.reduce((t, s) => t + s.review.percent, 0) / withReview.length) : 0;
   const reached = active.filter((s) => s.lesson && s.lesson.total >= s.lesson.target).length;
-  tab = tab || sessionStorage.getItem('qTab') || 'overview';
+  tab = tab === 'overview' ? 'students' : tab || sessionStorage.getItem('qTab') || 'students';
+  if (!['students', 'groups', 'signups'].includes(tab)) tab = 'students';
   sessionStorage.setItem('qTab', tab);
   el.innerHTML = `
     ${heroBanner({ sub: 'تابع مراجعة الطلبة وحفظهم أسبوعًا بأسبوع.', art: '📖',
@@ -107,7 +108,6 @@ async function viewQuranHome(el, tab = '') {
     </div>
     <a href="#/quran/signups" class="signup-alert" id="signup-alert" hidden>📝 <span></span> <b>عرض ←</b></a>
     <div class="board-tabs" role="tablist">
-      <a href="#/quran/overview" class="${tab === 'overview' ? 'on' : ''}"><span>📊</span>الرؤية الإجمالية</a>
       <a href="#/quran/students" class="${tab === 'students' ? 'on' : ''}"><span>👥</span>الطلبة</a>
       <a href="#/quran/groups" class="${tab === 'groups' ? 'on' : ''}"><span>🕌</span>المجموعات</a>
       <a href="#/quran/signups" class="${tab === 'signups' ? 'on' : ''}"><span>📝</span>طلبات التسجيل<b class="tab-badge" id="signup-badge" hidden></b></a>
@@ -118,105 +118,108 @@ async function viewQuranHome(el, tab = '') {
   const page = $('#q-page');
   if (tab === 'groups') return quranGroupsTab(page, d, el);
   refreshSignupBadge();
-  if (tab === 'overview') return quranOverviewTab(page, d);
   if (tab === 'signups') return signupsTab(page, d.groups);
   return quranStudentsTab(page, d);
 }
 
-function quranStudentCard(s) {
-  const l = s.lesson;
-  const r = s.review || {};
-  return `<a class="card q-st ${s.active ? '' : 'q-off'}" href="#/quran/student/${s.id}">
-    <div class="q-st-head">${avatar({ full_name: s.full_name }, 'md')}<div>
-      <h3>${esc(s.full_name)}</h3>
-      <span class="muted small">${[s.group_name && `🕌 ${esc(s.group_name)}`, s.age && `${s.age} سنة`].filter(Boolean).join(' · ')}</span>
-    </div>${s.active ? '' : '<span class="badge general">متوقف</span>'}</div>
-    <div class="q-st-mem"><span class="q-dot s"></span>${hizbTxt(s.solid_hizb)} <span class="q-dot w"></span>${hizbTxt(s.weak_hizb)}</div>
-    ${s.active ? `<div class="q-st-line"><span>المراجعة</span>${bar(r.percent || 0, 100)}<b>${r.percent ?? 0}%</b></div>
-    <div class="q-st-line"><span>اليوم</span><em class="small ${s.reviewed_today ? 'in' : 'muted'}">${s.reviewed_today ? `راجع ${hizbTxt(s.reviewed_today)}` : 'لم يسجّل مراجعة بعد'}</em></div>
-    <div class="q-st-line"><span>الدرس</span>${l ? `${bar(l.total, l.target, l.total >= l.target ? 'ok' : '')}<b>${l.total}/${l.target}</b>` : '<em class="muted small">لا درس</em>'}</div>` : ''}
-    ${s.last_meeting ? `<div class="muted small">آخر لقاء: ${fmtDate(s.last_meeting.date)} <span class="badge ${Q_ATT_CLS[s.last_meeting.attendance]}">${Q_ATT[s.last_meeting.attendance]}</span></div>` : ''}
-  </a>`;
-}
-
-// الرؤية الإجمالية: جدول تقدّم كل الطلبة، والحضور جملة واحدة
-async function quranOverviewTab(page, d) {
-  const list = d.students.filter((s) => s.active);
-  if (!list.length) {
-    page.innerHTML = '<div class="card empty-state"><span>📊</span><p>لا يوجد طلبة بعد.</p></div>';
+// الطلبة: جدول تقدّم كل الطلبة + حضور / غيابات اليوم المختار، في صفحة واحدة
+async function quranStudentsTab(page, d) {
+  if (!d.students.length) {
+    page.innerHTML = '<div class="card empty-state"><span>📖</span><p>لا يوجد طلبة بعد. أضف مجموعة ثم طالبًا جديدًا.</p></div>';
     return;
   }
   const day0 = today();
   page.innerHTML = `<div class="card">
-      <div class="section-head"><h3>📊 تقدّم الطلبة هذا الأسبوع</h3>
-        <select id="ov-group" class="ov-filter"><option value="">كل المجموعات</option>${d.groups.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`).join('')}</select></div>
-      <div class="q-att-bar"><label class="q-date">📋 الحضور ليوم <input type="date" id="ov-date" value="${day0}" max="${day0}"></label>
-        <span class="q-actions"><button type="button" class="btn small ghost" id="ov-all">الكل حاضر</button><button type="button" class="btn small" id="ov-save">حفظ الحضور</button></span></div>
+      <div class="q-filters">
+        <input type="search" id="q-search" placeholder="بحث بالاسم…">
+        <select id="q-group"><option value="">كل المجموعات</option>${d.groups.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`).join('')}<option value="none">بلا مجموعة</option></select>
+        <select id="q-sort"><option value="name">ترتيب بالاسم</option><option value="review">الأقل مراجعة أولًا</option><option value="hifz">الأكثر حفظًا أولًا</option><option value="absent">الغائبون أولًا</option></select>
+      </div>
+      <div class="q-att-bar">
+        <label class="q-date">📋 الحضور والغيابات ليوم <input type="date" id="ov-date" value="${day0}" max="${day0}"></label>
+        <span class="q-actions"><button type="button" class="btn small ghost" id="ov-all">الكل حاضر</button><button type="button" class="btn small" id="ov-save">حفظ الحضور</button></span>
+        <div class="q-att-sum" id="ov-sum"></div>
+      </div>
       <div class="q-table-wrap"><table class="q-table q-ov"><thead><tr>
-        <th>الطالب</th><th>المحفوظ</th><th>المراجعة</th><th>اليوم</th><th>الدرس</th><th>الحضور</th></tr></thead>
+        <th>الطالب</th><th>المحفوظ</th><th>المراجعة هذا الأسبوع</th><th>مراجعة اليوم</th><th>الدرس</th><th>الحضور</th></tr></thead>
         <tbody id="ov-body"></tbody></table></div>
-      <p class="muted small">المراجعة: نسبة ما راجعه من محفوظه هذا الأسبوع. اليوم: ما سجّله من مراجعة اليوم. الدرس: قراءاته من الهدف.</p></div>`;
-  let marks = {};
+      <label class="check small muted"><input type="checkbox" id="q-off"> إظهار الطلبة المتوقفين</label>
+    </div>`;
+  let saved = {};
+  let draft = {};
+  const visible = () => {
+    const q = $('#q-search').value.trim();
+    const g = $('#q-group').value;
+    const sort = $('#q-sort').value;
+    let list = d.students.filter((x) => (x.active || $('#q-off').checked) && (!q || x.full_name.includes(q)) && (!g || (g === 'none' ? !x.group_id : String(x.group_id) === g)));
+    if (sort === 'review') list = [...list].sort((a, b) => (a.review?.percent ?? 101) - (b.review?.percent ?? 101));
+    if (sort === 'hifz') list = [...list].sort((a, b) => b.solid_hizb + b.weak_hizb - (a.solid_hizb + a.weak_hizb));
+    if (sort === 'absent') list = [...list].sort((a, b) => (draft[b.id] && draft[b.id] !== 'present') - (draft[a.id] && draft[a.id] !== 'present'));
+    return list;
+  };
+  const summary = () => {
+    const list = d.students.filter((x) => x.active);
+    const n = (k) => list.filter((x) => draft[x.id] === k).length;
+    const none = list.filter((x) => !draft[x.id]).length;
+    const dirty = Object.keys({ ...saved, ...draft }).some((k) => saved[k] !== draft[k]);
+    const day = $('#ov-date').value;
+    $('#ov-sum').innerHTML = `${day === day0 ? 'اليوم' : `${qDay(day)} ${fmtDate(day)}`}:
+      <span class="badge good">حاضر ${n('present')}</span> <span class="badge weak">غائب ${n('absent')}</span>
+      <span class="badge average">غائب بعذر ${n('excused')}</span>${none ? ` <span class="badge general">لم يُسجَّل ${none}</span>` : ''}
+      ${dirty ? '<b class="q-unsaved">● غير محفوظ</b>' : ''}`;
+  };
   const att = (s) => `<span class="q-att-opts">${Object.entries(Q_ATT)
-    .map(([k, l]) => `<label class="chip-check q-${k}"><input type="radio" name="ov${s.id}" value="${k}" ${marks[s.id] === k ? 'checked' : ''}> ${l}</label>`).join('')}</span>`;
+    .map(([k, l]) => `<label class="chip-check q-${k}"><input type="radio" name="ov${s.id}" value="${k}" ${draft[s.id] === k ? 'checked' : ''}> ${l}</label>`).join('')}</span>`;
   const render = () => {
-    const g = $('#ov-group').value;
-    $('#ov-body').innerHTML = list
-      .filter((s) => !g || String(s.group_id) === g)
+    $('#ov-body').innerHTML = visible()
       .map((s) => {
         const r = s.review || {};
         const l = s.lesson;
-        return `<tr><td class="ov-name"><a href="#/quran/student/${s.id}"><b>${esc(s.full_name)}</b></a>${s.group_name ? `<small class="q-what">${esc(s.group_name)}</small>` : ''}</td>
+        const a = draft[s.id];
+        return `<tr class="${a === 'absent' ? 'is-absent' : a === 'excused' ? 'is-excused' : ''} ${s.active ? '' : 'q-off'}">
+          <td class="ov-name"><a href="#/quran/student/${s.id}"><b>${esc(s.full_name)}</b></a>${s.active ? '' : ' <span class="badge general">متوقف</span>'}
+            <small class="q-what">${[s.group_name && esc(s.group_name), s.age && `${s.age} سنة`].filter(Boolean).join(' · ')}</small></td>
           <td data-l="المحفوظ"><span class="nowrap"><span class="q-dot s"></span>${num(s.solid_hizb)}</span> <span class="nowrap"><span class="q-dot w"></span>${num(s.weak_hizb)}</span></td>
-          <td data-l="المراجعة"><div class="q-mini">${bar(r.percent || 0, 100)}<b>${r.percent ?? 0}%</b></div></td>
-          <td data-l="اليوم" class="${s.reviewed_today ? 'in' : 'muted'}">${s.reviewed_today ? hizbTxt(s.reviewed_today) : '—'}</td>
+          <td data-l="المراجعة هذا الأسبوع"><div class="q-mini">${bar(r.percent || 0, 100)}<b>${r.percent ?? 0}%</b></div></td>
+          <td data-l="مراجعة اليوم" class="${s.reviewed_today ? 'in' : 'muted'}">${s.reviewed_today ? hizbTxt(s.reviewed_today) : '—'}</td>
           <td data-l="الدرس">${l ? `<div class="q-mini">${bar(l.total, l.target, l.total >= l.target ? 'ok' : '')}<b>${l.total}/${l.target}</b></div>` : '—'}</td>
           <td class="ov-att">${att(s)}</td></tr>`;
       })
-      .join('');
+      .join('') || '<tr><td colspan="6" class="muted">لا نتائج.</td></tr>';
+    summary();
   };
   const load = async () => {
-    marks = (await api('GET', `/api/quran/attendance?date=${$('#ov-date').value}`)).marks;
+    saved = (await api('GET', `/api/quran/attendance?date=${$('#ov-date').value}`)).marks;
+    draft = { ...saved };
     render();
   };
-  $('#ov-group').addEventListener('change', render);
+  ['q-search', 'q-group', 'q-sort', 'q-off'].forEach((id) => $(`#${id}`).addEventListener(id === 'q-search' ? 'input' : 'change', render));
   $('#ov-date').addEventListener('change', load);
-  $('#ov-all').addEventListener('click', () => page.querySelectorAll('#ov-body input[value="present"]').forEach((i) => (i.checked = true)));
+  $('#ov-body').addEventListener('change', (e) => {
+    if (e.target.type !== 'radio') return;
+    draft[e.target.name.slice(2)] = e.target.value;
+    const tr = e.target.closest('tr');
+    tr.classList.toggle('is-absent', e.target.value === 'absent');
+    tr.classList.toggle('is-excused', e.target.value === 'excused');
+    summary();
+  });
+  $('#ov-all').addEventListener('click', () => {
+    for (const s of visible()) if (!draft[s.id]) draft[s.id] = 'present';
+    render();
+  });
   $('#ov-save').addEventListener('click', async () => {
-    const out = {};
-    page.querySelectorAll('#ov-body input[type=radio]:checked').forEach((i) => (out[i.name.slice(2)] = i.value));
-    if (!Object.keys(out).length) return toast('اختر الحضور أولًا', true);
+    const out = Object.fromEntries(Object.entries(draft).filter(([k, v]) => saved[k] !== v));
+    if (!Object.keys(out).length) return toast('لا يوجد تغيير للحفظ');
     try {
       const r = await api('POST', '/api/quran/attendance', { date: $('#ov-date').value, marks: out });
+      saved = { ...draft };
+      summary();
       toast(`تم حفظ حضور ${r.saved} طالب ✓`);
     } catch (e) {
       toast(e.message, true);
     }
   });
   await load();
-}
-
-function quranStudentsTab(page, d) {
-  if (!d.students.length) {
-    page.innerHTML = '<div class="card empty-state"><span>📖</span><p>لا يوجد طلبة بعد. أضف مجموعة ثم طالبًا جديدًا.</p></div>';
-    return;
-  }
-  page.innerHTML = `<div class="q-filters">
-      <input type="search" id="q-search" placeholder="بحث بالاسم…">
-      <select id="q-group"><option value="">كل المجموعات</option>${d.groups.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`).join('')}<option value="none">بلا مجموعة</option></select>
-      <select id="q-sort"><option value="name">ترتيب بالاسم</option><option value="review">الأقل مراجعة أولًا</option><option value="hifz">الأكثر حفظًا أولًا</option></select>
-    </div><div class="cards" id="q-list"></div>`;
-  const render = () => {
-    const s = $('#q-search').value.trim();
-    const g = $('#q-group').value;
-    const sort = $('#q-sort').value;
-    let list = d.students.filter((x) => (!s || x.full_name.includes(s)) && (!g || (g === 'none' ? !x.group_id : String(x.group_id) === g)));
-    if (sort === 'review') list = [...list].sort((a, b) => (a.review?.percent ?? 101) - (b.review?.percent ?? 101));
-    if (sort === 'hifz') list = [...list].sort((a, b) => b.solid_hizb + b.weak_hizb - (a.solid_hizb + a.weak_hizb));
-    $('#q-list').innerHTML = list.map(quranStudentCard).join('') || '<p class="muted">لا نتائج.</p>';
-  };
-  ['input', 'change'].forEach((ev) => page.addEventListener(ev, render));
-  render();
 }
 
 function quranGroupsTab(page, d, root) {
