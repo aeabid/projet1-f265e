@@ -2,6 +2,7 @@
 // createHandler(pool) يرجع دالة: (Request) => Promise<Response>
 import crypto from 'node:crypto';
 import { registerQuranRoutes } from './quran.js';
+import { registerGoogleRoutes, verifyGoogleToken } from './google.js';
 
 const SESSION_COOKIE = 'tsid';
 const SESSION_TTL_S = 60 * 24 * 60 * 60;
@@ -61,6 +62,8 @@ export function createHandler(pool, {
   adminUsername = process.env.ADMIN_USERNAME || 'admin',
   adminName = process.env.ADMIN_NAME || 'المشرف',
   adminEmail = process.env.ADMIN_EMAIL || null,
+  googleClientId = process.env.GOOGLE_CLIENT_ID || '',
+  verifyGoogle = (credential) => verifyGoogleToken(credential, googleClientId, HttpError),
 } = {}) {
   const all = async (sql, params = []) => (await pool.query(sql, params)).rows;
   const one = async (sql, params = []) => (await pool.query(sql, params)).rows[0] || null;
@@ -80,8 +83,17 @@ export function createHandler(pool, {
       throw err;
     }));
 
-  const userById = (id) => one('SELECT id, username, email, full_name, role, phone, disabled, last_seen FROM users WHERE id = $1', [id]);
+  const userById = (id) => one('SELECT id, username, email, full_name, role, phone, disabled, last_seen, google_email FROM users WHERE id = $1', [id]);
   const withLabel = (u) => u && { ...u, role_label: ROLE_LABELS[u.role] };
+
+  async function startSession(userId, setSession) {
+    const token = crypto.randomBytes(32).toString('hex');
+    await pool.query('DELETE FROM sessions WHERE expires_at <= now()');
+    await pool.query('INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, now() + make_interval(secs => $3))', [token, userId, SESSION_TTL_S]);
+    await pool.query('UPDATE users SET last_seen = now() WHERE id = $1', [userId]);
+    setSession(token, SESSION_TTL_S);
+    return withLabel(await userById(userId));
+  }
 
   const routes = [];
   const route = (method, path, roles, handler) => {
@@ -100,12 +112,7 @@ export function createHandler(pool, {
       throw new HttpError(401, 'اسم المستخدم أو كلمة السر غير صحيحة');
     }
     if (row.disabled) throw new HttpError(403, 'حسابك موقوف حاليًا');
-    const token = crypto.randomBytes(32).toString('hex');
-    await pool.query('DELETE FROM sessions WHERE expires_at <= now()');
-    await pool.query('INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, now() + make_interval(secs => $3))', [token, row.id, SESSION_TTL_S]);
-    await pool.query('UPDATE users SET last_seen = now() WHERE id = $1', [row.id]);
-    setSession(token, SESSION_TTL_S);
-    return { user: withLabel(await userById(row.id)) };
+    return { user: await startSession(row.id, setSession) };
   });
   route('POST', '/api/logout', null, async ({ token, setSession }) => {
     if (token) await pool.query('DELETE FROM sessions WHERE token = $1', [token]);
@@ -130,6 +137,9 @@ export function createHandler(pool, {
     ]);
     return { user: withLabel(await userById(user.id)) };
   });
+
+  // ---------- Google: الدخول، وتسجيل الطلبة الجدد (يؤكده المشرف) ----------
+  registerGoogleRoutes({ route, pool, all, one, HttpError, text, hashPassword, today, startSession, googleClientId, verifyGoogle, ANY });
 
   // ---------- المشرفون: الشيخ والإدارة، بنفس الصلاحيات ----------
   route('GET', '/api/admins', ['admin'], async () => ({

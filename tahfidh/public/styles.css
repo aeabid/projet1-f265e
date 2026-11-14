@@ -369,3 +369,18 @@ body.no-scroll { overflow: hidden; }
   .q-ov td.ov-name, .q-ov td.ov-att { grid-column: 1 / -1; }
   .q-ov .q-att-opts { flex-wrap: wrap; }
 }
+
+/* Google والتسجيل */
+.google-box { text-align: center; margin-top: .8rem; }
+.google-box p { margin: 0 0 .7rem; font-size: .92rem; }
+#google-btn, #g-link { display: flex; justify-content: center; min-height: 44px; }
+.signup-state { font-size: 1.1rem; line-height: 1.8; }
+.tab-badge { background: #ef207a; color: #fff; border-radius: 999px; font-size: .72rem; padding: 0 .45rem; margin-inline-start: .2rem; }
+.signups { list-style: none; margin: 0; padding: 0; }
+.signups li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem; padding: .7rem 0; border-bottom: 1px solid var(--border); }
+.signups li:last-child { border: 0; }
+.signups p { margin: .3rem 0 0; }
+.signup-alert { display: flex; align-items: center; gap: .5rem; background: #fde8f1; color: #b0145a; border-radius: 16px; padding: .8rem 1rem; margin-bottom: 1rem; font-weight: 700; }
+.signup-alert b { margin-inline-start: auto; }
+.signup-alert:hover { text-decoration: none; }
+@media (prefers-color-scheme: dark) { .signup-alert { background: #3d1c2b; color: #f59ac2; } }

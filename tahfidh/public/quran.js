@@ -105,17 +105,21 @@ async function viewQuranHome(el, tab = '') {
       <div class="kpi"><b>${avg}%</b><span>معدّل إنجاز المراجعة هذا الأسبوع</span></div>
       <div class="kpi"><b class="in">${reached}</b><span>بلغ هدف قراءة الدرس</span></div>
     </div>
+    <a href="#/quran/signups" class="signup-alert" id="signup-alert" hidden>📝 <span></span> <b>عرض ←</b></a>
     <div class="board-tabs" role="tablist">
       <a href="#/quran/overview" class="${tab === 'overview' ? 'on' : ''}"><span>📊</span>الرؤية الإجمالية</a>
       <a href="#/quran/students" class="${tab === 'students' ? 'on' : ''}"><span>👥</span>الطلبة</a>
       <a href="#/quran/groups" class="${tab === 'groups' ? 'on' : ''}"><span>🕌</span>المجموعات</a>
+      <a href="#/quran/signups" class="${tab === 'signups' ? 'on' : ''}"><span>📝</span>طلبات التسجيل<b class="tab-badge" id="signup-badge" hidden></b></a>
     </div>
     <div id="q-page"></div>`;
   $('#q-add-st').addEventListener('click', () => quranStudentForm(null, d, () => viewQuranHome(el, 'students')));
   $('#q-add-g').addEventListener('click', () => quranGroupForm(null, () => viewQuranHome(el, 'groups')));
   const page = $('#q-page');
   if (tab === 'groups') return quranGroupsTab(page, d, el);
+  refreshSignupBadge();
   if (tab === 'overview') return quranOverviewTab(page, d);
+  if (tab === 'signups') return signupsTab(page, d.groups);
   return quranStudentsTab(page, d);
 }
 
@@ -768,7 +772,7 @@ async function viewQuranHifz(el, id) {
 
 // المسارات (تُضاف لقائمة app.js)
 routes.unshift(
-  [/^#\/quran(?:\/(students|groups|overview))?$/, (el, tab) => (state.user.role === 'talib' ? viewQuranStudent(el, state.user.id) : viewQuranHome(el, tab || ''))],
+  [/^#\/quran(?:\/(students|groups|overview|signups))?$/, (el, tab) => (state.user.role === 'talib' ? viewQuranStudent(el, state.user.id) : viewQuranHome(el, tab || ''))],
   [/^#\/quran\/student\/(\d+)(?:\?week=(\d{4}-\d{2}-\d{2}))?$/, (el, id, week) => viewQuranStudent(el, Number(id), week || '')],
   [/^#\/quran\/review\/(\d+)(?:\?date=(\d{4}-\d{2}-\d{2}))?$/, (el, id, d) => viewQuranReview(el, Number(id), d || '')],
   [/^#\/quran\/hifz\/(\d+)$/, (el, id) => viewQuranHifz(el, Number(id))],

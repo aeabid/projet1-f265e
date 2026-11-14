@@ -158,8 +158,12 @@ function viewLogin(el) {
       <p class="error" id="login-error" hidden></p>
       <button class="btn block" type="submit">دخول</button>
     </form>
-    <p class="muted small">ليس لديك حساب؟ اطلبه من شيخك.</p>
+    <div id="google-box" class="card google-box" hidden>
+      <p><b>طالب جديد؟</b> سجّل بحساب Google، والشيخ يؤكّد تسجيلك. (ومن له حساب مربوط بـ Google يدخل به مباشرة.)</p>
+      <div id="google-btn"></div></div>
+    <p class="muted small">ليس لديك حساب؟ سجّل بـ Google أو اطلبه من شيخك.</p>
   </div>`;
+  setupGoogleLogin();
   $('#pw-eye').addEventListener('click', () => {
     const i = $('#login-form input[name=password]');
     i.type = i.type === 'password' ? 'text' : 'password';
@@ -193,7 +197,9 @@ function viewAccount(el) {
       <form id="pw-form"><label>كلمة السر الحالية<input name="current" type="password" required autocomplete="current-password"></label>
         <label>كلمة السر الجديدة<input name="next" type="password" required minlength="6" autocomplete="new-password"></label>
         <button class="btn" type="submit">تغيير</button></form></div>
+    <div class="card narrow" id="g-card"></div>
     ${u.role === 'admin' ? '<div class="card narrow" id="admins"></div>' : ''}`;
+  googleAccountCard($('#g-card'));
   if (u.role === 'admin') adminsCard($('#admins'));
   $('#me-form').addEventListener('submit', async (e) => {
     e.preventDefault();
