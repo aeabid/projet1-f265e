@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>صناعة العادات</title>
+  <meta name="theme-color" content="#4a0b93">
+  <link rel="icon" href="feed-icon.png">
+  <link rel="apple-touch-icon" href="feed-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      <div class="brand">
+        <img src="feed-logo-white.png" alt="feed" width="56" height="32">
+        <h1>صناعة العادات</h1>
+      </div>
+      <div class="top-actions" id="top-actions" hidden>
+        <button class="icon-btn" type="button" id="rules-btn" aria-label="القانون" title="القانون">📜</button>
+        <button class="icon-btn" type="button" id="sound-btn" aria-label="الصوت" title="الصوت">🔊</button>
+        <button class="icon-btn" type="button" id="logout" aria-label="خروج" title="خروج">⏻</button>
+      </div>
+    </div>
+  </header>
+  <main class="wrap" id="view"><div class="loading"><span class="spinner"></span></div></main>
+  <nav class="bottom-nav" id="nav" hidden>
+    <button type="button" data-tab="today"><span class="ni">🏠</span><span>اليوم</span></button>
+    <button type="button" data-tab="quests"><span class="ni">🎯</span><span>التحديات</span><b class="dot" id="quest-dot" hidden></b></button>
+    <button type="button" data-tab="board"><span class="ni">🏆</span><span>الترتيب</span></button>
+    <button type="button" data-tab="me"><span class="ni">🎖️</span><span>إنجازاتي</span></button>
+    <button type="button" data-tab="admin" id="tab-admin" hidden><span class="ni">⚙️</span><span>الإدارة</span></button>
+  </nav>
+  <div class="toast" id="toast" hidden></div>
+  <div class="modal" id="modal" hidden></div>
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
