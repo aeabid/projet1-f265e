@@ -169,3 +169,16 @@ create policy "avatars own update" on storage.objects for update to authenticate
   using (bucket_id = 'avatars' and ((storage.foldername(name))[1] = (select auth.uid())::text or (select public.is_admin())));
 create policy "avatars own delete" on storage.objects for delete to authenticated
   using (bucket_id = 'avatars' and ((storage.foldername(name))[1] = (select auth.uid())::text or (select public.is_admin())));
+
+-- أنواع المهام: صلاة، قرآن، أذكار، كتاب (PDF)، فيديو، عادة عامة؛ ولكل نوع خصائصه في meta
+-- (القرآن: {"amount": 2, "unit": "صفحة"}، الكتاب: {"pages": 40, "author": "…"})
+alter table public.challenges add column if not exists type text not null default 'custom'
+  check (type in ('prayer', 'quran', 'adhkar', 'book', 'video', 'custom'));
+alter table public.challenges add column if not exists meta jsonb check (meta is null or jsonb_typeof(meta) = 'object');
+update public.challenges set type = case
+  when coalesce(array_length(items, 1), 0) >= 5 then 'prayer'
+  when title like '%قرآن%' or title like '%القرآن%' then 'quran'
+  when title like '%أذكار%' then 'adhkar'
+  when kind = 'once' and pdf_url is not null then 'book'
+  when video_url is not null then 'video'
+  else 'custom' end;
