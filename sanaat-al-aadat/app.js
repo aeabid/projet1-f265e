@@ -4,7 +4,7 @@
 const DAYS = ['إث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 const PERIODS = { week: 'هذا الأسبوع', month: 'هذا الشهر', all: 'منذ البداية' };
-const WINDOWS = { 1: 'اليوم فقط (حتى نصف الليل)', 2: 'اليوم وأمس (48 ساعة)', 3: 'آخر 3 أيام', 7: 'آخر أسبوع' };
+const WINDOWS = { 1: 'اليوم نفسه فقط (حتى نصف الليل)', 2: 'اليوم وأمس (48 ساعة)', 3: 'آخر 3 أيام', 7: 'آخر أسبوع' };
 const MONTH_NAMES = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const COLORS = ['#61038d', '#20149a', '#e5197d', '#1f9d63', '#c26a00', '#0b7fa6', '#8a2be2', '#b0306a'];
 const avatarColor = (id) => COLORS[Math.abs(Number(id) || 0) % COLORS.length];
@@ -68,11 +68,15 @@ const TYPES = {
   book: { icon: '📚', name: 'قراءة كتاب', desc: 'ملف PDF وسؤال للتأكّد من القراءة', kind: 'once', color: '#c26a00', title: '', hint: 'مثال: اقرأ الفصل الأول' },
   video: { icon: '🎬', name: 'مشاهدة فيديو', desc: 'فيديو يوتيوب يُشاهَد حتى آخره', kind: 'once', color: '#e5197d', title: '', hint: '' },
   custom: { icon: '⭐', name: 'عادة أخرى', desc: 'رياضة، صدقة، برّ الوالدين…', kind: 'daily', color: '#8a5cf6', title: '', hint: 'متى تُعتبر المهمة منجزة؟' },
+  quiz: { icon: '🧩', name: 'أسئلة تفاعلية', desc: 'اربط، رتّب، اسحب الكلمات، اختيار من متعدد…', kind: 'once', color: '#20149a', title: '', hint: 'مثال: بعد درس الطهارة' },
+  submit: { icon: '📤', name: 'إرسال إنجاز', desc: 'ملف أو صورة أو رسالة صوتية يراجعها المشرف', kind: 'once', color: '#0f766e', title: '', hint: 'مثال: سجّل تلاوتك لسورة الملك' },
 };
 const PRAYERS = ['الصبح', 'الظهر', 'العصر', 'المغرب', 'العشاء'];
 const SUNAN = ['سنّة الفجر', 'الضحى', 'الرواتب', 'الشفع والوتر', 'قيام الليل'];
 const ADHKAR = ['أذكار الصباح', 'أذكار المساء', 'أذكار النوم', 'أذكار بعد الصلاة'];
 const QURAN_MODES = { read: 'قراءة', memorize: 'حفظ', review: 'مراجعة' };
+const isCounter = (c) => c.type === 'quran' && c.meta?.track === 'counter';
+const SUBMIT_NEEDS = { either: 'ملف أو رسالة صوتية', file: 'ملف فقط', audio: 'رسالة صوتية فقط', both: 'ملف ورسالة صوتية' };
 const UNITS = ['صفحة', 'آية', 'ربع حزب', 'حزب', 'جزء'];
 const ITEM_ICONS = {
   'الصبح': '🌄', 'الظهر': '☀️', 'العصر': '🌤️', 'المغرب': '🌇', 'العشاء': '🌙', 'سنّة الفجر': '🌅', 'الضحى': '🌞', 'الرواتب': '🕌',
@@ -123,9 +127,23 @@ const key = (cid, day, item = 0) => `${cid}|${day}|${item}`;
 const nItems = (c) => c.items?.length || 1;
 const doneCount = (c, d) => { let n = 0; for (let i = 0; i < nItems(c); i++) if (S.myLogs.has(key(c.id, d, i))) n++; return n; };
 const isFull = (c, d) => doneCount(c, d) >= nItems(c);
+// كامل بتسجيلات في وقتها فقط (للسلاسل والأيام المثالية والشارات، كما في الترتيب)
+const fullOnTime = (c, d) => S.logs.filter((l) => l.challenge_id === c.id && l.day === d && !l.late).length >= nItems(c);
 const inRange = (c, d) => d >= c.start_date && (!c.end_date || d <= c.end_date);
 const dailies = (d = today()) => S.challenges.filter((c) => c.active && (c.kind || 'daily') === 'daily' && inRange(c, d));
 const quests = () => S.challenges.filter((c) => c.active && c.kind === 'once' && c.start_date <= today());
+// مهام مبرمجة لم يحن وقتها: تظهر باهتة حتى منتصف ليل يومها
+const upcoming = (kind) => S.challenges.filter((c) => c.active && c.kind === kind && c.start_date > today()).sort((a, b) => (a.start_date < b.start_date ? -1 : 1));
+const logsOf = (c, d) => S.logs.filter((l) => l.challenge_id === c.id && l.day === d);
+const lateDay = (c, d) => { const l = logsOf(c, d); return l.length > 0 && l.every((x) => x.late); };
+const valueOf = (c, d) => logsOf(c, d).reduce((t, l) => t + Number(l.value ?? 1), 0);
+// نقاط تسجيل: صفر إن كان متأخّرًا، والنقاط × القيمة (عدد الصفحات، نسبة النجاح)
+const logPts = (c, l) => (l.late ? 0 : (c.points ?? 1) * Number(l.value ?? 1));
+const dayPts = (c, d) => Math.round(logsOf(c, d).reduce((t, l) => t + logPts(c, l), 0));
+function opensIn(d) {
+  const n = diff(today(), d);
+  return n === 1 ? 'يفتح غدًا على الساعة 00:00' : n === 2 ? 'يفتح بعد غد' : `يفتح بعد ${n} أيام`;
+}
 const onceDone = (c) => S.logs.some((l) => l.challenge_id === c.id);
 const member = () => S.members.find((m) => m.id === S.memberId);
 const store = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
@@ -357,7 +375,7 @@ async function loadMembers() {
 async function loadAll() {
   const [{ data: ch }, { data: logs }, { data: settings }] = await Promise.all([
     sb.from('challenges').select('*').order('sort').order('id'),
-    S.memberId ? sb.from('habit_logs').select('challenge_id, day, item, created_at').eq('member_id', S.memberId) : Promise.resolve({ data: [] }),
+    S.memberId ? sb.from('habit_logs').select('challenge_id, day, item, created_at, value, payload, late').eq('member_id', S.memberId) : Promise.resolve({ data: [] }),
     sb.from('app_settings').select('key, value'),
   ]);
   const set = Object.fromEntries((settings || []).map((x) => [x.key, x.value]));
@@ -409,9 +427,9 @@ const meIn = (rows) => rows?.find((r) => r.member_id === S.memberId);
 // ---------- حساب الإحصائيات محليًا ----------
 // سلسلة مهمة يومية حتى اليوم (أو أمس إن لم يُكمَل اليوم بعد)
 function streakOf(c, upTo = today()) {
-  let d = isFull(c, upTo) ? upTo : addDays(upTo, -1);
+  let d = fullOnTime(c, upTo) ? upTo : addDays(upTo, -1);
   let s = 0;
-  while (d >= c.start_date && isFull(c, d)) { s++; d = addDays(d, -1); }
+  while (d >= c.start_date && fullOnTime(c, d)) { s++; d = addDays(d, -1); }
   return s;
 }
 function bestRun(days) {
@@ -423,9 +441,9 @@ function bestRun(days) {
 // يوم مثالي: كل المهام اليومية المفتوحة في ذلك اليوم كاملة
 function isPerfect(d) {
   const list = dailies(d);
-  return list.length > 0 && list.every((c) => isFull(c, d));
+  return list.length > 0 && list.every((c) => fullOnTime(c, d));
 }
-function activeDays() { return new Set(S.logs.map((l) => l.day)); }
+function activeDays() { return new Set(S.logs.filter((l) => !l.late).map((l) => l.day)); }
 function activityStreak() {
   const days = activeDays();
   let d = days.has(today()) ? today() : addDays(today(), -1);
@@ -437,7 +455,7 @@ function activityStreak() {
 function badgeStats() {
   const fullDays = {};
   for (const c of S.challenges.filter((x) => x.kind === 'daily')) {
-    fullDays[c.id] = new Set([...new Set(S.logs.filter((l) => l.challenge_id === c.id).map((l) => l.day))].filter((d) => isFull(c, d)));
+    fullDays[c.id] = new Set([...new Set(S.logs.filter((l) => l.challenge_id === c.id).map((l) => l.day))].filter((d) => fullOnTime(c, d)));
   }
   const days = activeDays();
   const perfect = [...days].filter(isPerfect);
@@ -489,10 +507,9 @@ function checkRewards() {
 }
 
 // ---------- الواجهة ----------
-const editable = (c, d) => {
-  const now = today();
-  return d <= now && inRange(c, d) && (S.me.is_admin || diff(d, now) < S.editDays);
-};
+// يمكن تسجيل أي يوم فات منذ بداية المهمة؛ والنقاط فقط داخل مدّة التعمير
+const editable = (c, d) => d <= today() && inRange(c, d);
+const onTime = (c, d) => S.me.is_admin || diff(d, today()) < S.editDays;
 
 let players = [];
 function cleanupPlayers() { players.forEach((p) => { clearInterval(p.timer); try { p.player?.destroy(); } catch {} }); players = []; }
@@ -522,6 +539,8 @@ async function render() {
   bind();
   mountPlayers();
   if (S.pop) showPop();
+  if (S.pending) document.querySelector('.confirm')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  if (S.qz && $('#quiz-box')) { if (S.qz.i === undefined) startQuiz(S.challenges.find((x) => x.id === S.qz.cid)); else drawQuiz(); }
 }
 
 // كل حساب = مشارك واحد
@@ -624,7 +643,8 @@ function renderToday() {
   const q = quests().filter((c) => !onceDone(c) && (!c.end_date || c.end_date >= now));
   const total = list.reduce((t, c) => t + nItems(c), 0);
   const done = list.reduce((t, c) => t + Math.min(doneCount(c, now), nItems(c)), 0);
-  const earned = list.reduce((t, c) => t + Math.min(doneCount(c, now), nItems(c)) * (c.points ?? 1), 0) + (isPerfect(now) ? S.perfectBonus : 0);
+  const earned = list.reduce((t, c) => t + dayPts(c, now), 0) + (isPerfect(now) ? S.perfectBonus : 0);
+  const soon = upcoming('daily');
   const quote = QUOTES[diff('2026-01-01', now) % QUOTES.length];
   return `${heroCard()}
     <section class="card today-card">
@@ -642,33 +662,38 @@ function renderToday() {
     ${!shown.length ? `<div class="card empty"><div class="empty-ico">🌱</div><h3>لا توجد مهام يومية ${S.weekOff ? 'في هذا الأسبوع' : 'بعد'}</h3><p class="muted">${
       S.me.is_admin ? 'أضف أول مهمة من تبويب «الإدارة».' : 'ستظهر هنا المهام عندما يضيفها المشرف.'}</p></div>` : ''}
     <div class="tasks">${shown.map((c) => taskCard(c, week)).join('')}</div>
+    ${soon.length ? `<h3 class="sec">🔒 قريبًا</h3><div class="tasks">${soon.map(lockedCard).join('')}</div>` : ''}
     ${q.length ? `<button class="card quest-teaser" type="button" data-goto="quests">
       <span class="qt-ico">🎯</span><span><b>${q.length === 1 ? 'تحدٍّ خاص ينتظرك' : `${q.length} تحديات خاصة تنتظرك`}</b><small>قراءة، فيديو… نقاط إضافية!</small></span><span class="go">${ICON.left}</span></button>` : ''}
     <figure class="quote"><blockquote>${esc(quote[0])}</blockquote><figcaption>${esc(quote[1])}</figcaption></figure>
-    <p class="muted small center">اضغط على دائرة اليوم لتسجيله${S.editDays === 1 ? ' (اليوم فقط، حتى نصف الليل)' : ` (آخر ${S.editDays} أيام)`}.</p>`;
+    <p class="muted small center">اضغط على دائرة اليوم لتسجيله. النقاط تُحتسب ${S.editDays === 1 ? 'لليوم نفسه فقط (حتى نصف الليل)' : `خلال ${S.editDays === 2 ? 'يومين' : `${S.editDays} أيام`}`}، وبعدها يُسجَّل اليوم دون نقاط.</p>`;
 }
 
-// دائرة يوم: ✓ كاملة، قوس للتقدّم الجزئي، باهتة للمستقبل
+// دائرة يوم: ✓ كاملة، قوس للتقدّم الجزئي، رقم للعدّاد، رمادية إن سُجّلت بعد المدّة (دون نقاط)
 function dayCircle(c, d, big = false) {
   const now = today();
   const N = nItems(c);
   const n = Math.min(doneCount(c, d), N);
   const off = d > now || !inRange(c, d);
-  const late = !off && !editable(c, d);
+  const late = n > 0 && lateDay(c, d);
+  const closed = !off && !onTime(c, d);
   const r = 18, len = 2 * Math.PI * r;
   const arc = n && n < N ? `<svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="${r}" stroke-dasharray="${len}" stroke-dashoffset="${len * (1 - n / N)}"/></svg>` : '';
   const state = n >= N ? 'full' : n ? 'part' : 'none';
   const open = S.pop && S.pop.c === c.id && S.pop.d === d;
-  return `<button type="button" class="dc ${state} ${d === now ? 'is-today' : ''} ${off ? 'off' : ''} ${late ? 'late' : ''} ${open ? 'open' : ''} ${big ? 'big' : ''}"
-      data-wd data-c="${c.id}" data-d="${d}" ${off ? 'disabled' : ''} aria-label="${dayName(d)} ${fmt(d)}: ${n} من ${N}">
+  const tick = '<svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const label = isCounter(c) && n ? `<span class="cnt">${valueOf(c, d)}</span>` : n >= N ? tick : n ? `${n}/${N}` : Number(d.slice(8));
+  return `<button type="button" class="dc ${state} ${d === now ? 'is-today' : ''} ${off ? 'off' : ''} ${late ? 'is-late' : ''} ${closed ? 'closed' : ''} ${open ? 'open' : ''} ${big ? 'big' : ''}"
+      data-wd data-c="${c.id}" data-d="${d}" ${off ? 'disabled' : ''} aria-label="${dayName(d)} ${fmt(d)}: ${n} من ${N}${late ? ' (متأخّر، دون نقاط)' : ''}">
     ${big ? '' : `<small>${d === now ? 'اليوم' : dayName(d)}</small>`}
-    <span class="dc-c">${arc}<b>${n >= N ? '<svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : n ? `${n}/${N}` : Number(d.slice(8))}</b></span>
+    <span class="dc-c">${arc}<b>${label}</b></span>
   </button>`;
 }
 
 function typeInfo(c) {
   const t = TYPES[c.type] || TYPES.custom;
   const m = c.meta || {};
+  if (isCounter(c)) return `${QURAN_MODES[m.mode] || 'قراءة'}: عدّاد · +${c.points ?? 1} لكل ${m.unit || 'صفحة'}`;
   if (c.type === 'quran' && m.amount) return `${QURAN_MODES[m.mode] || 'الورد'}: ${m.amount} ${m.unit || 'صفحة'} يوميًا`;
   if (c.type === 'prayer' && N(c) > 1) return `${N(c)} ${N(c) <= 10 ? 'صلوات' : 'صلاة'} · +${c.points ?? 1} لكل صلاة`;
   if (N(c) > 1) return `${N(c)} عناصر · +${c.points ?? 1} لكل واحد`;
@@ -687,7 +712,7 @@ function taskCard(c, week) {
       <span class="task-ico">${esc(c.icon || t.icon)}</span>
       <div class="task-title">
         <b>${esc(c.title)}</b>
-        <small><span class="type-tag">${t.icon} ${esc(typeInfo(c))}</span>${N(c) === 1 ? ` <span class="pts">+${c.points ?? 1}</span>` : ''}</small>
+        <small><span class="type-tag">${t.icon} ${esc(typeInfo(c))}</span>${N(c) === 1 && !isCounter(c) ? ` <span class="pts">+${c.points ?? 1}</span>` : ''}</small>
       </div>
       ${st ? `<span class="streak-badge" title="سلسلة ${st} أيام">🔥<b>${st}</b></span>` : ''}
     </div>
@@ -699,6 +724,20 @@ function taskCard(c, week) {
       <button type="button" class="tlink" data-open="${c.id}">${ICON.cal}<span>تقدّم الشهر</span></button>
       <button type="button" class="tlink" data-rank="${c.id}">${ICON.trophy}<span>${r?.points ? `ترتيبي ${r.rank} من ${r.count}` : 'الترتيب'}</span></button>
     </div>
+  </section>`;
+}
+
+// مهمة مبرمجة لم تبدأ: باهتة مع العدّ التنازلي
+function lockedCard(c) {
+  const t = TYPES[c.type] || TYPES.custom;
+  const [, m, d] = c.start_date.split('-').map(Number);
+  return `<section class="task locked" style="--tc:${t.color}">
+    <div class="task-head">
+      <span class="task-ico">${esc(c.icon || t.icon)}</span>
+      <div class="task-title"><b>${esc(c.title)}</b><small><span class="type-tag">${t.icon} ${esc(typeInfo(c))}</span></small></div>
+      <span class="lock-badge">🔒</span>
+    </div>
+    <div class="lock-line">📅 ${dayName(c.start_date) === 'جم' ? 'الجمعة' : dayName(c.start_date)} ${d} ${MONTH_NAMES[m - 1]} · <b>${opensIn(c.start_date)}</b></div>
   </section>`;
 }
 
@@ -714,20 +753,36 @@ function videoBlock(c) {
 // نافذة صغيرة فوق اليوم المضغوط: الصلوات (أو العناصر) لذلك اليوم
 function itemIcon(c, name) { return ITEM_ICONS[name] || (TYPES[c.type] || TYPES.custom).icon; }
 function popHtml(c, d) {
-  const ok = editable(c, d);
+  const ok = onTime(c, d);
+  const when = d === today() ? 'اليوم' : `${dayName(d)} ${fmt(d)}`;
+  const late = ok ? '' : `<p class="pop-note">⏰ انتهت مدّة النقاط لهذا اليوم: يمكنك التسجيل لكن <b>دون نقاط</b>.</p>`;
+  const head = (sub) => `<div class="pop-head"><b>${esc(c.icon || '')} ${esc(c.title)}</b><small>${when} · ${sub}</small>
+      <button type="button" class="pop-x" data-popx aria-label="إغلاق">✕</button></div>`;
+  if (isCounter(c)) {
+    const v = S.pop?.v ?? valueOf(c, d);
+    const unit = c.meta?.unit || 'صفحة';
+    const max = Number(c.meta?.max) || 60;
+    return `${head(`كم ${unit} قرأت؟`)}${late}
+      <div class="stepper"><button type="button" class="st-b" data-st="-1" aria-label="ناقص">−</button>
+        <output class="st-v"><b>${v}</b><small>${unit}</small></output>
+        <button type="button" class="st-b" data-st="1" aria-label="زائد">+</button></div>
+      <div class="chips st-quick">${[1, 2, 5, 10, 20].filter((x) => x <= max).map((x) => `<button type="button" class="pill" data-sv="${x}">${x}</button>`).join('')}</div>
+      <div class="st-pts">${ok ? `+${Math.round(v * (c.points ?? 1))} نقطة` : 'دون نقاط'}</div>
+      <div class="row nowrap"><button type="button" class="btn small" data-ssave style="flex:1">حفظ</button>
+        ${valueOf(c, d) ? '<button type="button" class="btn danger small" data-sdel>مسح</button>' : ''}</div>`;
+  }
   const n = doneCount(c, d);
   const all = n >= N(c);
-  return `<div class="pop-head"><b>${esc(c.icon || '')} ${esc(c.title)}</b><small>${d === today() ? 'اليوم' : `${dayName(d)} ${fmt(d)}`} · ${n}/${N(c)}</small>
-      <button type="button" class="pop-x" data-popx aria-label="إغلاق">✕</button></div>
-    ${ok ? '' : '<p class="pop-note">انتهت مدّة تسجيل هذا اليوم.</p>'}
+  return `${head(`${n}/${N(c)}`)}${late}
     <div class="pop-items">${c.items
       .map((name, i) => {
         const on = S.myLogs.has(key(c.id, d, i));
-        return `<button type="button" class="pi ${on ? 'on' : ''}" data-pi="${i}" aria-pressed="${on}" ${ok ? '' : 'disabled'}>
-          <span class="pi-ico">${itemIcon(c, name)}</span><span>${esc(name)}</span><i>${on ? '✓' : `+${c.points ?? 1}`}</i></button>`;
+        const l = on && logsOf(c, d).find((x) => x.item === i);
+        return `<button type="button" class="pi ${on ? 'on' : ''} ${l?.late ? 'late' : ''}" data-pi="${i}" aria-pressed="${on}">
+          <span class="pi-ico">${itemIcon(c, name)}</span><span>${esc(name)}</span><i>${on ? (l?.late ? '✓ دون نقاط' : '✓') : ok ? `+${c.points ?? 1}` : '0'}</i></button>`;
       })
       .join('')}</div>
-    ${ok && !all ? `<button type="button" class="btn small pop-all" data-piall>✓ الكل (${N(c) - n})</button>` : ''}`;
+    ${!all ? `<button type="button" class="btn small pop-all" data-piall>✓ الكل (${N(c) - n})</button>` : ''}`;
 }
 function closePop() { S.pop = null; $('#pop')?.remove(); document.querySelectorAll('.dc.open').forEach((b) => b.classList.remove('open')); }
 function showPop() {
@@ -757,6 +812,13 @@ function showPop() {
   pop.querySelectorAll('[data-pi]').forEach((b) =>
     b.addEventListener('click', () => mark(c, S.pop.d, [Number(b.dataset.pi)], b.getAttribute('aria-pressed') !== 'true', b))
   );
+  // العدّاد
+  const max = Number(c.meta?.max) || 60;
+  const setV = (v) => { S.pop.v = Math.max(0, Math.min(max, v)); showPop(); };
+  pop.querySelectorAll('[data-st]').forEach((b) => b.addEventListener('click', () => setV((S.pop.v ?? valueOf(c, S.pop.d)) + Number(b.dataset.st))));
+  pop.querySelectorAll('[data-sv]').forEach((b) => b.addEventListener('click', () => setV(Number(b.dataset.sv))));
+  pop.querySelector('[data-ssave]')?.addEventListener('click', (e) => setCount(c, S.pop.d, S.pop.v ?? valueOf(c, S.pop.d), e.currentTarget));
+  pop.querySelector('[data-sdel]')?.addEventListener('click', (e) => setCount(c, S.pop.d, 0, e.currentTarget));
   pop.querySelector('[data-piall]')?.addEventListener('click', (e) => {
     const d = S.pop.d;
     const missing = c.items.map((_, i) => i).filter((i) => !S.myLogs.has(key(c.id, d, i)));
@@ -772,12 +834,11 @@ function onDay(b) {
   const c = S.challenges.find((x) => x.id === Number(b.dataset.c));
   const d = b.dataset.d;
   if (!c) return;
-  if (N(c) > 1) {
+  if (N(c) > 1 || isCounter(c)) {
     if (S.pop && S.pop.c === c.id && S.pop.d === d) return closePop();
     S.pop = { c: c.id, d };
     return showPop();
   }
-  if (!editable(c, d)) return toast('انتهت مدّة تسجيل هذا اليوم.', true);
   mark(c, d, [0], !isFull(c, d), b);
 }
 
@@ -799,6 +860,7 @@ function renderQuests() {
   const open = list.filter((c) => !onceDone(c) && (!c.end_date || c.end_date >= now));
   const done = list.filter(onceDone);
   const missed = list.filter((c) => !onceDone(c) && c.end_date && c.end_date < now);
+  const soonQ = upcoming('once');
   const card = (c) => {
     const st = questState(c);
     const isDone = onceDone(c);
@@ -813,11 +875,12 @@ function renderQuests() {
         <span class="task-ico">${esc(c.icon || t.icon)}</span>
         <span class="quest-info"><b>${esc(c.title)}</b>
           <small><span class="tag-type">${type}</span> <span class="pts">+${c.points ?? 1}</span>${
-            isDone ? ' · <span class="good">✓ أنجزت</span>' : left !== null ? ` · <span class="${left <= 1 ? 'urgent' : 'muted'}">⏳ ${left === 0 ? 'آخر يوم!' : left === 1 ? 'ينتهي غدًا' : `باقي ${left} أيام`}</span>` : ''}</small></span>
-        <span class="go">${isDone ? '🏅' : expanded ? '▲' : 'ابدأ'}</span>
+            isDone ? ` · <span class="good">✓ ${doneLabel(c)}</span>` : left !== null ? ` · <span class="${left <= 1 ? 'urgent' : 'muted'}">⏳ ${left === 0 ? 'آخر يوم!' : left === 1 ? 'ينتهي غدًا' : `باقي ${left} أيام`}</span>` : ''}</small></span>
+        <span class="go">${isDone ? '🏅' : expanded ? '▲' : c.type === 'submit' ? 'أرسل' : 'ابدأ'}</span>
       </button>
       ${expanded ? `<div class="quest-body">
         ${c.description ? `<p class="small" style="margin:0">${esc(c.description)}</p>` : ''}
+        ${c.type === 'quiz' ? quizIntro(c) : c.type === 'submit' ? submitForm(c) : `
         ${st.vid ? `<div class="qstep ${st.needVideo ? '' : 'ok'}"><b>${st.needVideo ? '1' : '✓'}</b> شاهد الفيديو حتى آخره</div>
           <div class="video"><div id="yt-${c.id}" data-yt="${st.vid}" data-cid="${c.id}"></div></div>
           <div class="watch"><div class="xp-bar"><span id="wp-${c.id}" style="width:${Math.round(st.watched * 100)}%"></span></div><small id="wt-${c.id}">${Math.round(st.watched * 100)}% مشاهَد</small></div>` : ''}
@@ -829,19 +892,124 @@ function renderQuests() {
               data-qc="${c.id}" data-qi="${i}" ${st.needVideo || st.needPdf || st.quizOk ? 'disabled' : ''}>${esc(t)}</button>`)
             .join('')}</div>
           ${String(S.quiz[c.id] || '').startsWith('no') ? '<p class="error small">ليست الإجابة الصحيحة، راجع وحاول مرة أخرى.</p>' : ''}` : ''}
-        <button class="btn big ${st.ready ? 'yellow' : ''}" type="button" data-qdone="${c.id}" ${st.ready ? '' : 'disabled'}>${st.ready ? `🎉 أنجزت! (+${c.points ?? 1})` : '🔒 أكمل الخطوات أولًا'}</button>
+        <button class="btn big ${st.ready ? 'yellow' : ''}" type="button" data-qdone="${c.id}" ${st.ready ? '' : 'disabled'}>${st.ready ? `🎉 أنجزت! (+${c.points ?? 1})` : '🔒 أكمل الخطوات أولًا'}</button>`}
       </div>` : ''}
     </section>`;
   };
   return `${membersBar()}
     <section class="banner">
-      <div><span class="pill-yellow">تحديات خاصة</span><h2>اقرأ، شاهد، وأنجز!</h2><p>كل تحدٍّ يُنجز مرة واحدة ويضيف نقاطًا لترتيبك.</p></div>
+      <div><span class="pill-yellow">تحديات خاصة</span><h2>اقرأ، شاهد، أجب، وأرسل!</h2><p>كل تحدٍّ يُنجز مرة واحدة ويضيف نقاطًا لترتيبك.</p></div>
       <span class="banner-ico">🎯</span>
     </section>
     ${open.length ? open.map(card).join('') : `<div class="card empty"><div class="empty-ico">${list.length ? '🏅' : '🎯'}</div><h3>${
-      list.length ? 'أنهيت كل التحديات الحالية!' : 'لا توجد تحديات خاصة الآن'}</h3><p class="muted">${S.me.is_admin ? 'أضف تحدّي قراءة أو فيديو من «الإدارة».' : 'ترقّب الجديد قريبًا.'}</p></div>`}
+      list.length ? 'أنهيت كل التحديات الحالية!' : 'لا توجد تحديات خاصة الآن'}</h3><p class="muted">${S.me.is_admin ? 'أضف تحدّيًا (قراءة، فيديو، أسئلة، إرسال) من «الإدارة».' : 'ترقّب الجديد قريبًا.'}</p></div>`}
     ${done.length ? `<h3 class="sec">✓ أنجزتها (${done.length})</h3>${done.map(card).join('')}` : ''}
+    ${soonQ.length ? `<h3 class="sec">🔒 قريبًا</h3>${soonQ.map(lockedCard).join('')}` : ''}
     ${missed.length ? `<h3 class="sec muted">انتهى وقتها</h3>${missed.map((c) => `<div class="quest missed"><div class="quest-head"><span class="task-ico">${esc(c.icon || '🎯')}</span><span class="quest-info"><b>${esc(c.title)}</b><small class="muted">انتهى في ${fmt(c.end_date)}</small></span></div></div>`).join('')}` : ''}`;
+}
+
+function doneLabel(c) {
+  const l = S.logs.find((x) => x.challenge_id === c.id);
+  if (c.type === 'quiz' && l?.value != null) return `نتيجتك ${Math.round(Number(l.value) * 100)}% (+${Math.round((c.points ?? 1) * Number(l.value))})`;
+  if (c.type === 'submit') return 'أُرسل للمشرف';
+  return 'أنجزت';
+}
+
+function quizIntro(c) {
+  const qs = quizQuestions(c);
+  if (S.qz?.cid === c.id) return '<div class="quiz-box" id="quiz-box"></div>';
+  const kinds = [...new Set(qs.map((q) => q.t))].map((t) => `${QTYPES[t].icon} ${QTYPES[t].name}`).join(' · ');
+  return `<div class="quiz-intro"><b>${qs.length} ${qs.length === 1 ? 'سؤال' : qs.length <= 10 ? 'أسئلة' : 'سؤالًا'}</b><small>${kinds}</small>
+      <small class="muted">محاولة واحدة: النقاط حسب نسبة الإجابات الصحيحة.</small></div>
+    <button class="btn big yellow" type="button" data-qzstart="${c.id}" ${qs.length ? '' : 'disabled'}>▶ ابدأ الأسئلة</button>`;
+}
+
+// ---------- إرسال إنجاز: ملف و/أو رسالة صوتية ----------
+const REC = { rec: null, chunks: [], blob: null, url: null, secs: 0, timer: null, cid: null };
+function submitForm(c) {
+  const need = c.meta?.need || 'either';
+  const accept = { image: 'image/*', pdf: 'application/pdf', any: 'image/*,application/pdf,audio/*,video/*,.doc,.docx,.txt' }[c.meta?.accept || 'any'];
+  const f = S.subFile?.cid === c.id ? S.subFile.file : null;
+  const hasAudio = REC.cid === c.id && REC.blob;
+  const recording = REC.cid === c.id && REC.rec;
+  return `<div class="sub-need">📌 المطلوب: <b>${SUBMIT_NEEDS[need]}</b></div>
+    ${need !== 'audio' ? `<label class="drop">
+        <input type="file" id="sub-file" accept="${accept}" hidden>
+        <span class="drop-ico">${f ? '📎' : '⬆️'}</span>
+        <span>${f ? `<b>${esc(f.name)}</b><small>${Math.round(f.size / 1024)} ك.ب · اضغط للتغيير</small>` : '<b>اختر ملفًا أو صورة</b><small>من الهاتف أو الكاميرا (حتى 25 ميغا)</small>'}</span>
+      </label>` : ''}
+    ${need !== 'file' ? `<div class="rec ${recording ? 'on' : ''}">
+        ${recording ? `<button type="button" class="rec-btn stop" id="rec-stop" aria-label="إيقاف">■</button><span class="rec-t"><i class="rec-dot"></i> جاري التسجيل… <b id="rec-secs">${REC.secs}</b> ث</span>`
+          : hasAudio ? `<audio controls src="${REC.url}"></audio><button type="button" class="btn ghost small" id="rec-again">إعادة</button>`
+          : `<button type="button" class="rec-btn" id="rec-start" aria-label="تسجيل">🎙️</button><span class="rec-t">اضغط لتسجيل رسالة صوتية (حتى 3 دقائق)</span>`}
+      </div>` : ''}
+    <label>ملاحظة (اختياري)<textarea id="sub-note" rows="2" maxlength="500">${esc(S.subNote || '')}</textarea></label>
+    <button class="btn big yellow" type="button" data-subsend="${c.id}">📤 إرسال (+${c.points ?? 1})</button>`;
+}
+async function startRec(c) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'].find((t) => window.MediaRecorder?.isTypeSupported?.(t)) || '';
+    const rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    Object.assign(REC, { rec, chunks: [], blob: null, url: null, secs: 0, cid: c.id });
+    rec.ondataavailable = (e) => e.data.size && REC.chunks.push(e.data);
+    rec.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      clearInterval(REC.timer);
+      REC.blob = new Blob(REC.chunks, { type: rec.mimeType || 'audio/webm' });
+      REC.url = URL.createObjectURL(REC.blob);
+      REC.rec = null;
+      render();
+    };
+    rec.start();
+    REC.timer = setInterval(() => {
+      REC.secs++;
+      const el = $('#rec-secs');
+      if (el) el.textContent = REC.secs;
+      if (REC.secs >= 180) rec.stop();
+    }, 1000);
+    render();
+  } catch {
+    toast('لم نتمكّن من استعمال المايكروفون. اسمح للمتصفح باستعماله.', true);
+  }
+}
+async function sendSubmission(c, btn) {
+  const need = c.meta?.need || 'either';
+  const file = S.subFile?.cid === c.id ? S.subFile.file : null;
+  const audio = REC.cid === c.id ? REC.blob : null;
+  if (need === 'file' && !file) return toast('أضف الملف أولًا.', true);
+  if (need === 'audio' && !audio) return toast('سجّل الرسالة الصوتية أولًا.', true);
+  if (need === 'both' && (!file || !audio)) return toast('المطلوب ملف ورسالة صوتية.', true);
+  if (need === 'either' && !file && !audio) return toast('أضف ملفًا أو سجّل رسالة صوتية.', true);
+  if (file && file.size > 25 * 1024 * 1024) return toast('الملف أكبر من 25 ميغا.', true);
+  btn.disabled = true;
+  btn.textContent = 'جاري الإرسال…';
+  const payload = { note: $('#sub-note')?.value.trim() || undefined };
+  const base = `${S.me.id}/${c.id}-${Date.now()}`;
+  try {
+    if (file) {
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5);
+      const path = `${base}.${ext}`;
+      const { error } = await sb.storage.from('submissions').upload(path, file, { contentType: file.type || 'application/octet-stream' });
+      if (error) throw error;
+      payload.file = { path, name: file.name.slice(0, 120), type: file.type, size: file.size };
+    }
+    if (audio) {
+      const ext = /mp4/.test(audio.type) ? 'm4a' : /ogg/.test(audio.type) ? 'ogg' : 'webm';
+      const path = `${base}-voice.${ext}`;
+      const { error } = await sb.storage.from('submissions').upload(path, audio, { contentType: audio.type.split(';')[0] });
+      if (error) throw error;
+      payload.audio = { path, secs: REC.secs };
+    }
+  } catch {
+    btn.disabled = false;
+    btn.textContent = '📤 إرسال';
+    return toast('تعذّر رفع الملف. أعد المحاولة.', true);
+  }
+  S.subFile = null;
+  S.subNote = '';
+  Object.assign(REC, { blob: null, url: null, cid: null, secs: 0 });
+  await completeOnce(c, { payload });
 }
 
 // مشغّل يوتيوب يحسب الوقت المشاهَد فعلًا (القفز لا يُحتسب)
@@ -1060,7 +1228,8 @@ function renderRules() {
     <div class="card" style="display:grid;gap:.4rem">
       <h3>⭐ كيف تُحسب النقاط؟</h3>
       <ul class="how">
-        <li>كل مهمة منجزة: نقاطها (الصلوات: لكل صلاة).</li>
+        <li>كل مهمة منجزة: نقاطها (الصلوات: لكل صلاة، العدّاد: لكل صفحة، الأسئلة: حسب النتيجة).</li>
+        <li>⏰ النقاط تُحتسب فقط إذا سجّلت ${S.editDays === 1 ? 'في اليوم نفسه' : `خلال ${S.editDays === 2 ? 'يومين' : `${S.editDays} أيام`}`}؛ بعدها يمكنك التسجيل دون نقاط.</li>
         <li>✨ يوم مثالي (كل المهام اليومية): <b>+${S.perfectBonus}</b>.</li>
         <li>🔥 كل 7 أيام متتالية في نفس المهمة: <b>+${S.streakBonus}</b>.</li>
         <li>🎯 التحديات الخاصة (قراءة، فيديو): نقاطها مرة واحدة.</li>
@@ -1165,12 +1334,29 @@ function challengeForm(c) {
         <label>أذكار أخرى (كل واحد في سطر)<textarea id="f-items-extra" rows="2" placeholder="الاستغفار 100 مرة">${esc(items.filter((x) => !ADHKAR.includes(x)).join('\n'))}</textarea></label>
       </fieldset>`;
   } else if (c.type === 'quran') {
+    const counter = m.track === 'counter';
     specific = `<fieldset class="box"><legend>📖 الورد اليومي</legend>
+        <div class="seg two" role="radiogroup" aria-label="طريقة التسجيل">
+          <button type="button" data-track="fixed" aria-pressed="${!counter}">🎯 المشرف يحدّد المقدار</button>
+          <button type="button" data-track="counter" aria-pressed="${counter}">🔢 المشارك يُدخل العدد</button>
+        </div>
+        <small class="muted">${counter ? 'كل مشارك يُدخل عدد ما قرأ كل يوم، ويربح النقاط لكل وحدة.' : 'المشارك يضغط ✓ عندما يُتمّ المقدار المحدّد.'}</small>
         <div class="grid3">
           <label>النوع<select id="f-mode">${Object.entries(QURAN_MODES).map(([k, v]) => `<option value="${k}" ${(m.mode || 'read') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-          <label>المقدار<input type="number" id="f-amount" min="1" max="604" value="${m.amount || 1}"></label>
+          ${counter ? `<label>الحدّ الأقصى يوميًا<input type="number" id="f-max" min="1" max="604" value="${m.max || 20}"></label>`
+            : `<label>المقدار<input type="number" id="f-amount" min="1" max="604" value="${m.amount || 1}"></label>`}
           <label>الوحدة<select id="f-unit">${UNITS.map((u) => `<option ${(m.unit || 'صفحة') === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
         </div>
+      </fieldset>`;
+  } else if (c.type === 'quiz') {
+    specific = quizBuilder(c.raws || []);
+  } else if (c.type === 'submit') {
+    specific = `<fieldset class="box"><legend>📤 ماذا يرسل المشارك؟</legend>
+        <div class="grid2">
+          <label>المطلوب<select id="f-need">${Object.entries(SUBMIT_NEEDS).map(([k, v]) => `<option value="${k}" ${(m.need || 'either') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label>نوع الملف<select id="f-accept">${Object.entries({ any: 'أي ملف', image: 'صورة', pdf: 'PDF' }).map(([k, v]) => `<option value="${k}" ${(m.accept || 'any') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        </div>
+        <small class="muted">تجد ما أُرسل في «الإدارة ← الإنجازات المرسَلة»، ويمكنك رفضه (فتُلغى نقاطه).</small>
       </fieldset>`;
   } else if (c.type === 'book') {
     specific = `<fieldset class="box"><legend>📚 الكتاب</legend>
@@ -1193,7 +1379,7 @@ function challengeForm(c) {
     specific = `<label>عناصر (اختياري، كل عنصر في سطر)<textarea id="f-items" rows="3" placeholder="مثال: الأب&#10;الأم">${esc(items.join('\n'))}</textarea></label>
       <label>رابط فيديو يوتيوب (اختياري)<input id="f-video" maxlength="300" dir="ltr" value="${esc(c.video_url || '')}"></label>`;
   }
-  const canQuiz = kind === 'once';
+  const canQuiz = kind === 'once' && !['quiz', 'submit'].includes(c.type);
   return `<form class="card" id="ch-form" style="display:grid;gap:.8rem">
     <div class="form-head" style="--tc:${t.color}"><span class="tt-ico">${t.icon}</span><div><small>${c.id ? 'تعديل' : 'مهمة جديدة'}</small><h2>${t.name}</h2></div>
       ${c.id ? '' : '<button class="link small" type="button" id="f-retype">تغيير النوع</button>'}</div>
@@ -1206,7 +1392,7 @@ function challengeForm(c) {
     </div>
     ${specific}
     <label>وصف أو تعليمات (اختياري)<input id="f-desc" maxlength="300" value="${esc(c.description || '')}" placeholder="${esc(t.hint)}"></label>
-    <label>النقاط ${N(c) > 1 || ['prayer', 'adhkar'].includes(c.type) ? 'لكل عنصر' : kind === 'once' ? '(مرة واحدة)' : 'لكل يوم'}<input type="number" id="f-points" min="0" max="1000" value="${c.points ?? (kind === 'once' ? 20 : 5)}" required></label>
+    <label>النقاط ${isCounter(c) ? `لكل ${esc(m.unit || 'صفحة')}` : c.type === 'quiz' ? '(كاملة عند 100%، وبالنسبة لغيرها)' : N(c) > 1 || ['prayer', 'adhkar'].includes(c.type) ? 'لكل عنصر' : kind === 'once' ? '(مرة واحدة)' : 'لكل يوم'}<input type="number" id="f-points" min="0" max="1000" value="${c.points ?? (kind === 'once' ? 20 : 5)}" required></label>
     ${canQuiz ? `<fieldset class="box"><legend>❓ سؤال للتأكّد (اختياري)</legend>
         <label>السؤال<input id="f-q" maxlength="200" value="${esc(quiz.q || '')}" placeholder="${c.type === 'video' ? 'ما العبرة من القصة؟' : 'ما الفكرة الرئيسية في الفصل الأول؟'}"></label>
         <label>الاختيارات (كل اختيار في سطر)<textarea id="f-choices" rows="3">${esc((quiz.choices || []).join('\n'))}</textarea></label>
@@ -1239,7 +1425,13 @@ function readForm() {
   if (f.type === 'adhkar') f.items = [...ADHKAR.filter((x) => picked.includes(x)), ...$('#f-items-extra').value.split('\n').map((x) => x.trim()).filter(Boolean)].slice(0, 10);
   if ($('#f-items')) f.items = $('#f-items').value.split('\n').map((x) => x.trim()).filter(Boolean).slice(0, 10);
   f.meta = { ...(f.meta || {}) };
-  if (f.type === 'quran') Object.assign(f.meta, { mode: $('#f-mode').value, amount: Math.max(1, Number($('#f-amount').value) || 1), unit: $('#f-unit').value });
+  if (f.type === 'quran') {
+    Object.assign(f.meta, { mode: $('#f-mode').value, unit: $('#f-unit').value });
+    if ($('#f-amount')) f.meta.amount = Math.max(1, Number($('#f-amount').value) || 1);
+    if ($('#f-max')) f.meta.max = Math.max(1, Number($('#f-max').value) || 20);
+  }
+  if (f.type === 'submit') Object.assign(f.meta, { need: $('#f-need').value, accept: $('#f-accept').value });
+  if (f.type === 'quiz') { readBuilder(); f.meta.questions = f.raws.map(rawToQ); }
   if (f.type === 'book') Object.assign(f.meta, { author: val('#f-author') || undefined, pages: Number($('#f-pages').value) || undefined });
   if ($('#f-pdf')) f.pdf_url = val('#f-pdf');
   if ($('#f-q')) {
@@ -1254,62 +1446,7 @@ async function renderAdmin() {
   if (S.editing) return challengeForm(S.editing);
   const now = today();
   const c = S.challenges.find((x) => x.id === S.detailId) || S.challenges[0];
-  let details = '';
-  if (c) {
-    S.detailId = c.id;
-    const month = S.month || now.slice(0, 7);
-    const [y, m] = month.split('-').map(Number);
-    const days = Array.from({ length: new Date(y, m, 0).getDate() }, (_, i) => `${month}-${pad(i + 1)}`);
-    const [{ data: people }, { data: logs }, { data: board }] = await Promise.all([
-      sb.from('members').select('id, name, profiles(display_name)'),
-      sb.from('habit_logs').select('member_id, day, item, created_at').eq('challenge_id', c.id).gte('day', days[0]).lte('day', days[days.length - 1]),
-      sb.rpc('ranking2', { p_challenge: c.id, p_period: 'all' }),
-    ]);
-    const rows = ranked(board || []);
-    const byUser = {};
-    for (const l of logs || []) {
-      const cell = ((byUser[l.member_id] ??= {})[l.day] ??= { items: [], at: l.created_at });
-      cell.items.push(l.item);
-      if (l.created_at > cell.at) cell.at = l.created_at;
-    }
-    const account = Object.fromEntries((people || []).map((p) => [p.id, p.profiles?.display_name || '']));
-    const avg = rows.length ? Math.round((rows.reduce((t, r) => t + (r.total ? r.days / r.total : 0), 0) / rows.length) * 100) : 0;
-    details = `<div class="card" style="display:grid;gap:.7rem">
-        <h2>📊 التفاصيل</h2>
-        <div class="grid2">
-          <label>المهمة<select id="d-c">${S.challenges.map((x) => `<option value="${x.id}" ${x.id === c.id ? 'selected' : ''}>${esc(x.icon || '⭐')} ${esc(x.title)}</option>`).join('')}</select></label>
-          <label>الشهر<input type="month" id="d-month" value="${month}"></label>
-        </div>
-        <div class="kpis">
-          <div class="kpi"><b>${rows.length}</b><small>مشارك</small></div>
-          <div class="kpi"><b>${Object.keys(byUser).length}</b><small>سجّل هذا الشهر</small></div>
-          <div class="kpi"><b>${rows.filter((r) => !r.points).length}</b><small>لم يسجّل أبدًا</small></div>
-          <div class="kpi"><b>${avg}%</b><small>متوسط المواظبة</small></div>
-        </div>
-        ${confirmBox()}
-        <p class="muted small" style="margin:0">✓ = يوم منجز (مرّر على الخانة لترى وقت التسجيل). اضغط على خانة لتصحيح يوم لأي مشارك.</p>
-      </div>
-      <div class="table-wrap"><table>
-        <thead><tr><th class="name">الاسم</th>${days.map((d) => `<th class="${d === now ? 'today' : ''}">${Number(d.slice(8))}</th>`).join('')}<th>الشهر</th><th>النقاط</th><th>الإجمالي</th><th>🔥</th></tr></thead>
-        <tbody>${rows
-          .map((r) => {
-            const mine = byUser[r.member_id] || {};
-            const pct = r.total ? Math.round((r.days / r.total) * 100) : 0;
-            return `<tr><td class="name">${r.points && r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank} ${esc(r.name)}${account[r.member_id] && account[r.member_id] !== r.name ? ` <span class="small muted">(${esc(account[r.member_id])})</span>` : ''}</td>${days
-              .map((d) => {
-                const out = d > now || !inRange(c, d);
-                const cell = mine[d];
-                const k = cell?.items.length || 0;
-                const full = k >= nItems(c);
-                const at = cell ? new Date(cell.at).toLocaleString('fr-TN', { timeZone: 'Africa/Tunis' }) : '';
-                const what = cell && c.items ? ' — ' + cell.items.map((i) => c.items[i]).join('، ') : '';
-                return `<td class="cell ${full ? 'done' : k ? 'part' : ''} ${out ? 'out' : ''}" title="${at ? esc('سُجّل في ' + at + what) : fmt(d)}" ${
-                  out ? '' : `data-u="${r.member_id}" data-d="${d}" data-n="${esc(r.name)}" data-full="${full}"`}>${full ? '✓' : k ? `${k}/${nItems(c)}` : ''}</td>`;
-              })
-              .join('')}<td><b>${Object.values(mine).filter((x) => x.items.length >= nItems(c)).length}</b></td><td>⭐ ${r.points}</td><td>${r.days}/${r.total} · ${pct}%</td><td>${r.streak}</td></tr>`;
-          })
-          .join('')}</tbody></table></div>`;
-  }
+  const details = c ? await adminDetails(c) : '';
   const titles = new Set(S.challenges.map((x) => x.title.trim()));
   const { data: accounts } = await sb.rpc('admin_accounts');
   const acc = accounts || [];
@@ -1362,9 +1499,10 @@ async function renderAdmin() {
     </div>
     <form class="card" id="settings-form" style="display:grid;gap:.7rem">
       <h3>⚙️ القواعد والمكافآت</h3>
-      <label>مدّة تعمير اليوم<select id="edit-days">${Object.entries(WINDOWS)
+      <label>مدّة الحصول على النقاط<select id="edit-days">${Object.entries(WINDOWS)
         .map(([k, t]) => `<option value="${k}" ${Number(k) === S.editDays ? 'selected' : ''}>${t}</option>`)
         .join('')}</select></label>
+      <p class="muted small" style="margin:-.3rem 0 0">يمكن للمشارك تسجيل أي يوم فات، لكن <b>النقاط والمكافآت</b> لا تُحتسب إلا إذا سجّل خلال هذه المدّة. تسجيلاتك أنت (التصحيح) تُحتسب دائمًا.</p>
       <div class="grid2">
         <label>✨ مكافأة اليوم المثالي<input type="number" id="perfect-bonus" min="0" max="1000" value="${S.perfectBonus}"></label>
         <label>🔥 مكافأة كل 7 أيام متتالية<input type="number" id="streak-bonus" min="0" max="1000" value="${S.streakBonus}"></label>
@@ -1372,6 +1510,128 @@ async function renderAdmin() {
       <div class="row"><button class="btn" type="submit">حفظ</button><button class="btn ghost" type="button" data-goto="rules">📜 تعديل القانون</button></div>
     </form>
     ${details}`;
+}
+
+// ---------- جدول المتابعة (المشرف) ----------
+async function adminDetails(c) {
+  S.detailId = c.id;
+  const now = today();
+  const A = (S.adm ??= { view: 'week', off: 0 });
+  let days;
+  let title;
+  if (A.view === 'week') {
+    const st = addDays(weekStart(now), A.off * 7);
+    days = Array.from({ length: 7 }, (_, i) => addDays(st, i));
+    title = `${weekTitle(A.off)} · ${rangeLabel(days[0], days[6])}`;
+  } else {
+    const [y, m] = (A.month || now.slice(0, 7)).split('-').map(Number);
+    days = Array.from({ length: new Date(y, m, 0).getDate() }, (_, i) => `${y}-${pad(m)}-${pad(i + 1)}`);
+    title = `${MONTH_NAMES[m - 1]} ${y}`;
+  }
+  const once = c.kind === 'once';
+  const q = sb.from('habit_logs').select('member_id, day, item, created_at, value, late, payload').eq('challenge_id', c.id);
+  const [{ data: people }, { data: logs }, { data: board }] = await Promise.all([
+    sb.from('members').select('id, name, avatar_url, profiles(display_name)'),
+    once ? q : q.gte('day', days[0]).lte('day', days[days.length - 1]),
+    sb.rpc('ranking2', { p_challenge: c.id, p_period: 'all' }),
+  ]);
+  const rows = ranked(board || []);
+  const who = Object.fromEntries((people || []).map((p) => [p.id, p]));
+  const t = TYPES[c.type] || TYPES.custom;
+  const select = `<label>المهمة<select id="d-c">${S.challenges.map((x) => `<option value="${x.id}" ${x.id === c.id ? 'selected' : ''}>${esc(x.icon || '⭐')} ${esc(x.title)}</option>`).join('')}</select></label>`;
+  if (once) return onceDetails(c, rows, logs || [], who, select);
+
+  const byUser = {};
+  for (const l of logs || []) ((byUser[l.member_id] ??= {})[l.day] ??= []).push(l);
+  const elapsed = days.filter((d) => d <= now && inRange(c, d)).length;
+  const head = days.map((d) => `<th class="${d === now ? 'today' : ''} ${['جم'].includes(dayName(d)) ? 'fri' : ''}"><small>${dayName(d)}</small><b>${Number(d.slice(8))}</b></th>`).join('');
+  const body = rows.map((r) => {
+    const mine = byUser[r.member_id] || {};
+    let full = 0, pts = 0;
+    const cells = days.map((d) => {
+      const out = d > now || !inRange(c, d);
+      const ls = mine[d] || [];
+      const k = Math.min(ls.length, nItems(c));
+      const isFullDay = k >= nItems(c);
+      const late = ls.length && ls.every((l) => l.late);
+      if (isFullDay) full++;
+      pts += ls.reduce((s2, l) => s2 + logPts(c, l), 0);
+      const at = ls.length ? new Date(ls.reduce((a, l) => (l.created_at > a ? l.created_at : a), '')).toLocaleString('fr-TN', { timeZone: 'Africa/Tunis', dateStyle: 'short', timeStyle: 'short' }) : '';
+      const what = ls.length && c.items ? ls.map((l) => c.items[l.item]).join('، ') : '';
+      const tip = out ? '' : ls.length ? `سُجّل ${at}${late ? ' (متأخّر، دون نقاط)' : ''}${what ? ' — ' + what : ''}` : `${dayName(d)} ${fmt(d)}: لم يُسجَّل`;
+      const content = out ? '' : isCounter(c) && ls.length ? `<b>${ls.reduce((a, l) => a + Number(l.value ?? 1), 0)}</b>`
+        : isFullDay ? '✓' : k ? `<span class="ac-frac">${k}/${nItems(c)}</span><i class="ac-bar"><i style="width:${(k / nItems(c)) * 100}%"></i></i>` : '<span class="ac-dot"></span>';
+      return `<td><button type="button" class="ac ${out ? 'out' : isFullDay ? 'full' : k ? 'part' : 'none'} ${late ? 'late' : ''} ${d === now ? 'today' : ''}" title="${esc(tip)}"
+        ${out || isCounter(c) ? 'disabled' : `data-u="${r.member_id}" data-d="${d}" data-n="${esc(r.name)}" data-full="${isFullDay}"`}>${content}</button></td>`;
+    }).join('');
+    const pct = elapsed ? Math.round((full / elapsed) * 100) : 0;
+    const p = who[r.member_id];
+    return `<tr>
+      <th class="who" scope="row"><span class="who-in">${avatar(r.member_id, r.name, p?.avatar_url, 'xs')}<span><b>${esc(r.name)}</b>${p?.profiles?.display_name && p.profiles.display_name !== r.name ? `<small>${esc(p.profiles.display_name)}</small>` : ''}</span></span></th>
+      ${cells}
+      <td class="tot"><b>${Math.round(pts)}</b></td>
+      <td class="tot"><span class="pct ${pct >= 80 ? 'hi' : pct >= 50 ? 'mid' : 'lo'}">${pct}%</span></td>
+      <td class="tot">${r.streak ? `🔥${r.streak}` : '–'}</td>
+    </tr>`;
+  }).join('');
+  const active = rows.filter((r) => Object.keys(byUser[r.member_id] || {}).length).length;
+  return `<section class="card adm" style="display:grid;gap:.8rem">
+      <div class="row"><h2>📊 جدول المتابعة</h2>
+        <div class="seg two mini"><button type="button" data-av="week" aria-pressed="${A.view === 'week'}">أسبوع</button><button type="button" data-av="month" aria-pressed="${A.view === 'month'}">شهر</button></div></div>
+      ${select}
+      <div class="mnav">
+        <button class="wk-arrow" type="button" data-an="-1" aria-label="السابق">${ICON.right}</button>
+        <b>${title}</b>
+        <button class="wk-arrow" type="button" data-an="1" aria-label="التالي" ${(A.view === 'week' ? A.off >= 0 : (A.month || now.slice(0, 7)) >= now.slice(0, 7)) ? 'disabled' : ''}>${ICON.left}</button>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><b>${rows.length}</b><small>مشارك</small></div>
+        <div class="kpi"><b>${active}</b><small>سجّل في الفترة</small></div>
+        <div class="kpi"><b>${rows.length - active}</b><small>لم يسجّل</small></div>
+      </div>
+      ${confirmBox()}
+    </section>
+    <div class="atable-wrap" style="--tc:${t.color}"><table class="atable ${A.view}">
+      <thead><tr><th class="who">المشارك</th>${head}<th class="tot">نقاط</th><th class="tot">مواظبة</th><th class="tot">سلسلة</th></tr></thead>
+      <tbody>${body || `<tr><td colspan="${days.length + 4}" class="muted center">لا يوجد مشاركون بعد.</td></tr>`}</tbody>
+    </table></div>
+    <p class="legend"><span class="lg-full"></span> كامل <span class="lg-part"></span> ناقص <span class="lg-late"></span> متأخّر (دون نقاط) <span class="lg-none"></span> لم يُسجَّل · اضغط على خانة للتصحيح</p>`;
+}
+
+// تحدٍّ لمرة واحدة: من أنجز، متى، النتيجة، وما أرسله
+function onceDetails(c, rows, logs, who, select) {
+  const byUser = Object.fromEntries(logs.map((l) => [l.member_id, l]));
+  const done = rows.filter((r) => byUser[r.member_id]);
+  const items = rows.map((r) => {
+    const l = byUser[r.member_id];
+    const p = who[r.member_id];
+    const at = l ? new Date(l.created_at).toLocaleString('fr-TN', { timeZone: 'Africa/Tunis', dateStyle: 'short', timeStyle: 'short' }) : '';
+    const pay = l?.payload || {};
+    return `<div class="sub-row ${l ? 'ok' : ''}">
+      ${avatar(r.member_id, r.name, p?.avatar_url, 'sm')}
+      <div class="sub-info"><b>${esc(r.name)}</b>
+        <small>${l ? `✓ ${at}${c.type === 'quiz' && l.value != null ? ` · النتيجة <b>${Math.round(Number(l.value) * 100)}%</b>` : ''}` : '<span class="muted">لم ينجز بعد</span>'}</small>
+        ${pay.note ? `<small class="sub-note">💬 ${esc(pay.note)}</small>` : ''}
+        ${l && (pay.file || pay.audio) ? `<div class="row" style="justify-content:flex-start">
+          ${pay.file ? `<button class="btn ghost small" type="button" data-open-file="${esc(pay.file.path)}">📎 ${esc(pay.file.name || 'الملف')}</button>` : ''}
+          ${pay.audio ? `<button class="btn ghost small" type="button" data-play="${esc(pay.audio.path)}">▶ الرسالة الصوتية${pay.audio.secs ? ` (${pay.audio.secs} ث)` : ''}</button>` : ''}
+        </div><div class="sub-player" data-player="${esc(pay.audio?.path || '')}"></div>` : ''}
+      </div>
+      ${l ? `<button class="btn danger small" type="button" data-reject="${r.member_id}" data-n="${esc(r.name)}">${c.type === 'submit' ? 'رفض' : 'إلغاء'}</button>` : ''}
+    </div>`;
+  }).join('');
+  return `<section class="card adm" style="display:grid;gap:.8rem">
+      <h2>${c.type === 'submit' ? '📤 الإنجازات المرسَلة' : '📊 من أنجز التحدّي'}</h2>
+      ${select}
+      <div class="kpis">
+        <div class="kpi"><b>${done.length}</b><small>أنجز</small></div>
+        <div class="kpi"><b>${rows.length - done.length}</b><small>لم ينجز</small></div>
+        ${c.type === 'quiz' && done.length ? `<div class="kpi"><b>${Math.round((done.reduce((a, r) => a + Number(byUser[r.member_id].value ?? 0), 0) / done.length) * 100)}%</b><small>متوسط النتيجة</small></div>` : ''}
+      </div>
+      ${confirmBox()}
+      <div class="subs">${items || '<p class="muted">لا يوجد مشاركون بعد.</p>'}</div>
+      ${c.type === 'submit' ? '<p class="muted small" style="margin:0">«رفض» يحذف الإرسال فتُلغى نقاطه، ويمكن للمشارك أن يرسل من جديد.</p>' : ''}
+    </section>`;
 }
 
 const inviteLink = () => location.origin + location.pathname.replace(/index\.html$/, '');
@@ -1397,12 +1657,14 @@ async function toggle(memberId, cid, day, done, item = 0) {
 async function mark(c, d, list, done, el) {
   const wasPerfect = isPerfect(d);
   const wasFull = isFull(c, d);
-  const add = (i) => { S.myLogs.add(key(c.id, d, i)); S.logs.push({ challenge_id: c.id, day: d, item: i, created_at: new Date().toISOString() }); };
+  const late = !onTime(c, d);
+  const add = (i) => { S.myLogs.add(key(c.id, d, i)); S.logs.push({ challenge_id: c.id, day: d, item: i, late, created_at: new Date().toISOString() }); };
   const del = (i) => { S.myLogs.delete(key(c.id, d, i)); S.logs = S.logs.filter((l) => !(l.challenge_id === c.id && l.day === d && l.item === i)); };
   list.forEach(done ? add : del);
   if (done) {
     const r = el?.getBoundingClientRect();
-    FX.float(el, `+${(c.points ?? 1) * list.length}`);
+    FX.float(el, late ? '+0' : `+${(c.points ?? 1) * list.length}`);
+    if (late) toast('سُجّل دون نقاط: انتهت مدّة النقاط لهذا اليوم.');
     FX.chime();
     FX.buzz();
     if (r) FX.confetti(isFull(c, d) && !wasFull ? 50 : 14, { x: r.left + r.width / 2, y: r.top });
@@ -1413,17 +1675,65 @@ async function mark(c, d, list, done, el) {
     list.forEach((i, k) => { if (!results[k]) (done ? del : add)(i); });
     return render();
   }
-  if (done && isFull(c, d) && !wasFull) {
+  if (done && isFull(c, d) && !wasFull && !late) {
     if (N(c) > 1 && S.pop) closePop();
     const st = streakOf(c, d);
     if (S.streakBonus && st && st % 7 === 0) celebrate({ icon: '🔥', title: `${st} أيام متتالية!`, text: `سلسلة رائعة في «${c.title}». واصل!`, pts: S.streakBonus });
   }
-  if (done && !wasPerfect && isPerfect(d)) {
+  if (done && !late && !wasPerfect && isPerfect(d)) {
     celebrate({ icon: '✨', title: 'يوم مثالي!', text: 'أكملت كل مهام اليوم. ما شاء الله، تبارك الرحمن!', pts: S.perfectBonus || 0 });
   }
   await loadRanks();
   checkRewards();
   render();
+}
+
+// العدّاد: يُستبدل تسجيل اليوم بالقيمة الجديدة (0 = مسح)
+async function setCount(c, d, v, el) {
+  const late = !onTime(c, d);
+  const old = logsOf(c, d);
+  const wasPerfect = isPerfect(d);
+  const before = valueOf(c, d);
+  closePop();
+  if (old.length) {
+    const { error } = await sb.from('habit_logs').delete().match({ member_id: S.memberId, challenge_id: c.id, day: d });
+    if (error) return toast('تعذّر الحفظ.', true);
+    S.logs = S.logs.filter((l) => !(l.challenge_id === c.id && l.day === d));
+    S.myLogs.delete(key(c.id, d));
+  }
+  if (v > 0) {
+    const { data, error } = await sb.from('habit_logs').insert({ member_id: S.memberId, challenge_id: c.id, day: d, item: 0, value: v }).select('late').single();
+    if (error) { toast('تعذّر الحفظ.', true); return render(); }
+    S.logs.push({ challenge_id: c.id, day: d, item: 0, value: v, late: data?.late ?? late, created_at: new Date().toISOString() });
+    S.myLogs.add(key(c.id, d));
+    if (v > before) {
+      FX.float(el, late ? '+0' : `+${Math.round((v - before) * (c.points ?? 1))}`);
+      FX.chime();
+      FX.buzz();
+    }
+    if (late) toast('سُجّل دون نقاط: انتهت مدّة النقاط لهذا اليوم.');
+    else if (!wasPerfect && isPerfect(d)) celebrate({ icon: '✨', title: 'يوم مثالي!', text: 'أكملت كل مهام اليوم. ما شاء الله، تبارك الرحمن!', pts: S.perfectBonus || 0 });
+  }
+  await loadRanks();
+  checkRewards();
+  render();
+}
+
+// إنجاز تحدٍّ (مرة واحدة)، مع قيمة (نتيجة الأسئلة) أو محتوى مرسَل
+async function completeOnce(c, extra = {}) {
+  const row = { member_id: S.memberId, challenge_id: c.id, day: today(), item: 0, ...extra };
+  const { error } = await sb.from('habit_logs').insert(row);
+  if (error && error.code !== '23505') { toast(error.code === '42501' ? 'لا يمكن تسجيل هذا التحدّي.' : 'تعذّر الحفظ، أعد المحاولة.', true); render(); return false; }
+  S.logs.push({ challenge_id: c.id, day: today(), item: 0, value: extra.value ?? null, payload: extra.payload ?? null, late: false, created_at: new Date().toISOString() });
+  S.myLogs.add(key(c.id, today()));
+  S.quest = null;
+  S.qz = null;
+  const pts = Math.round((c.points ?? 1) * Number(extra.value ?? 1));
+  celebrate({ icon: c.icon || '🎯', title: 'تحدٍّ منجز!', text: `أنهيت «${c.title}». بارك الله فيك!`, pts });
+  await loadRanks();
+  checkRewards();
+  render();
+  return true;
 }
 
 function bind() {
@@ -1489,7 +1799,7 @@ function bind() {
   );
   // التحديات الخاصة
   v.querySelectorAll('[data-quest]').forEach((b) =>
-    b.addEventListener('click', () => { const id = Number(b.dataset.quest); S.quest = S.quest === id ? null : id; render(); })
+    b.addEventListener('click', () => { const id = Number(b.dataset.quest); S.quest = S.quest === id ? null : id; if (S.qz?.cid !== S.quest) S.qz = null; render(); })
   );
   v.querySelectorAll('[data-pdf]').forEach((a) =>
     a.addEventListener('click', () => {
@@ -1507,19 +1817,20 @@ function bind() {
     })
   );
   v.querySelectorAll('[data-qdone]').forEach((b) =>
-    b.addEventListener('click', async () => {
-      const c = S.challenges.find((x) => x.id === Number(b.dataset.qdone));
+    b.addEventListener('click', () => {
       b.disabled = true;
-      if (!(await toggle(S.memberId, c.id, today(), true, 0))) return render();
-      S.myLogs.add(key(c.id, today()));
-      S.logs.push({ challenge_id: c.id, day: today(), item: 0, created_at: new Date().toISOString() });
-      S.quest = null;
-      celebrate({ icon: c.icon || '🎯', title: 'تحدٍّ منجز!', text: `أنهيت «${c.title}». بارك الله فيك!`, pts: c.points ?? 1 });
-      await loadRanks();
-      checkRewards();
-      render();
+      completeOnce(S.challenges.find((x) => x.id === Number(b.dataset.qdone)));
     })
   );
+  v.querySelectorAll('[data-qzstart]').forEach((b) => b.addEventListener('click', () => {
+    S.qz = { cid: Number(b.dataset.qzstart) };
+    render();
+  }));
+  $('#sub-file')?.addEventListener('change', (e) => { const f = e.target.files?.[0]; if (f) { S.subNote = $('#sub-note')?.value || ''; S.subFile = { cid: S.quest, file: f }; render(); } });
+  $('#rec-start')?.addEventListener('click', () => { S.subNote = $('#sub-note')?.value || ''; startRec(S.challenges.find((x) => x.id === S.quest)); });
+  $('#rec-stop')?.addEventListener('click', () => REC.rec?.stop());
+  $('#rec-again')?.addEventListener('click', () => { Object.assign(REC, { blob: null, url: null, cid: null, secs: 0 }); render(); });
+  v.querySelectorAll('[data-subsend]').forEach((b) => b.addEventListener('click', () => sendSubmission(S.challenges.find((x) => x.id === Number(b.dataset.subsend)), b)));
   v.querySelectorAll('[data-board]').forEach((b) => b.addEventListener('click', () => { S.boardId = Number(b.dataset.board); render(); }));
   v.querySelectorAll('[data-period]').forEach((b) => b.addEventListener('click', () => { S.period = b.dataset.period; render(); }));
   bindAdmin(v);
@@ -1548,13 +1859,21 @@ function bindAdmin(v) {
       const t = TYPES[b.dataset.type];
       S.editing = { ...S.editing, type: b.dataset.type, kind: t.kind, icon: t.icon, title: t.title, points: t.kind === 'once' ? 20 : 5,
         items: b.dataset.type === 'prayer' ? [...PRAYERS] : b.dataset.type === 'adhkar' ? ['أذكار الصباح', 'أذكار المساء'] : null,
-        meta: b.dataset.type === 'quran' ? { mode: 'read', amount: 1, unit: 'صفحة' } : {} };
+        meta: b.dataset.type === 'quran' ? { mode: 'read', amount: 1, unit: 'صفحة' } : {},
+        raws: b.dataset.type === 'quiz' ? [{ t: 'mcq', q: '', a: '', b: '1' }] : undefined };
       render();
       window.scrollTo({ top: 0 });
     })
   );
+  v.querySelectorAll('[data-track]').forEach((b) => b.addEventListener('click', () => { readForm(); S.editing.meta = { ...S.editing.meta, track: b.dataset.track }; render(); }));
+  if (S.editing?.type === 'quiz') bindBuilder(v);
   $('#f-retype')?.addEventListener('click', () => { S.editing = { start_date: S.editing.start_date, active: true }; render(); });
-  v.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => { S.editing = { ...S.challenges.find((x) => x.id === Number(b.dataset.edit)) }; render(); window.scrollTo({ top: 0 }); }));
+  v.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
+    const x = S.challenges.find((c) => c.id === Number(b.dataset.edit));
+    S.editing = { ...x, meta: { ...(x.meta || {}) }, raws: x.type === 'quiz' ? quizQuestions(x).map(qToRaw) : undefined };
+    render();
+    window.scrollTo({ top: 0 });
+  }));
   v.querySelectorAll('[data-kind]').forEach((b) => b.addEventListener('click', () => { readForm(); S.editing.kind = b.dataset.kind; render(); }));
   v.querySelectorAll('[data-tpl]').forEach((b) =>
     b.addEventListener('click', async () => {
@@ -1603,7 +1922,13 @@ function bindAdmin(v) {
     const btn = e.submitter;
     readForm();
     const f = S.editing;
-    const kind = f.kind || TYPES[f.type].kind;
+    const kind = ['quiz', 'submit', 'book'].includes(f.type) ? 'once' : f.kind || TYPES[f.type].kind;
+    if (f.type === 'quiz') {
+      const qs = f.meta.questions || [];
+      if (!qs.length) return toast('أضف سؤالًا واحدًا على الأقل.', true);
+      const bad = qs.map((q, k) => qProblem(q, k + 1)).find(Boolean);
+      if (bad) return toast(bad, true);
+    }
     const row = {
       type: f.type, kind, icon: f.icon || null, title: f.title, description: f.description || null,
       start_date: f.start_date || today(), end_date: f.end_date || null, active: f.active,
@@ -1644,8 +1969,41 @@ function bindAdmin(v) {
     render();
   });
   $('#d-c')?.addEventListener('change', (e) => { S.detailId = Number(e.target.value); S.pending = null; render(); });
-  $('#d-month')?.addEventListener('change', (e) => { S.month = e.target.value || null; S.pending = null; render(); });
-  v.querySelectorAll('td.cell[data-u]').forEach((td) =>
+  v.querySelectorAll('[data-av]').forEach((b) => b.addEventListener('click', () => { S.adm.view = b.dataset.av; S.adm.off = 0; S.adm.month = null; render(); }));
+  v.querySelectorAll('[data-an]').forEach((b) => b.addEventListener('click', () => {
+    const k = Number(b.dataset.an);
+    if (S.adm.view === 'week') S.adm.off = Math.min(0, S.adm.off + k);
+    else { const [y, m] = (S.adm.month || today().slice(0, 7)).split('-').map(Number); S.adm.month = iso(new Date(y, m - 1 + k, 1)).slice(0, 7); }
+    render();
+  }));
+  const signed = async (path) => { const { data, error } = await sb.storage.from('submissions').createSignedUrl(path, 3600); if (error) toast('تعذّر فتح الملف.', true); return data?.signedUrl; };
+  v.querySelectorAll('[data-open-file]').forEach((b) => b.addEventListener('click', async () => {
+    const w = window.open('', '_blank');
+    const url = await signed(b.dataset.openFile);
+    if (url && w) w.location = url; else w?.close();
+  }));
+  v.querySelectorAll('[data-play]').forEach((b) => b.addEventListener('click', async () => {
+    const url = await signed(b.dataset.play);
+    const box = v.querySelector(`[data-player="${CSS.escape(b.dataset.play)}"]`);
+    if (url && box) { box.innerHTML = `<audio controls autoplay src="${esc(url)}"></audio>`; b.hidden = true; }
+  }));
+  v.querySelectorAll('[data-reject]').forEach((b) => b.addEventListener('click', () => {
+    const c = S.challenges.find((x) => x.id === S.detailId);
+    S.pending = {
+      label: `${c.type === 'submit' ? 'رفض إرسال' : 'إلغاء إنجاز'} ${b.dataset.n}؟ تُحذف نقاطه ويمكنه المحاولة من جديد.`,
+      run: async () => {
+        const { data: ls } = await sb.from('habit_logs').select('payload').match({ member_id: Number(b.dataset.reject), challenge_id: c.id });
+        const files = (ls || []).flatMap((l) => [l.payload?.file?.path, l.payload?.audio?.path]).filter(Boolean);
+        const { error } = await sb.from('habit_logs').delete().match({ member_id: Number(b.dataset.reject), challenge_id: c.id });
+        if (error) return toast('تعذّر الحذف.', true);
+        if (files.length) await sb.storage.from('submissions').remove(files);
+        toast('تم');
+        await loadAll();
+      },
+    };
+    render();
+  }));
+  v.querySelectorAll('.ac[data-u]').forEach((td) =>
     td.addEventListener('click', () => {
       const done = td.dataset.full !== 'true';
       const c = S.challenges.find((x) => x.id === S.detailId);
@@ -1696,7 +2054,12 @@ function go(tab) {
 document.querySelectorAll('#nav button').forEach((b) => b.addEventListener('click', () => go(b.dataset.tab)));
 $('#rules-btn').addEventListener('click', () => go('rules'));
 $('#logout').addEventListener('click', () => sb.auth.signOut());
-const soundIcon = () => { $('#sound-btn').textContent = FX.sound ? '🔊' : '🔇'; };
+const soundIcon = () => {
+  $('#sound-btn').innerHTML = FX.sound
+    ? '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>'
+    : '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM16 9.5l5 5M21 9.5l-5 5"/></svg>';
+  $('#sound-btn').setAttribute('aria-pressed', String(FX.sound));
+};
 soundIcon();
 $('#sound-btn').addEventListener('click', () => { FX.sound = !FX.sound; store('sound', FX.sound ? 'on' : 'off'); soundIcon(); if (FX.sound) FX.chime(); });
 
