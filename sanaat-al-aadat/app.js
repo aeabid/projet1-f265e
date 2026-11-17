@@ -41,23 +41,32 @@ const QUOTES = [
 ];
 
 // الشارات: تُحسب من أيام المشارك ونقاطه
+// الشارات: كل شارة لها 4 درجات (برونزي، فضي، ذهبي، ماسي) وأهدافها صعبة تدريجيًا
+const TIERS = [
+  { name: 'برونزي', color: '#cd7f32' },
+  { name: 'فضي', color: '#9aa4b5' },
+  { name: 'ذهبي', color: '#e8a90c' },
+  { name: 'ماسي', color: '#2bb3d9' },
+];
 const BADGES = [
-  { id: 'first', icon: '🌱', name: 'أول خطوة', desc: 'سجّل أول مهمة', v: (x) => [x.activeDays, 1] },
-  { id: 's3', icon: '🔥', name: 'ثلاثة أيام', desc: 'سلسلة 3 أيام متتالية في مهمة', v: (x) => [x.bestStreak, 3] },
-  { id: 's7', icon: '⚡', name: 'أسبوع ذهبي', desc: 'سلسلة 7 أيام متتالية', v: (x) => [x.bestStreak, 7] },
-  { id: 's14', icon: '🏅', name: 'أسبوعان', desc: 'سلسلة 14 يومًا متتالية', v: (x) => [x.bestStreak, 14] },
-  { id: 's30', icon: '👑', name: 'شهر كامل', desc: 'سلسلة 30 يومًا متتالية', v: (x) => [x.bestStreak, 30] },
-  { id: 'p1', icon: '✨', name: 'يوم مثالي', desc: 'أكمل كل المهام اليومية في يوم واحد', v: (x) => [x.perfectDays, 1] },
-  { id: 'p7', icon: '💎', name: 'أسبوع مثالي', desc: '7 أيام مثالية متتالية', v: (x) => [x.bestPerfectRun, 7] },
-  { id: 'pray', icon: '🕌', name: 'حارس الصلاة', desc: 'كل الصلوات على وقتها 7 أيام متتالية', v: (x) => [x.prayRun, 7], when: (x) => x.hasPrayers },
-  { id: 'read1', icon: '📚', name: 'قارئ', desc: 'أنهِ قراءة أول ملف', v: (x) => [x.pdfDone, 1], when: (x) => x.hasPdf },
-  { id: 'read5', icon: '📖', name: 'قارئ نهِم', desc: 'أنهِ قراءة 5 ملفات', v: (x) => [x.pdfDone, 5], when: (x) => x.hasPdf },
-  { id: 'video', icon: '🎬', name: 'متابع', desc: 'شاهد أول فيديو حتى آخره', v: (x) => [x.videoDone, 1], when: (x) => x.hasVideo },
-  { id: 'pts100', icon: '💯', name: 'مئة نقطة', desc: 'اجمع 100 نقطة', v: (x) => [x.points, 100] },
-  { id: 'pts500', icon: '🚀', name: '500 نقطة', desc: 'اجمع 500 نقطة', v: (x) => [x.points, 500] },
-  { id: 'pts1000', icon: '🌟', name: 'ألف نقطة', desc: 'اجمع 1000 نقطة', v: (x) => [x.points, 1000] },
-  { id: 'top1', icon: '🥇', name: 'المتصدّر', desc: 'المرتبة الأولى في ترتيب الأسبوع', v: (x) => [x.weekRank === 1 ? 1 : 0, 1] },
-  { id: 'days30', icon: '📅', name: 'مواظب', desc: 'نشاط في 30 يومًا مختلفًا', v: (x) => [x.activeDays, 30] },
+  { id: 'done', icon: '✅', name: 'المنجِز', unit: 'مهمة منجزة', goals: [10, 100, 500, 2000], v: (x) => x.completions },
+  { id: 'streak', icon: '🔥', name: 'السلسلة', unit: 'يومًا متتاليًا في مهمة', goals: [7, 21, 40, 100], v: (x) => x.bestStreak },
+  { id: 'perfect', icon: '✨', name: 'الأيام المثالية', unit: 'يومًا مثاليًا', goals: [5, 20, 60, 150], v: (x) => x.perfectDays },
+  { id: 'prun', icon: '💎', name: 'الكمال المتواصل', unit: 'أيام مثالية متتالية', goals: [3, 7, 21, 40], v: (x) => x.bestPerfectRun },
+  { id: 'pray', icon: '🕌', name: 'حارس الصلاة', unit: 'يومًا متتاليًا بكل الصلوات', goals: [7, 21, 40, 100], v: (x) => x.prayRun, when: (x) => x.hasPrayers },
+  { id: 'fajr', icon: '🌄', name: 'فارس الفجر', unit: 'صلاة صبح على وقتها', goals: [10, 40, 100, 250], v: (x) => x.fajr, when: (x) => x.hasFajr },
+  { id: 'quran', icon: '📖', name: 'صاحب القرآن', unit: 'يومًا من الورد', goals: [10, 40, 100, 250], v: (x) => x.quranDays, when: (x) => x.hasQuran },
+  { id: 'pages', icon: '📜', name: 'الختمة', unit: 'صفحة مقروءة', goals: [100, 302, 604, 1208], v: (x) => x.pages, when: (x) => x.hasCounter },
+  { id: 'adhkar', icon: '📿', name: 'الذاكر', unit: 'يومًا من الأذكار', goals: [10, 40, 100, 250], v: (x) => x.adhkarDays, when: (x) => x.hasAdhkar },
+  { id: 'points', icon: '⭐', name: 'جامع النقاط', unit: 'نقطة', goals: [300, 1000, 3000, 8000], v: (x) => x.points },
+  { id: 'active', icon: '📅', name: 'المواظب', unit: 'يوم نشاط', goals: [15, 45, 100, 250], v: (x) => x.activeDays },
+  { id: 'quests', icon: '🎯', name: 'صائد التحديات', unit: 'تحدٍّ خاص منجز', goals: [3, 10, 25, 60], v: (x) => x.onceDone, when: (x) => x.hasOnce },
+  { id: 'books', icon: '📚', name: 'القارئ', unit: 'كتاب مقروء', goals: [1, 3, 8, 20], v: (x) => x.pdfDone, when: (x) => x.hasPdf },
+  { id: 'videos', icon: '🎬', name: 'المتابع', unit: 'فيديو مشاهَد', goals: [1, 5, 15, 40], v: (x) => x.videoDone, when: (x) => x.hasVideo },
+  { id: 'quiz', icon: '🧩', name: 'العبقري', unit: 'اختبار بنتيجة 90% فأكثر', goals: [1, 3, 10, 25], v: (x) => x.quizAces, when: (x) => x.hasQuiz },
+  { id: 'submit', icon: '📤', name: 'المبدع', unit: 'إنجاز مرسَل', goals: [1, 3, 10, 25], v: (x) => x.submits, when: (x) => x.hasSubmit },
+  { id: 'top1', icon: '🏆', name: 'المتصدّر', unit: 'أسبوع في المرتبة الأولى', goals: [1, 3, 8, 20], v: (x) => x.weeksTop1 },
+  { id: 'top3', icon: '🥉', name: 'منصّة التتويج', unit: 'أسبوع في الثلاثة الأوائل', goals: [2, 6, 15, 40], v: (x) => x.weeksTop3 },
 ];
 
 // أنواع المهام وخصوصياتها
@@ -461,51 +470,93 @@ function activityStreak() {
 
 function badgeStats() {
   const fullDays = {};
-  for (const c of S.challenges.filter((x) => x.kind === 'daily')) {
+  const daily = S.challenges.filter((x) => x.kind === 'daily');
+  for (const c of daily) {
     fullDays[c.id] = new Set([...new Set(S.logs.filter((l) => l.challenge_id === c.id).map((l) => l.day))].filter((d) => fullOnTime(c, d)));
   }
+  const ok = S.logs.filter((l) => !l.late);
   const days = activeDays();
   const perfect = [...days].filter(isPerfect);
-  const prayers = S.challenges.filter((c) => c.kind === 'daily' && nItems(c) >= 5);
-  const once = S.challenges.filter((c) => c.kind === 'once' && onceDone(c));
+  const prayers = daily.filter((c) => c.type === 'prayer' && nItems(c) >= 5);
+  const fajrTasks = daily.filter((c) => (c.items || []).includes('الصبح'));
+  const quran = daily.filter((c) => c.type === 'quran');
+  const counters = quran.filter(isCounter);
+  const adhkar = daily.filter((c) => c.type === 'adhkar');
+  const onceList = S.challenges.filter((c) => c.kind === 'once');
+  const once = onceList.filter(onceDone);
+  const union = (list) => new Set(list.flatMap((c) => [...(fullDays[c.id] || [])])).size;
   const o = meIn(S.overall);
-  const w = meIn(S.week);
   return {
+    completions: ok.length,
     activeDays: days.size,
     bestStreak: Math.max(0, ...Object.values(fullDays).map(bestRun)),
     perfectDays: perfect.length,
     bestPerfectRun: bestRun(perfect),
     hasPrayers: prayers.length > 0,
     prayRun: Math.max(0, ...prayers.map((c) => bestRun(fullDays[c.id] || []))),
-    hasPdf: S.challenges.some((c) => c.kind === 'once' && c.pdf_url),
-    hasVideo: S.challenges.some((c) => c.kind === 'once' && youtubeId(c.video_url)),
-    pdfDone: once.filter((c) => c.pdf_url).length,
+    hasFajr: fajrTasks.length > 0,
+    fajr: new Set(ok.filter((l) => fajrTasks.some((c) => c.id === l.challenge_id && c.items[l.item] === 'الصبح')).map((l) => l.day)).size,
+    hasQuran: quran.length > 0,
+    quranDays: union(quran),
+    hasCounter: counters.length > 0,
+    pages: Math.round(ok.filter((l) => counters.some((c) => c.id === l.challenge_id)).reduce((t, l) => t + Number(l.value ?? 1), 0)),
+    hasAdhkar: adhkar.length > 0,
+    adhkarDays: union(adhkar),
+    hasOnce: onceList.length > 0,
+    onceDone: once.length,
+    hasPdf: onceList.some((c) => c.type === 'book' || c.pdf_url),
+    pdfDone: once.filter((c) => c.type === 'book' || c.pdf_url).length,
+    hasVideo: onceList.some((c) => youtubeId(c.video_url)),
     videoDone: once.filter((c) => youtubeId(c.video_url)).length,
+    hasQuiz: onceList.some((c) => c.type === 'quiz'),
+    quizAces: S.logs.filter((l) => S.challenges.find((c) => c.id === l.challenge_id)?.type === 'quiz' && Number(l.value) >= 0.9).length,
+    hasSubmit: onceList.some((c) => c.type === 'submit'),
+    submits: once.filter((c) => c.type === 'submit').length,
     points: o?.points || 0,
-    weekRank: w?.points ? w.rank : 0,
+    weeksTop1: weeksAt('top1').length,
+    weeksTop3: weeksAt('top3').length,
   };
 }
+// الأسابيع التي ظهر فيها المشارك في الصدارة (تُحفظ في الهاتف)
+const weeksAt = (k) => (recall(`${k}:${S.memberId}`) || '').split(',').filter(Boolean);
+function noteWeekRank() {
+  const w = meIn(S.week);
+  if (!w?.points) return;
+  const wk = weekStart(today());
+  for (const [k, okRank] of [['top1', w.rank === 1], ['top3', w.rank <= 3 && S.week.length >= 3]]) {
+    const list = weeksAt(k);
+    if (okRank && !list.includes(wk)) store(`${k}:${S.memberId}`, [...list, wk].join(','));
+  }
+}
+const earnedTiers = () => { try { return JSON.parse(recall('badges2:' + S.memberId) || 'null'); } catch { return null; } };
 function badges() {
   const x = badgeStats();
-  const kept = new Set((recall('badges:' + S.memberId) || '').split(',').filter(Boolean));
-  return BADGES.filter((b) => !b.when || b.when(x) || kept.has(b.id)).map((b) => {
-    const [cur, goal] = b.v(x);
-    return { ...b, cur: Math.min(cur, goal), goal, got: cur >= goal || kept.has(b.id) };
+  const kept = earnedTiers() || {};
+  return BADGES.filter((b) => !b.when || b.when(x) || kept[b.id]).map((b) => {
+    const cur = b.v(x) || 0;
+    const tier = Math.max(kept[b.id] || 0, b.goals.filter((g) => cur >= g).length);
+    const next = b.goals[tier];
+    const prev = tier ? b.goals[tier - 1] : 0;
+    return { ...b, cur, tier, next, pct: next ? Math.round(((Math.min(cur, next) - prev) / (next - prev)) * 100) : 100 };
   });
 }
-// الشارات والمستوى الجديدان منذ آخر مرة
+const tierCount = (list = badges()) => list.reduce((t, b) => t + b.tier, 0);
+// الدرجات الجديدة والمستوى الجديد منذ آخر مرة
 function checkRewards() {
   if (!S.memberId) return;
-  const k = 'badges:' + S.memberId;
-  const stored = recall(k);
+  noteWeekRank();
+  const before = earnedTiers();
   const list = badges();
-  const got = list.filter((b) => b.got).map((b) => b.id);
-  if (stored !== null) {
-    const before = new Set(stored.split(',').filter(Boolean));
-    for (const b of list) if (b.got && !before.has(b.id)) celebrate({ icon: b.icon, title: `شارة جديدة: ${b.name}`, text: b.desc + ' — بارك الله فيك!' });
+  const now = Object.fromEntries(list.map((b) => [b.id, b.tier]));
+  if (before) {
+    for (const b of list) {
+      if (b.tier > (before[b.id] || 0)) {
+        const t = TIERS[b.tier - 1];
+        celebrate({ icon: b.icon, title: `${b.name}: الدرجة ${t.name === 'ماسي' ? 'الماسية' : t.name === 'ذهبي' ? 'الذهبية' : t.name === 'فضي' ? 'الفضية' : 'البرونزية'}!`, text: `${b.goals[b.tier - 1]} ${b.unit} — بارك الله فيك!` });
+      }
+    }
   }
-  const keep = new Set([...(stored || '').split(',').filter(Boolean), ...got]);
-  store(k, [...keep].join(','));
+  store('badges2:' + S.memberId, JSON.stringify({ ...(before || {}), ...now }));
   const lk = 'level:' + S.memberId;
   const lv = level(meIn(S.overall)?.points || 0);
   const prev = Number(recall(lk) || 0);
@@ -594,7 +645,7 @@ function heroCard() {
     <div class="hero-stats">
       <div><b class="num">${pts}</b><small>نقطة</small></div>
       <div><b class="num">${flame}<span class="flame ${flame ? 'on' : ''}">🔥</span></b><small>${flame === 1 ? 'يوم متتالٍ' : 'أيام متتالية'}</small></div>
-      <div><b class="num">${badges().filter((b) => b.got).length}</b><small>شارة</small></div>
+      <div><b class="num">${tierCount()}</b><small>شارة</small></div>
     </div>
     <div class="xp"><div class="xp-bar"><span style="width:${lv.pct}%"></span></div>
       <small>${lv.toGo} نقطة للمستوى ${lv.level + 1} (${lv.next})</small></div>
@@ -1138,17 +1189,25 @@ function renderMe() {
   const pts = o?.points || 0;
   const lv = level(pts);
   const list = badges();
-  const got = list.filter((b) => b.got).length;
+  const got = tierCount(list);
   const x = badgeStats();
   return `${profileCard()}
     ${heroCard()}
     <section class="card" style="display:grid;gap:.7rem">
-      <div class="row"><h2>🎖️ الشارات</h2><span class="pill-yellow sm">${got}/${list.length}</span></div>
+      <div class="row"><h2>🎖️ الشارات</h2><span class="pill-yellow sm">${got}/${list.length * 4}</span></div>
+      <p class="muted small" style="margin:0">لكل شارة 4 درجات: <b style="color:${TIERS[0].color}">برونزي</b> ← <b style="color:${TIERS[1].color}">فضي</b> ← <b style="color:${TIERS[2].color}">ذهبي</b> ← <b style="color:${TIERS[3].color}">ماسي</b></p>
       <div class="badges">${list
-        .map((b) => `<div class="badge ${b.got ? 'got' : ''}" title="${esc(b.desc)}">
-          <span class="b-ico">${b.icon}</span><b>${esc(b.name)}</b><small>${esc(b.desc)}</small>
-          ${b.got ? '<span class="b-ok">✓</span>' : `<span class="b-prog"><span style="width:${Math.round((b.cur / b.goal) * 100)}%"></span></span><small class="b-num">${b.cur}/${b.goal}</small>`}
-        </div>`)
+        .sort((a, b) => b.tier - a.tier || b.pct - a.pct)
+        .map((b) => {
+          const t = TIERS[b.tier - 1];
+          return `<div class="badge ${b.tier ? 'got' : ''} ${b.tier === 4 ? 'max' : ''}" style="--tier:${t ? t.color : 'var(--off)'}" title="${esc(b.goals.map((g, k) => `${TIERS[k].name}: ${g}`).join(' · '))}">
+            <span class="b-ico">${b.icon}</span><b>${esc(b.name)}</b>
+            <span class="b-tier">${t ? t.name : 'لم تُفتح بعد'}</span>
+            <span class="b-pips">${TIERS.map((tt, k) => `<i class="${k < b.tier ? 'on' : ''}" style="--c:${tt.color}"></i>`).join('')}</span>
+            ${b.next ? `<span class="b-prog"><span style="width:${b.pct}%"></span></span><small class="b-num">${Math.min(b.cur, b.next)}/${b.next} ${esc(b.unit)}</small>`
+              : `<small class="b-num">🏁 أعلى درجة: ${b.goals[3]} ${esc(b.unit)}</small>`}
+          </div>`;
+        })
         .join('')}</div>
     </section>
     <section class="card" style="display:grid;gap:.6rem">
@@ -1211,7 +1270,7 @@ async function uploadPhoto(file) {
   let blob;
   try { blob = await squareJpeg(file); } catch { return toast('تعذّرت قراءة الصورة. جرّب صورة JPG أو PNG.', true); }
   const path = `${S.me.id}/${Date.now()}.jpg`;
-  const { error } = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+  const { error } = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg' });
   if (error) return toast('تعذّر رفع الصورة.', true);
   const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
   const old = m.avatar_url;

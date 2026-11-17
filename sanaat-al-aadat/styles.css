@@ -657,3 +657,18 @@ body { background: radial-gradient(1200px 400px at 50% -100px, #e9dcff 0%, trans
 .atable .tot { font-family: var(--display); color: var(--title); padding-inline: .5rem; }
 .pct { border-radius: 999px; padding: .05rem .5rem; font-size: .85rem; }
 .pct.hi { background: var(--good-soft); color: var(--good); } .pct.mid { background: #fff4d6; color: #8a5a00; } .pct.lo { background: #ffe3ef; color: var(--pink); }
+
+/* الشارات بدرجات */
+.badge { --tier: var(--off); }
+.badge.got { background: linear-gradient(160deg, color-mix(in srgb, var(--tier) 10%, var(--card)), color-mix(in srgb, var(--tier) 26%, var(--card))); border-color: var(--tier); box-shadow: 0 4px 0 color-mix(in srgb, var(--tier) 70%, #000); }
+.badge.got b { color: color-mix(in srgb, var(--tier) 55%, #2a1840); }
+.badge.got small { color: color-mix(in srgb, var(--tier) 45%, #4a3a5a); }
+.badge.got .b-ico { filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--tier) 60%, transparent)); }
+.badge.max { background: linear-gradient(160deg, #e6f9ff, #b9ecff 55%, #e9dcff); }
+.b-tier { font-size: .72rem; font-weight: 800; color: #fff; background: var(--tier); border-radius: 999px; padding: 0 .55rem; }
+.badge:not(.got) .b-tier { background: var(--off); color: var(--muted); }
+.b-pips { display: flex; gap: .25rem; margin-top: .1rem; }
+.b-pips i { width: 10px; height: 10px; border-radius: 50%; background: var(--off); border: 1.5px solid color-mix(in srgb, var(--c) 60%, transparent); }
+.b-pips i.on { background: var(--c); border-color: var(--c); }
+.badge .b-prog span { background: var(--tier); }
+.badge:not(.got) .b-prog span { background: var(--purple); }
