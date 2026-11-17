@@ -239,7 +239,7 @@ function showCelebration() {
   if (!c) return;
   const m = $('#modal');
   m.innerHTML = `<div class="modal-card pop" role="dialog" aria-modal="true" aria-labelledby="cel-t">
-    <div class="cel-icon">${c.icon}</div>
+    <div class="cel-icon">${esc(c.icon)}</div>
     <h2 id="cel-t">${esc(c.title)}</h2>
     <p>${esc(c.text)}</p>
     ${c.pts ? `<div class="cel-pts">+${c.pts} نقطة</div>` : ''}
@@ -383,10 +383,17 @@ async function loadAll() {
   S.editDays = Math.max(1, Number(set.edit_days) || 2);
   S.perfectBonus = Number(set.perfect_bonus ?? 10) || 0;
   S.streakBonus = Number(set.streak_bonus ?? 10) || 0;
-  S.challenges = (ch || []).map((c) => ({ ...c, kind: c.kind || 'daily', type: TYPES[c.type] ? c.type : guessType(c) }));
+  S.challenges = (ch || []).map((c) => ({ ...c, icon: firstIcon(c.icon), kind: c.kind || 'daily', type: TYPES[c.type] ? c.type : guessType(c) }));
   S.logs = logs || [];
   S.myLogs = new Set(S.logs.map((l) => key(l.challenge_id, l.day, l.item)));
   await loadRanks();
+}
+
+// الرمز: أول رمز تعبيري فقط (لا نصّ داخل خانة الأيقونة)
+function firstIcon(v) {
+  const str = String(v || '').trim();
+  if (!str) return null;
+  try { return [...new Intl.Segmenter('ar', { granularity: 'grapheme' }).segment(str)][0].segment; } catch { return [...str][0]; }
 }
 
 // المهام القديمة دون نوع
@@ -1387,7 +1394,7 @@ function challengeForm(c) {
       <button type="button" data-kind="daily" aria-pressed="${kind === 'daily'}">🔁 كل يوم</button>
       <button type="button" data-kind="once" aria-pressed="${kind === 'once'}">🎯 مرة واحدة</button></div>` : ''}
     <div class="grid-icon">
-      <label>الرمز<input id="f-icon" maxlength="16" value="${esc(c.icon || t.icon)}"></label>
+      <label>الرمز (رمز واحد)<input id="f-icon" maxlength="16" value="${esc(c.icon || t.icon)}"></label>
       <label>العنوان<input id="f-title" maxlength="80" value="${esc(c.title || t.title)}" required></label>
     </div>
     ${specific}
@@ -1930,7 +1937,7 @@ function bindAdmin(v) {
       if (bad) return toast(bad, true);
     }
     const row = {
-      type: f.type, kind, icon: f.icon || null, title: f.title, description: f.description || null,
+      type: f.type, kind, icon: firstIcon(f.icon), title: f.title, description: f.description || null,
       start_date: f.start_date || today(), end_date: f.end_date || null, active: f.active,
       points: Math.max(0, Math.min(1000, Number(f.points) || 0)), video_url: f.video_url || null,
       items: kind === 'daily' && f.items?.length > 1 ? f.items : null, pdf_url: f.type === 'book' ? f.pdf_url || null : null,
