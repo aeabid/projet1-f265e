@@ -480,6 +480,117 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 @keyframes sh{to{background-position:-200% 0}}
 .toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#1d0f30;color:#fff;padding:10px 18px;border-radius:14px;font-size:14px;z-index:80;box-shadow:0 12px 30px rgba(0,0,0,.25);animation:pop .2s ease;display:flex;gap:8px;align-items:center}
 .toast.bad{background:#be123c}
+
+/* =====================================================================
+   التصميم الجديد: شريط علوي فاتح، البنفسجي للتمييز فقط، شريط تبويب سفلي
+   ===================================================================== */
+:root{--bg:#f6f5fa;--card:#fff;--ink:#1d1630;--muted:#857d96;--line:#ece9f2;--soft:#f3f1f8;--acc:#61038d;--acc-soft:#f1e8f8}
+@media (prefers-color-scheme:dark){:root{--bg:#100b18;--card:#1a1326;--ink:#f1ecf8;--muted:#a197b4;--line:#2a2139;--soft:#231a32;--acc:#c79bff;--acc-soft:#2b1d40}}
+body{background:var(--bg);padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+/* الشريط العلوي */
+.hero{background:transparent!important;color:var(--ink);border-radius:0;padding:calc(4px + env(safe-area-inset-top)) 0 2px;overflow:visible}
+.hero::before,.hero::after,.hero .spark{display:none}
+.topline{height:50px}
+.brand img{height:24px!important}
+.brand .logo-d{display:none}
+@media (prefers-color-scheme:dark){.brand .logo-l{display:none}.brand .logo-d{display:block}}
+.brand .tag{background:none;border:0;padding:0;color:var(--muted);font-size:13px;font-weight:700;backdrop-filter:none;letter-spacing:.2px}
+.me{background:var(--card);border:1px solid var(--line);color:var(--ink);box-shadow:0 1px 2px rgba(20,10,40,.05)}
+.me .av{background:var(--grad);color:#fff}
+main#main{margin-top:10px}
+/* عناوين الصفحات */
+.ph{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 0 2px}
+.pt,.dh-t{font-family:Tajawal;font-weight:800;font-size:28px;line-height:1.15;margin:0;color:var(--ink)}
+.ps{font-size:13px;color:var(--muted);margin-top:2px}
+.pring{--p:0;width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--acc) calc(var(--p) * 1%),var(--line) 0);display:grid;place-items:center;flex:none}
+.pring span{width:42px;height:42px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-family:Tajawal;font-weight:800;font-size:13px;color:var(--ink)}
+/* عناصر التحكم في الشريط العلوي */
+.seg{background:var(--soft);border:0;backdrop-filter:none;border-radius:12px;padding:3px}
+.seg button{color:var(--muted);border-radius:9px;padding:7px 8px;font-size:13.5px}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(20,10,40,.12)}
+.round{border:1px solid var(--line);background:var(--card);color:var(--ink);width:36px;height:36px}
+.round:hover{background:var(--soft)}
+.round:disabled{opacity:.35}
+.pnav{margin:10px 0 2px}
+.pnav .lab{font-size:16px;color:var(--ink)}
+.pnav .lab small{opacity:1;color:var(--muted)}
+.custom label{opacity:1;color:var(--muted)}
+.custom input{background:var(--card);border:1px solid var(--line);color:var(--ink);color-scheme:light}
+@media (prefers-color-scheme:dark){.custom input{color-scheme:dark}}
+/* بطاقة الرصيد (فلوسي) */
+.balcard{position:relative;overflow:hidden;background:var(--grad);color:#fff;border-radius:22px;padding:16px 16px 14px;margin-top:12px;box-shadow:0 16px 32px -18px rgba(70,10,130,.7)}
+.balcard::after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(239,32,122,.35),transparent 65%);top:-130px;left:-70px;pointer-events:none}
+.balcard>*{position:relative;z-index:1}
+.balance{margin-top:0}
+.balance .k{font-size:12.5px;opacity:.85}
+.balance .v{font-size:34px}
+.flows{margin-top:12px}
+.voicebtn{background:var(--card);border:1px solid var(--line);color:var(--acc);backdrop-filter:none;box-shadow:0 1px 2px rgba(20,10,40,.05);margin-top:12px}
+.voicebtn span{color:var(--muted);opacity:1}
+/* «يومي» */
+.dh{padding-top:4px}
+.dh-tag{background:var(--acc-soft);border:0;color:var(--acc);font-weight:700}
+.dh-back{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+.dh-sub{color:var(--muted);opacity:1}
+.edit-toggle{background:var(--soft);border:1px solid transparent;color:var(--ink);padding:7px 12px;font-size:12.5px}
+.edit-toggle.on{background:var(--acc);color:#fff}
+@media (prefers-color-scheme:dark){.edit-toggle.on{color:#1a1326}}
+.wgrid.locked .blk{cursor:pointer}
+.blk{border-radius:9px}
+/* البطاقات */
+.card{border-radius:20px;box-shadow:0 1px 2px rgba(20,10,40,.04);border-color:var(--line)}
+.card-h h2{font-size:16px}
+/* شريط التبويب السفلي + زرّ الإضافة العائم */
+.dock{left:0;right:0;bottom:0;transform:none;border-radius:0;gap:0;padding:4px 6px calc(4px + env(safe-area-inset-bottom));justify-content:space-around;border:0;border-top:1px solid var(--line);background:color-mix(in srgb,var(--card) 92%,transparent);box-shadow:none}
+.dock .tab{flex:1;min-width:0;max-width:120px;background:none!important;color:var(--muted);font-size:11px;padding:6px 0 4px;gap:3px;border-radius:12px}
+.dock .tab svg{width:23px;height:23px}
+.dock .tab.on{color:var(--acc)}
+.dock .tab.on svg{stroke-width:2.4}
+.fab{position:fixed;left:16px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:26;width:56px;height:56px;border-radius:18px;border:0;background:var(--grad);color:#fff;display:grid;place-items:center;box-shadow:0 12px 26px -8px rgba(97,3,141,.65);transition:transform .15s}
+.fab:active{transform:scale(.93)}
+.fab svg{width:26px;height:26px}
+@media (min-width:980px){.fab{left:calc(50% - 470px)}}
+/* «عاداتي»: قائمة واحدة، الأيام مرة واحدة في الأعلى */
+.hl{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 12px 4px;box-shadow:0 1px 2px rgba(20,10,40,.04)}
+.hl-head{display:flex;align-items:center;justify-content:space-between;padding:6px 0 4px;font-size:13px;font-weight:700;color:var(--ink)}
+.nb{width:32px;height:32px;border-radius:10px;border:0;background:var(--soft);color:var(--ink);display:grid;place-items:center}
+.nb:disabled{opacity:.3}
+.nb svg{width:18px;height:18px}
+.hl-days,.hr-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.hl-days{padding:6px 0 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:2}
+.hl-days div{display:flex;flex-direction:column;align-items:center;line-height:1.2;color:var(--muted)}
+.hl-days small{font-size:10.5px}
+.hl-days b{font-family:Tajawal;font-size:14px;color:var(--ink)}
+.hl-days .t b{background:var(--acc);color:#fff;border-radius:8px;padding:0 6px}
+@media (prefers-color-scheme:dark){.hl-days .t b{color:#1a1326}}
+.hl-days .t small{color:var(--acc);font-weight:700}
+.hr{padding:12px 0 12px;border-bottom:1px solid var(--line)}
+.hr:last-child{border-bottom:0}
+.hr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.hr-ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:17px;background:color-mix(in srgb,var(--c) 13%,var(--card));flex:none}
+.hr-n{flex:1;min-width:0}
+.hr-n>b{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr-n small{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr-n small i{font-style:normal;margin:0 5px;opacity:.6}
+.hr-n .fire{color:#e08a00;font-weight:700}
+.hr-n .up{color:#0e9f6e}.hr-n .down{color:#e11d48}
+.hr-more{width:32px;height:32px;border-radius:10px;border:0;background:none;color:var(--muted);display:grid;place-items:center;flex:none}
+.hr-more:hover{background:var(--soft);color:var(--ink)}
+.hr-more svg{width:18px;height:18px}
+.qb{border:0;background:var(--c);color:#fff;border-radius:999px;padding:4px 12px;font-weight:800;font-size:13px;flex:none}
+.cell{border:0;background:none;padding:0;display:grid;place-items:center;height:38px}
+.cell span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);font-family:Tajawal;font-weight:800;font-size:12px;color:var(--ink);transition:transform .12s,background .15s}
+.cell:active span{transform:scale(.88)}
+.cell.today span{border-color:color-mix(in srgb,var(--c) 55%,var(--line))}
+.cell.done span{background:var(--c);border-color:var(--c);color:#fff}
+.cell.part span{border-color:transparent;background:radial-gradient(closest-side,var(--card) 76%,transparent 78%),conic-gradient(var(--c) var(--pp),var(--line) 0)}
+.cell.soft span{background:color-mix(in srgb,var(--c) 14%,var(--card));border-color:transparent;color:var(--c)}
+.cell.bad span{border-color:#e11d48;color:#e11d48;background:color-mix(in srgb,#e11d48 8%,var(--card))}
+.cell.na span{border-style:dashed;opacity:.55}
+.cell.off span{border-color:transparent;background:var(--soft);opacity:.45}
+.hl-tip{text-align:center;font-size:11.5px;color:var(--muted);margin:10px 0 0;display:flex;align-items:center;justify-content:center;gap:4px}
+.hl-tip svg{width:14px;height:14px}
+@media (max-width:360px){.cell span{width:30px;height:30px}}
 </style>
 </head>
 <body>
@@ -640,6 +751,7 @@ const ICONS = {
   back: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
   download: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+  more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
   wallet: '<path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   check: '<rect x="3" y="3" width="18" height="18" rx="5"/><path d="m8 12 3 3 5-6"/>',
@@ -824,19 +936,19 @@ function shell() {
     <span class="spark" style="top:70px;left:16%">✦</span><span class="spark" style="top:150px;right:8%;font-size:11px;opacity:.6">✦</span>
     <div class="wrap">
       <div class="topline">
-        <a class="brand" href="#" title="Habits360"><img src="feed-logo-white.png" alt=""><span class="tag" dir="ltr">Habits360</span></a>
+        <a class="brand" href="#" title="Habits360"><img class="logo-l" src="feed-logo.png" alt=""><img class="logo-d" src="feed-logo-white.png" alt=""><span class="tag" dir="ltr">Habits360</span></a>
         <button class="me" id="me" aria-haspopup="true"><span>${esc(u.full_name)}</span><b class="av">${esc((u.full_name || '?').trim().charAt(0))}</b></button>
       </div>
       <div id="hero-body"></div>
     </div>
   </header>
   <main class="wrap" id="main"></main>
+  <button class="fab" id="dock-add" aria-label="إضافة">${icon('plus')}</button>
   <nav class="dock">
-    <button class="tab" data-view="home">${icon('wallet')}فلوسي</button>
-    <button class="tab" data-view="day">${icon('clock')}يومي</button>
-    <button class="add" id="dock-add" aria-label="إضافة">${icon('plus')}</button>
     <button class="tab" data-view="habits">${icon('check')}عاداتي</button>
-    <button class="tab" data-view="cats">${icon('tag')}${u.is_admin ? 'الإدارة' : 'الأنواع'}</button>
+    <button class="tab" data-view="day">${icon('clock')}يومي</button>
+    <button class="tab" data-view="home">${icon('wallet')}فلوسي</button>
+    <button class="tab" data-view="cats">${icon('tag')}${u.is_admin ? 'الإدارة' : 'الإعدادات'}</button>
   </nav>`;
   $$('.dock .tab').forEach((b) => (b.onclick = () => go(b.dataset.view)));
   $('#dock-add').onclick = () => {
@@ -863,7 +975,7 @@ document.addEventListener('click', (e) => { if (!e.target.closest('.me')) $('.me
 function go(view) {
   if (view === 'day') UI.editGrid = false;
   UI.view = view;
-  try { history.replaceState(null, '', view === 'home' ? '#' : '#' + view); } catch (e) {}
+  try { history.replaceState(null, '', view === 'home' ? '#money' : view === 'habits' ? '#' : '#' + view); } catch (e) {}
   render();
   scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -885,7 +997,8 @@ function renderHome() {
   const custom = P.mode === 'custom';
   const atNow = !custom && ymd(range(P.mode, moved(1))[0]) > ymd(today());
   $('#hero-body').innerHTML = `
-    <div class="seg" role="tablist">
+    <div class="ph"><h1 class="pt">فلوسي</h1><button class="voicebtn" id="v-money" style="margin:0">🎙️ بصوتك</button></div>
+    <div class="seg" role="tablist" style="margin-top:10px">
       ${[['day', 'يوم'], ['week', 'أسبوع'], ['month', 'شهر'], ['year', 'سنة'], ['custom', 'مدة']]
         .map(([m, l]) => `<button data-m="${m}" class="${P.mode === m ? 'on' : ''}">${l}</button>`).join('')}
     </div>
@@ -894,13 +1007,12 @@ function renderHome() {
       : `<div class="pnav"><button class="round" id="prev" aria-label="الفترة السابقة">${icon('prev')}</button>
           <div class="lab">${periodLabel()}</div>
           <button class="round" id="next" aria-label="الفترة الموالية" ${atNow ? 'disabled' : ''}>${icon('next')}</button></div>`}
-    <div class="balance"><div class="k">${net < 0 ? 'العجز في هذه الفترة' : 'الباقي في هذه الفترة'}</div>
+    <div class="balcard"><div class="balance"><div class="k">${net < 0 ? 'العجز في هذه الفترة' : 'الباقي في هذه الفترة'}</div>
       <div class="v num">${net < 0 ? '−' : ''}${money(Math.abs(net))}<small>${esc(CUR)}</small></div></div>
     <div class="flows">
       <div class="flow in"><div class="ic">${icon('in')}</div><div><div class="t">المداخيل</div><div class="a num">${money(inc)}</div><div class="d">${delta(inc, total(prev, 'income'))}</div></div></div>
       <div class="flow out"><div class="ic">${icon('out')}</div><div><div class="t">المصاريف</div><div class="a num">${money(out)}</div><div class="d">${delta(out, total(prev, 'expense'))}</div></div></div>
-    </div>
-    <div style="text-align:center"><button class="voicebtn" id="v-money">🎙️ أضف بصوتك <span>الذكاء الاصطناعي يسجّلها</span></button></div>`;
+    </div></div>`;
   $('#v-money').onclick = () => openVoice('money');
   $$('.seg button').forEach((b) => (b.onclick = () => {
     P.mode = b.dataset.m;
@@ -1404,7 +1516,7 @@ function renderDay() {
   $('#hero-body').innerHTML = base
     ? `<div class="dh"><div class="dh-t">⭐ الجدول الأساسي</div><button class="dh-back" id="b-back">→ الأسابيع</button></div>
        <div class="dh-sub">يُنسخ في كل أسبوع لم تعدّله وحده</div>`
-    : `<div class="dh"><div class="dh-t">يومي</div>${mat ? '<span class="dh-tag" title="هذا الأسبوع معدَّل وحده">✏️ معدَّل</span>' : ''}</div>
+    : `<div class="dh"><h1 class="dh-t">يومي</h1>${mat ? '<span class="dh-tag" title="هذا الأسبوع معدَّل وحده">✏️ معدَّل</span>' : ''}</div>
        <div class="pnav"><button class="round" id="w-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
          <div class="lab" id="w-lab" style="cursor:${wk !== thisWk ? 'pointer' : 'default'}">${fmtShort(wkD)} — ${fmtShort(addDays(wkD, 6))}<small>${wkRel}${wk !== thisWk ? ' · اضغط للعودة إلى هذا الأسبوع' : ''}</small></div>
          <button class="round" id="w-next" aria-label="الأسبوع الموالي">${icon('next')}</button></div>`;
@@ -1451,7 +1563,7 @@ function renderDay() {
         <button class="edit-toggle ${UI.editGrid ? 'on' : ''}" id="g-edit" aria-pressed="${UI.editGrid}">${UI.editGrid ? '✓ إنهاء' : '✏️ تعديل'}</button></span></div>
       ${UI.editGrid ? '<div class="edit-bar">✋ اسحب الخانة لتغيير وقتها أو يومها · ↕️ اسحب الحافّة العليا أو السفلى للتكبير والتصغير · ➕ اضغط مكانًا فارغًا للإضافة · اضغط الخانة لتعديل تفاصيلها</div>' : ''}
       ${g}
-      ${UI.editGrid ? '' : '<div class="grid-hint"><span>🔒 الجدول مقفل: يمكنك التمرير بحرية. للتعديل اضغط «✏️ تعديل الجدول».</span></div>'}
+      ${UI.editGrid ? '' : '<div class="grid-hint"><span>🔒 اضغط أيّ خانة لتعديل وقتها وتفاصيلها · للسحب والتكبير اضغط «✏️ تعديل»</span></div>'}
     </section>
     <section class="card span"><div class="card-h"><h2>📌 مواعيدي القادمة</h2>
       <span style="display:flex;gap:6px"><button class="ibtn mic-sm" id="v-appt" aria-label="موعد بصوتك" title="موعد بصوتك">🎙️</button><button class="btn sm" id="add-appt">+ موعد</button></span></div>
@@ -1491,6 +1603,11 @@ function bindGrid() {
     const g = e.target.closest('.grip');
     DRAG = { blk, resize: g ? g.dataset.g : null, x0: e.clientX, y0: e.clientY, pid: e.pointerId, started: false };
     if (DRAG.resize) startDrag();
+  };
+  grid.onclick = (e) => {
+    if (UI.editGrid) return; // في وضع التعديل تتكفّل أحداث السحب بالنقرة
+    const blk = e.target.closest('.blk');
+    if (blk) openFromBlock(blk);
   };
   $$('.dcol', grid).forEach((col) => (col.onclick = (e) => {
     if (!UI.editGrid || e.target !== col) return;
@@ -1842,20 +1959,24 @@ function renderHabits() {
   const due = hs.filter((h) => expected(h, t)), ok = due.filter((h) => okDay(h, t)).length;
   const pct = due.length ? Math.round((ok / due.length) * 100) : 0;
   $('#hero-body').innerHTML = `
-    <div class="hh">
-      <div><div style="font-family:Tajawal;font-weight:800;font-size:22px;line-height:1.2">عاداتي</div>
-        <div style="opacity:.85;font-size:12.5px">اليوم ${ok}/${due.length}${due.length && ok === due.length ? ' · أحسنت 🎉' : ''}</div></div>
-      <div class="hh-pct">${pct}%</div>
+    <div class="ph"><div><h1 class="pt">عاداتي</h1>
+      <div class="ps">${due.length ? `اليوم ${ok} من ${due.length}${ok === due.length ? ' · أحسنت 🎉' : ''}` : hs.length ? 'لا عادات مبرمجة اليوم' : 'ابدأ بعادتك الأولى'}</div></div>
+      ${due.length ? `<div class="pring" style="--p:${pct}"><span>${pct}%</span></div>` : ''}</div>`;
+  if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
+  if (!hs.length) return ($('#main').innerHTML = '<section class="card"><div class="empty"><span class="big">🌱</span>لا عادات بعد. اضغط <b>+</b> لإضافة عادتك الأولى</div></section>');
+  const days = [6, 5, 4, 3, 2, 1, 0].map((k) => addDays(end, -k));
+  $('#main').innerHTML = `<section class="hl">
+    <div class="hl-head">
+      <button class="nb" id="hw-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
+      <span>${fmtShort(days[0])} — ${fmtShort(end)}</span>
+      <button class="nb" id="hw-next" aria-label="الأسبوع الموالي" ${isNow ? 'disabled' : ''}>${icon('next')}</button>
     </div>
-    <div class="hh-nav"><button class="round" id="hw-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
-      <span>${fmtShort(addDays(end, -6))} — ${fmtShort(end)}</span>
-      <button class="round" id="hw-next" aria-label="الأسبوع الموالي" ${isNow ? 'disabled' : ''}>${icon('next')}</button></div>`;
+    <div class="hl-days">${days.map((d) => `<div class="${ymd(d) === ymd(t) ? 't' : ''}"><small>${DAYS_SHORT[d.getDay()]}</small><b>${d.getDate()}</b></div>`).join('')}</div>
+    ${hs.map((h) => habitRow(h, days)).join('')}
+  </section>
+  <p class="hl-tip">اضغط الدائرة لتسجيل اليوم · ${icon('more')} للتعديل</p>`;
   $('#hw-prev').onclick = () => { UI.habitDate = addDays(end, -7); renderHabits(); };
   $('#hw-next').onclick = () => { const n = addDays(end, 7); UI.habitDate = n > t ? t : n; renderHabits(); };
-  if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
-  $('#main').innerHTML = hs.length
-    ? `<div class="hlist">${hs.map((h) => habitRow(h, end)).join('')}</div>`
-    : '<section class="card"><div class="empty"><span class="big">🌱</span>لا عادات بعد. أضف عادتك الأولى بزرّ <b>+</b> في الأسفل</div></section>';
   bindHabits();
 }
 // نسبة الشهر الحالي (أيام ناجحة / أيام مبرمجة)
@@ -1865,45 +1986,47 @@ function monthPct(h) {
   for (let d = new Date(t.getFullYear(), t.getMonth(), 1); d <= t; d = addDays(d, 1)) if (expected(h, d)) { exp++; if (okDay(h, d)) ok++; }
   return exp ? Math.round((ok / exp) * 100) : 0;
 }
-function habitRow(h, end) {
+const CHECK_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+function habitRow(h, days) {
   const st = streak(h), t = today();
-  let info = '';
-  if (h.kind === 'more') info = `🎯 ${h.target} ${esc(h.unit || '')}`;
-  else if (h.kind === 'less') {
+  const meta = [];
+  if (st) meta.push(`<span class="fire">🔥 ${st}</span>`);
+  if (h.kind === 'more') meta.push(`🎯 ${h.target} ${esc(h.unit || '')}`);
+  if (h.kind === 'less') {
     const wk = startOfWeek(t), a = sumRange(h, wk, t), b = sumRange(h, addDays(wk, -7), addDays(t, -7));
-    info = `${a} هذا الأسبوع ${a < b ? '<span style="color:var(--in)">▼</span>' : a > b ? '<span style="color:#e11d48">▲</span>' : ''}`;
-  } else if (h.kind === 'quran') {
-    const q = lastQuran(h), wk = startOfWeek(t);
-    let wh = 0; for (let d = wk; d <= t; d = addDays(d, 1)) wh += ahzab(logOf(h, d)?.data);
-    info = `${wh ? `${fmtH(wh)} حزب هذا الأسبوع` : ''}${q ? `${wh ? ' · ' : ''}📍 الحزب ${hizbOf(q.ts, q.ta)} (${qPos(q.ts, q.ta)})` : ''}`;
+    meta.push(`${a} هذا الأسبوع${a < b ? ' <b class="up">▼</b>' : a > b ? ' <b class="down">▲</b>' : ''}`);
+  } else meta.push(`<bdi dir="ltr">${monthPct(h)}%</bdi> هذا الشهر`);
+  if (h.kind === 'quran') {
+    const q = lastQuran(h);
+    if (q) meta.push(`📍 الحزب ${hizbOf(q.ts, q.ta)}`);
   }
-  const days = [6, 5, 4, 3, 2, 1, 0].map((k) => addDays(end, -k)).map((d) => {
-    const ds = ymd(d), v = valOf(h, d), on = ds >= h.created && d <= t, ex = expected(h, d), isT = ds === ymd(t);
-    let cls = '', inner = DAYS_SHORT[d.getDay()], style = '', badge = '';
-    if (on) {
-      if (h.kind === 'more') {
-        const p = Math.min(1, v / (h.target || 1));
-        if (p >= 1) cls = 'full'; else if (p > 0) style = `background:conic-gradient(var(--c) ${p * 360}deg, transparent 0)`;
-        if (v) badge = `<i>${v}</i>`;
-      } else if (h.kind === 'less') {
-        if (ex && v <= (h.target || 0)) cls = 'full soft';
-        if (v) badge = `<i class="${v > (h.target || 0) ? 'red' : ''}">${v}</i>`;
-      } else if (v > 0) { cls = 'full'; if (h.kind === 'quran') { const hz = ahzab(logOf(h, d)?.data); inner = hz ? fmtH(hz) : '✓'; } }
+  const cells = days.map((d) => {
+    const ds = ymd(d), v = valOf(h, d), on = ds >= h.created && d <= t, ex = expected(h, d);
+    let cls = '', inner = '', style = '';
+    if (!on) cls = 'off';
+    else if (h.kind === 'check') { if (v) { cls = 'done'; inner = CHECK_SVG; } }
+    else if (h.kind === 'quran') { if (v) { cls = 'done'; const hz = ahzab(logOf(h, d)?.data); inner = hz ? fmtH(hz) : CHECK_SVG; } }
+    else if (h.kind === 'more') {
+      const p = Math.min(1, v / (h.target || 1));
+      if (p >= 1) { cls = 'done'; inner = CHECK_SVG; }
+      else if (p > 0) { cls = 'part'; style = `--pp:${p * 360}deg`; inner = String(v); }
+    } else if (h.kind === 'less') {
+      if (v > (h.target || 0)) { cls = 'bad'; inner = String(v); }
+      else if (ex) { cls = 'soft'; inner = v ? String(v) : ''; }
     }
-    return `<button class="dc ${cls} ${ex ? '' : 'na'} ${isT ? 'today' : ''}" data-h="${h.id}" data-d="${ds}" ${on ? '' : 'disabled'} aria-label="${fmtDay(d)}">
-      <span class="c" style="${style}"><span>${inner}</span>${badge}</span><small>${d.getDate()}</small></button>`;
+    if (on && !ex && !cls) cls = 'na';
+    return `<button class="cell ${cls} ${ds === ymd(t) ? 'today' : ''}" data-h="${h.id}" data-d="${ds}" ${on ? '' : 'disabled'} style="${style}" aria-label="${esc(h.name)} · ${fmtDay(d)}"><span>${inner}</span></button>`;
   }).join('');
   const quick = h.kind === 'less' ? `<button class="qb" data-plus="${h.id}" aria-label="+1 اليوم">+1</button>` : '';
-  return `<div class="hc" style="--c:${h.color}">
-    <div class="hc-top"><span class="ic">${esc(h.icon)}</span><b>${esc(h.name)}</b>
-      <span class="pct">${h.kind === 'less' ? '' : monthPct(h) + '%'}</span>
-      <button class="ib" data-edit="${h.id}" aria-label="تعديل العادة">${icon('edit')}</button></div>
-    <div class="hc-sub"><span class="${st ? 'fire' : 'fire off'}">🔥 ${st}</span>${info ? `<span>${info}</span>` : ''}${quick}</div>
-    <div class="hc-days">${days}</div></div>`;
+  return `<div class="hr" style="--c:${h.color}">
+    <div class="hr-top"><span class="hr-ic">${esc(h.icon)}</span>
+      <div class="hr-n"><b>${esc(h.name)}</b><small>${meta.join('<i>·</i>')}</small></div>
+      ${quick}<button class="hr-more" data-edit="${h.id}" aria-label="تعديل العادة">${icon('more')}</button></div>
+    <div class="hr-days">${cells}</div></div>`;
 }
 function bindHabits() {
   const H = (id) => S.habits.find((h) => h.id === Number(id));
-  $$('.dc').forEach((b) => (b.onclick = () => {
+  $$('.cell').forEach((b) => (b.onclick = () => {
     const h = H(b.dataset.h), ds = b.dataset.d;
     if (h.kind === 'check') return setLog(h, ds, valOf(h, ds) ? null : 1, null);
     if (h.kind === 'quran') return openQuran(h, ds);
@@ -2279,7 +2402,7 @@ async function boot() {
     if (err.auth) { setToken(null); return renderLogin(); }
     return (app.innerHTML = `<div class="empty" style="padding:80px 20px"><span class="big">⚠️</span>${esc(err.message)}<br><br><button class="btn" onclick="boot()">إعادة المحاولة</button></div>`);
   }
-  UI.view = { '#cats': 'cats', '#day': 'day', '#habits': 'habits' }[location.hash] || 'home';
+  UI.view = { '#cats': 'cats', '#day': 'day', '#money': 'home' }[location.hash] || 'habits';
   shell(); render();
 }
 boot();
