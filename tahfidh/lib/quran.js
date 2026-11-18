@@ -376,21 +376,21 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const lesson = await one(
       `INSERT INTO quran_lessons (student_id, assigned_on, content, athman, target, created_by) VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, assigned_on::text, content, athman::float8 AS athman, target`,
-      [st.id, lessonDate(user, st, body.assigned_on), text(body.content, { required: true, max: 300, name: 'الدرس' }), athman,
+      [st.id, lessonDate(user, st, body.assigned_on), text(body.content, { required: true, max: 300, name: 'المقرر' }), athman,
         LESSON_TARGET, user.id]
     );
     return [201, { lesson }];
   });
   async function loadLesson(user, id, opts) {
     const l = await one('SELECT id, student_id, assigned_on::text, target, created_by FROM quran_lessons WHERE id = $1', [Number(id) || 0]);
-    if (!l) throw new HttpError(404, 'الدرس غير موجود');
+    if (!l) throw new HttpError(404, 'المقرر غير موجود');
     l.student = await loadStudent(user, l.student_id, opts);
     return l;
   }
   // الطالب يحذف فقط درسًا أضافه هو
   q('DELETE', '/api/quran/lessons/:id', ['admin', 'talib'], async ({ user, params }) => {
     const l = await loadLesson(user, params.id);
-    if (user.role === 'talib' && l.created_by !== user.id) throw new HttpError(403, 'هذا الدرس أملاه الشيخ: لا يمكنك حذفه');
+    if (user.role === 'talib' && l.created_by !== user.id) throw new HttpError(403, 'هذا المقرر أملاه الشيخ: لا يمكنك حذفه');
     await pool.query('DELETE FROM quran_lessons WHERE id = $1', [l.id]);
     return { ok: true };
   });
@@ -398,7 +398,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
   q('PUT', '/api/quran/lessons/:id/reps', ['admin', 'talib'], async ({ user, params, body }) => {
     const l = await loadLesson(user, params.id);
     const day = body.date ? date(body.date) : today();
-    if (day > today() || day < l.assigned_on) throw new HttpError(400, 'التاريخ خارج مدة الدرس');
+    if (day > today() || day < l.assigned_on) throw new HttpError(400, 'التاريخ خارج مدة المقرر');
     if (body.count !== undefined) {
       const n = int(body.count, { min: 0, max: 10000, def: 0, name: 'العدد' });
       await pool.query(
@@ -428,7 +428,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const lesson = await one(
       `UPDATE quran_lessons SET content = $1, athman = $2, assigned_on = $3 WHERE id = $4
        RETURNING id, assigned_on::text, content, athman::float8 AS athman, target`,
-      [text(body.content, { required: true, max: 300, name: 'الدرس' }), athman, lessonDate(user, l.student, body.assigned_on, l.assigned_on), l.id]
+      [text(body.content, { required: true, max: 300, name: 'المقرر' }), athman, lessonDate(user, l.student, body.assigned_on, l.assigned_on), l.id]
     );
     return { lesson };
   });

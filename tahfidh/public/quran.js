@@ -110,7 +110,7 @@ async function viewQuranHome(el, tab = '') {
       <div class="kpi"><b>${active.length}</b><span>طالب</span></div>
       <div class="kpi"><b>${d.groups.length}</b><span>مجموعة</span></div>
       <div class="kpi"><b>${avg}%</b><span>معدّل إنجاز المراجعة هذا الأسبوع</span></div>
-      <div class="kpi"><b class="in">${reached}</b><span>بلغ هدف تكرار الدرس</span></div>
+      <div class="kpi"><b class="in">${reached}</b><span>بلغ هدف تكرار المقرر</span></div>
     </div>
     <a href="#/quran/signups" class="signup-alert" id="signup-alert" hidden>📝 <span></span> <b>عرض ←</b></a>
     <div class="board-tabs" role="tablist">
@@ -147,7 +147,7 @@ async function quranStudentsTab(page, d) {
         <div class="q-att-sum" id="ov-sum"></div>
       </div>
       <div class="q-table-wrap"><table class="q-table q-ov"><thead><tr>
-        <th>الطالب</th><th>المحفوظ</th><th>المراجعة هذا الأسبوع</th><th>مراجعة اليوم</th><th>الدرس</th><th>الحضور</th></tr></thead>
+        <th>الطالب</th><th>المحفوظ</th><th>المراجعة هذا الأسبوع</th><th>مراجعة اليوم</th><th>المقرر</th><th>الحضور</th></tr></thead>
         <tbody id="ov-body"></tbody></table></div>
       <label class="check small muted"><input type="checkbox" id="q-off"> إظهار الطلبة المتوقفين</label>
     </div>`;
@@ -188,7 +188,7 @@ async function quranStudentsTab(page, d) {
           <td data-l="المحفوظ">${hizbTxt(s.solid_hizb + s.weak_hizb)}</td>
           <td data-l="المراجعة هذا الأسبوع"><div class="q-mini">${bar(r.percent || 0, 100)}<b>${r.percent ?? 0}%</b></div></td>
           <td data-l="مراجعة اليوم" class="${s.reviewed_today ? 'in' : 'muted'}">${s.reviewed_today ? hizbTxt(s.reviewed_today) : '—'}</td>
-          <td data-l="الدرس">${l ? `<div class="q-mini">${bar(l.week_total, l.target, l.week_total >= l.target ? 'ok' : '')}<b>${l.week_total}/${l.target}</b></div>` : '—'}</td>
+          <td data-l="المقرر">${l ? `<div class="q-mini">${bar(l.week_total, l.target, l.week_total >= l.target ? 'ok' : '')}<b>${l.week_total}/${l.target}</b></div>` : '—'}</td>
           <td class="ov-att">${att(s)}</td></tr>`;
       })
       .join('') || '<tr><td colspan="6" class="muted">لا نتائج.</td></tr>';
@@ -281,7 +281,7 @@ function quranStudentForm(s, d, onDone) {
        .join('')}</select></label>
      <fieldset class="q-fs"><legend>نسق المراجعة</legend>
        <label>بداية الأسبوع (عادة يوم اللقاء مع الشيخ)${daySelect('week_start', s?.week_start ?? 6)}</label>
-       <p class="muted small">المحفوظ يُراجَع كله مرة واحدة في الأسبوع، والطالب يختار كل يوم ما يراجعه. والدرس الجديد يُكرَّر 60 مرة.</p>
+       <p class="muted small">المحفوظ يُراجَع كله مرة واحدة في الأسبوع، والطالب يختار كل يوم ما يراجعه. والمقرر الأسبوعي يُكرَّر 60 مرة.</p>
      </fieldset>
      <fieldset class="q-fs"><legend>حساب الطالب</legend>
        ${s ? `<p class="muted small">اسم المستخدم: <b dir="ltr">${esc(s.username)}</b></p>` : '<label>اسم المستخدم<input name="username" required dir="ltr" autocomplete="off"></label>'}
@@ -314,10 +314,10 @@ async function viewQuranGroup(el, id) {
   const day = today();
   el.innerHTML = `<p><a href="#/quran/groups">→ المجموعات</a></p>
     <div class="card"><div class="section-head"><h2>📋 ${esc(g.name)}</h2><label class="q-date">تاريخ اللقاء <input type="date" id="qg-date" value="${day}" max="${day}"></label></div>
-      <p class="muted small">سجّل الحضور، ثم اضغط «تقييم» لكل طالب حاضر: تقييم المراجعة، تسميع الدرس، الملاحظة والدرس الجديد.</p>
+      <p class="muted small">سجّل الحضور، ثم اضغط «تقييم» لكل طالب حاضر: تقييم المراجعة، تسميع المقرر، الملاحظة والمقرر الأسبوعي.</p>
       ${members.length ? `<ul class="q-att">${members
         .map((s) => `<li><span class="q-att-name">${avatar(s, 'sm')} <a href="#/quran/student/${s.id}">${esc(s.full_name)}</a>
-            <small class="muted">المراجعة ${s.review?.percent ?? 0}%${s.lesson ? ` · الدرس ${s.lesson.week_total}/${s.lesson.target}` : ''}</small></span>
+            <small class="muted">المراجعة ${s.review?.percent ?? 0}%${s.lesson ? ` · المقرر ${s.lesson.week_total}/${s.lesson.target}` : ''}</small></span>
           <span class="q-att-opts">${Object.entries(Q_ATT)
             .map(([k, l]) => `<label class="chip-check q-${k}"><input type="radio" name="a${s.id}" value="${k}" ${k === 'present' ? 'checked' : ''}> ${l}</label>`)
             .join('')}</span>
@@ -357,20 +357,20 @@ function quranMeetingForm(full, preset = {}, onDone) {
      <fieldset class="q-fs"><legend>المراجعة الأسبوعية</legend>
        ${progressBlock(full.progress)}
        ${ratingSelect('review_eval', 'تقييم المراجعة', m.review_eval)}</fieldset>
-     <fieldset class="q-fs"><legend>تسميع الدرس</legend>
-       ${full.lessons.length ? `<label>الدرس<select name="lesson_id"><option value="">—</option>${full.lessons
-         .map((l) => `<option value="${l.id}" ${(m.lesson_id || prev?.id) === l.id ? 'selected' : ''}>${esc(l.content)} · ${fmtDate(l.assigned_on)} (${l.total}/${l.target})</option>`).join('')}</select></label>` : '<p class="muted small">لا درس سابق.</p>'}
+     <fieldset class="q-fs"><legend>تسميع المقرر</legend>
+       ${full.lessons.length ? `<label>المقرر<select name="lesson_id"><option value="">—</option>${full.lessons
+         .map((l) => `<option value="${l.id}" ${(m.lesson_id || prev?.id) === l.id ? 'selected' : ''}>${esc(l.content)} · ${fmtDate(l.assigned_on)} (${l.total}/${l.target})</option>`).join('')}</select></label>` : '<p class="muted small">لا مقرر سابق.</p>'}
        <div class="row">${ratingSelect('hifz_eval', 'الحفظ', m.hifz_eval)}${ratingSelect('ada_eval', 'الأداء', m.ada_eval)}</div>
        ${ratingSelect('tajweed_eval', 'التجويد والأحكام', m.tajweed_eval)}</fieldset>
      <label>ملاحظة يراها الطالب<textarea name="note" rows="2">${esc(m.note || '')}</textarea></label>
-     <fieldset class="q-fs"><legend>📝 الدرس الجديد (اللوح)</legend>
-       <label class="check"><input type="checkbox" name="new_lesson" ${m.id ? '' : 'checked'}> إملاء درس جديد لهذا الأسبوع</label>
+     <fieldset class="q-fs"><legend>📝 المقرر الأسبوعي (اللوح)</legend>
+       <label class="check"><input type="checkbox" name="new_lesson" ${m.id ? '' : 'checked'}> إملاء مقرر جديد لهذا الأسبوع</label>
        <div class="row"><label>السورة${suraSelect('', false)}</label>
          <label>المقدار${athmanSelect}</label></div>
        <p class="muted small">يُكرَّر 60 مرة في الأسبوع.</p></fieldset>`,
     async (data) => {
       const { new_lesson, content, athman, ...meeting } = data;
-      if (new_lesson && !String(content || '').trim()) throw new Error('اختر سورة الدرس الجديد، أو أزل علامة «إملاء درس جديد»');
+      if (new_lesson && !String(content || '').trim()) throw new Error('اختر سورة المقرر الأسبوعي، أو أزل علامة «إملاء مقرر جديد»');
       await api('POST', `/api/quran/students/${st.id}/meetings`, meeting);
       if (new_lesson) await api('POST', `/api/quran/students/${st.id}/lessons`, { content, athman: Number(athman), assigned_on: meeting.date });
       onDone();
@@ -389,10 +389,10 @@ function lessonDateSelect(st, current = '') {
 
 function quranLessonForm(st, onDone, l = null) {
   openModal(
-    l ? '✏️ تعديل الدرس' : '📝 درس جديد',
+    l ? '✏️ تعديل المقرر' : '📝 مقرر جديد',
     `<div class="row"><label>السورة${suraSelect(l?.content || '')}</label>
        <label>المقدار${athmanSel(l?.athman ?? 1)}</label></div>
-     <p class="muted small">يُكرَّر الدرس 60 مرة في الأسبوع.</p>
+     <p class="muted small">يُكرَّر المقرر 60 مرة في الأسبوع.</p>
      <label>تاريخ الإملاء (يوم اللقاء)${lessonDateSelect(st, l?.assigned_on)}</label>`,
     async (data) => {
       await api(l ? 'PUT' : 'POST', l ? `/api/quran/lessons/${l.id}` : `/api/quran/students/${st.id}/lessons`, { ...data, athman: Number(data.athman) });
@@ -437,7 +437,7 @@ function openCounter(lesson, todayCount, onClose) {
     $('#qc-of', ov).textContent = `من ${lesson.target}`;
     ov.querySelector('.qc-ring').style.setProperty('--p', pct(total, lesson.target));
     ov.classList.toggle('done', total >= lesson.target);
-    $('#qc-hint', ov).textContent = total >= lesson.target ? `🎉 وصلت للهدف! كرّرت الدرس ${total} مرة` : 'اضغط في أي مكان من الشاشة بعد كل تكرار';
+    $('#qc-hint', ov).textContent = total >= lesson.target ? `🎉 وصلت للهدف! كرّرت المقرر ${total} مرة` : 'اضغط في أي مكان من الشاشة بعد كل تكرار';
     $('#qc-foot', ov).textContent = `اليوم: ${todayN} تكرار · الباقي ${Math.max(0, lesson.target - total)}`;
   };
   const bump = (n) => {
@@ -495,20 +495,20 @@ async function viewQuranStudent(el, id, week = '') {
       : `<p><a href="#/quran/students">→ الطلبة</a></p>
       <div class="card q-head">${avatar(st, 'md')}<div><h2>${esc(st.full_name)}</h2>
         <span class="muted small">${[st.group_name && `🕌 ${esc(st.group_name)}`, st.age && `${st.age} سنة`, `الأسبوع يبدأ ${Q_DAYS[st.week_start]}`].filter(Boolean).join(' · ')}</span></div>
-        <div class="q-actions"><button type="button" class="btn small" id="q-meet">✍️ اللقاء والتقييم</button><button type="button" class="btn small ghost" id="q-lesson">📝 درس جديد</button><a class="btn small ghost" href="#/quran/history/${st.id}">📜 السجلّ</a><button type="button" class="btn small ghost" id="q-edit">تعديل</button></div></div>`}
+        <div class="q-actions"><button type="button" class="btn small" id="q-meet">✍️ اللقاء والتقييم</button><button type="button" class="btn small ghost" id="q-lesson">📝 مقرر جديد</button><a class="btn small ghost" href="#/quran/history/${st.id}">📜 السجلّ</a><button type="button" class="btn small ghost" id="q-edit">تعديل</button></div></div>`}
 
     <section class="card q-lesson">
-      <div class="section-head"><h3>📝 الدرس الجديد</h3><span class="q-actions">${lesson ? `<span class="pill">${athmanTxt(lesson.athman)}</span>` : ''}
-        ${me ? '<button type="button" class="btn small ghost" id="q-lesson-me">＋ درس جديد</button>' : ''}</span></div>
-      ${lesson ? `<p class="q-lesson-txt">${esc(lesson.content)} ${me || staff ? `<button type="button" class="link small" data-edit-lesson="${lesson.id}" title="تعديل الدرس">✏️ تعديل</button>` : ''}</p>
+      <div class="section-head"><h3>📝 المقرر الأسبوعي</h3><span class="q-actions">${lesson ? `<span class="pill">${athmanTxt(lesson.athman)}</span>` : ''}
+        ${me ? '<button type="button" class="btn small ghost" id="q-lesson-me">＋ مقرر جديد</button>' : ''}</span></div>
+      ${lesson ? `<p class="q-lesson-txt">${esc(lesson.content)} ${me || staff ? `<button type="button" class="link small" data-edit-lesson="${lesson.id}" title="تعديل المقرر">✏️ تعديل</button>` : ''}</p>
         <button type="button" class="q-tap ${lesson.week_total >= lesson.target ? 'ok' : ''}" id="q-open-counter" ${me || staff ? '' : 'disabled'}>
           <span class="q-ring" style="--p:${pct(lesson.week_total, lesson.target)}"><b>${lesson.week_total}</b><small>من ${lesson.target}</small></span>
-          <span class="q-tap-txt">${lesson.week_total >= lesson.target ? `🎉 وصلت للهدف هذا الأسبوع! كرّرت الدرس <b>${lesson.week_total}</b> مرة.`
+          <span class="q-tap-txt">${lesson.week_total >= lesson.target ? `🎉 وصلت للهدف هذا الأسبوع! كرّرت المقرر <b>${lesson.week_total}</b> مرة.`
             : `<b>اضغط هنا لفتح العدّاد</b><small>اليوم: ${todayReps} تكرار · المطلوب اليوم حوالي ${Math.max(0, pace.perDay - todayReps)} أخرى</small>
                <small>الباقي ${pace.remaining} في ${pace.daysLeft} ${pace.daysLeft > 1 ? 'أيام' : 'يوم'}</small>`}</span></button>
         <p class="muted small">العدّاد يبدأ من الصفر كل أسبوع (يوم ${Q_DAYS[st.week_start]})، والأسابيع السابقة محفوظة في <a href="#/quran/history/${st.id}">السجلّ</a>.</p>
         ${me || staff ? '<button type="button" class="link small" id="q-set">✏️ كتابة العدد مباشرة</button>' : ''}`
-        : `<p class="muted">لا يوجد درس حاليًا. ${staff ? 'اضغط «درس جديد» أو «اللقاء والتقييم».' : 'أضف الدرس الذي أملاه عليك الشيخ بزر «＋ درس جديد».'}</p>`}
+        : `<p class="muted">لا يوجد مقرر حاليًا. ${staff ? 'اضغط «مقرر جديد» أو «اللقاء والتقييم».' : 'أضف المقرر الذي أملاه عليك الشيخ بزر «＋ مقرر جديد».'}</p>`}
     </section>
 
     <section class="card">
@@ -568,7 +568,7 @@ async function viewQuranStudent(el, id, week = '') {
         .map((m) => `<li class="note"><div class="note-head"><b>${fmtDate(m.date)}</b> <span class="badge ${Q_ATT_CLS[m.attendance]}">${Q_ATT[m.attendance]}</span>
             ${ratingBadge(m.review_eval, 'المراجعة')} ${ratingBadge(m.hifz_eval, 'الحفظ')} ${ratingBadge(m.ada_eval, 'الأداء')} ${ratingBadge(m.tajweed_eval, 'التجويد')}
             ${staff ? `<button type="button" class="link small danger" data-del-meet="${m.id}">حذف</button>` : ''}</div>
-          ${m.lesson_content ? `<p class="muted small">الدرس المسمَّع: ${esc(m.lesson_content)}</p>` : ''}
+          ${m.lesson_content ? `<p class="muted small">المقرر المسمَّع: ${esc(m.lesson_content)}</p>` : ''}
           ${m.note ? `<p>${esc(m.note)}</p>` : ''}</li>`)
         .join('')}</ul>` : '<p class="muted">لا لقاءات مسجّلة بعد.</p>'}
     </section>`;
@@ -582,7 +582,7 @@ async function viewQuranStudent(el, id, week = '') {
   );
   el.querySelectorAll('[data-del-lesson]').forEach((b) =>
     b.addEventListener('click', async () => {
-      if (!confirmAction('حذف هذا الدرس وعدّاد تكراراته؟')) return;
+      if (!confirmAction('حذف هذا المقرر وعدّاد تكراراته؟')) return;
       await api('DELETE', `/api/quran/lessons/${b.dataset.delLesson}`).catch((e) => toast(e.message, true));
       reload();
     })
@@ -684,9 +684,6 @@ async function viewQuranReview(el, id, dayArg = '') {
   el.innerHTML = `<p><a href="#/quran/student/${id}">→ ${state.user.role === 'talib' ? 'متابعتي' : esc(st.full_name)}</a></p>
     <div class="card"><div class="section-head"><h2>🔁 ما راجعته</h2>
       <label class="q-date"><input type="date" id="qr-date" value="${day}" max="${day0}"></label></div>
-      <p class="muted small">اختر بنفسك ما راجعته ${day === day0 ? 'اليوم' : `يوم ${qDay(day)}`}: اضغط على ربع أو جزء كامل أو على سورة. المهم أن تراجع كل محفوظك قبل آخر الأسبوع.</p>
-      <p class="q-legend small"><span class="q-chip-demo done">✓ قرأته هذا الأسبوع</span> <span class="q-chip-demo on">${day === day0 ? 'اليوم' : qDay(day)}</span>
-        <span class="q-chip-demo need">لم يُقرأ بعد هذا الأسبوع</span></p>
       ${meetingDay && carried.size ? '<p class="q-carry small">📌 اليوم يوم اللقاء: ما قرأته في الأسبوع الماضي يبقى ظاهرًا حتى يسجّل الشيخ الحصة، ثم يبدأ أسبوع جديد.</p>' : ''}
       <div id="qr-prog"></div>
       <div class="q-seg" role="tablist" aria-label="طريقة العرض">${Object.entries(VIEWS)
@@ -841,7 +838,7 @@ function hTotals(list) {
     <span><b>${num(hHizb(list))}</b><small>حزب من الورد</small></span>
     <span><b>${hSum(list, 'days')}</b><small>يوم ورد</small></span>
     <span><b>${hSum(list, 'reps')}</b><small>تكرار للمقرر</small></span>
-    <span><b>${list.reduce((t, w) => t + w.lessons.length, 0)}</b><small>درس جديد</small></span>
+    <span><b>${list.reduce((t, w) => t + w.lessons.length, 0)}</b><small>مقرر جديد</small></span>
     <span><b class="in">${present}</b><small>حضور</small></span>
     <span><b class="${absent ? 'out' : ''}">${absent + excused}</b><small>غياب${excused ? ` (${excused} بعذر)` : ''}</small></span></div>`;
 }
