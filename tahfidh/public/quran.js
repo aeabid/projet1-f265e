@@ -379,13 +379,22 @@ function quranMeetingForm(full, preset = {}, onDone) {
   );
 }
 
+// تاريخ الإملاء: يوم اللقاء فقط (لقاء هذا الأسبوع)، لا اختيار حرّ من الأجندة
+function lessonDateSelect(st, current = '') {
+  const t = today();
+  const meet = qAddDays(t, -((new Date(`${t}T00:00:00Z`).getUTCDay() - st.week_start + 7) % 7));
+  const days = [...new Set([meet, current].filter(Boolean))].sort().reverse();
+  return `<select name="assigned_on">${days
+    .map((d) => `<option value="${d}" ${d === (current || meet) ? 'selected' : ''}>${qDay(d)} ${fmtDate(d)}${d === meet ? ' (لقاء هذا الأسبوع)' : ''}</option>`).join('')}</select>`;
+}
+
 function quranLessonForm(st, onDone, l = null) {
   openModal(
     l ? '✏️ تعديل الدرس' : '📝 درس جديد',
     `<div class="row"><label>السورة (ما أملاه الشيخ)${suraSelect(l?.content || '')}</label>
        <label>المقدار${athmanSel(l?.athman ?? 1)}</label></div>
      <p class="muted small">يُقرأ الدرس 60 مرة في الأسبوع.</p>
-     <label>تاريخ الإملاء<input type="date" name="assigned_on" value="${l?.assigned_on || today()}" max="${today()}"></label>`,
+     <label>تاريخ الإملاء (يوم اللقاء)${lessonDateSelect(st, l?.assigned_on)}</label>`,
     async (data) => {
       await api(l ? 'PUT' : 'POST', l ? `/api/quran/lessons/${l.id}` : `/api/quran/students/${st.id}/lessons`, { ...data, athman: Number(data.athman) });
       toast('تم ✓');

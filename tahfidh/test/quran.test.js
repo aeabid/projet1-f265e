@@ -138,7 +138,10 @@ test('two admins with same rights, students, chosen review, counter, meetings', 
   assert.strictEqual((await talib('PUT', '/api/me/photo', { image: 'data:text/html;base64,AAAA' })).status, 400);
 
   // الطالب يضيف درسه ويحذفه، ولا يحذف درس الشيخ
+  // تاريخ الإملاء: يوم اللقاء فقط (السبت عند هذا الطالب)
+  assert.strictEqual((await talib('POST', `/api/quran/students/${sid}/lessons`, { content: 'الملك', athman: 1, assigned_on: '2026-11-04' })).status, 400);
   const own = await talib('POST', `/api/quran/students/${sid}/lessons`, { content: 'الملك 15-30', athman: 1 });
+  assert.strictEqual(new Date(own.body.lesson.assigned_on + 'T00:00:00Z').getUTCDay(), 6);
   assert.strictEqual(own.status, 201);
   assert.strictEqual((await talib('DELETE', `/api/quran/lessons/${lesson.id}`)).status, 403);
   assert.strictEqual((await talib('DELETE', `/api/quran/lessons/${own.body.lesson.id}`)).status, 200);

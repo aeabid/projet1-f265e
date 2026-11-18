@@ -359,6 +359,14 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
   });
 
   // ---------- الدرس الجديد وعدّاد القراءات ----------
+  // تاريخ الإملاء = يوم اللقاء. الطالب لا يختار إلا يوم لقاء (افتراضيًا: لقاء هذا الأسبوع)
+  const lessonDate = (user, st, value, fallback) => {
+    const d = value ? date(value, 'تاريخ الإملاء') : fallback ?? weekStartOf(today(), st.week_start);
+    if (d > today()) throw new HttpError(400, 'تاريخ الإملاء لم يأت بعد');
+    if (user.role === 'talib' && d !== fallback && weekStartOf(d, st.week_start) !== d) throw new HttpError(400, 'تاريخ الإملاء هو يوم اللقاء مع الشيخ');
+    return d;
+  };
+
   // الدرس الجديد: يضيفه المشرف، أو الطالب نفسه
   q('POST', '/api/quran/students/:id/lessons', ['admin', 'talib'], async ({ user, params, body }) => {
     const st = await loadStudent(user, params.id);
@@ -367,7 +375,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const lesson = await one(
       `INSERT INTO quran_lessons (student_id, assigned_on, content, athman, target, created_by) VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, assigned_on::text, content, athman::float8 AS athman, target`,
-      [st.id, body.assigned_on ? date(body.assigned_on) : today(), text(body.content, { required: true, max: 300, name: 'الدرس' }), athman,
+      [st.id, lessonDate(user, st, body.assigned_on), text(body.content, { required: true, max: 300, name: 'الدرس' }), athman,
         LESSON_TARGET, user.id]
     );
     return [201, { lesson }];
@@ -419,7 +427,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const lesson = await one(
       `UPDATE quran_lessons SET content = $1, athman = $2, assigned_on = $3 WHERE id = $4
        RETURNING id, assigned_on::text, content, athman::float8 AS athman, target`,
-      [text(body.content, { required: true, max: 300, name: 'الدرس' }), athman, body.assigned_on ? date(body.assigned_on) : l.assigned_on, l.id]
+      [text(body.content, { required: true, max: 300, name: 'الدرس' }), athman, lessonDate(user, l.student, body.assigned_on, l.assigned_on), l.id]
     );
     return { lesson };
   });
