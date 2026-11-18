@@ -43,7 +43,7 @@ function lessonPace(lesson, day, weekStart) {
   return { remaining, perDay: Math.ceil(remaining / daysLeft), daysLeft };
 }
 
-// تقدّم المراجعة (نفس حساب الخادم): المحفوظ الجيد مرة في الأسبوع، وما يحتاج مراجعة weak_reps مرة
+// تقدّم المراجعة (نفس حساب الخادم): كل المحفوظ مرة في الأسبوع
 function reviewProgress(mem, reps, counts) {
   const size = (i) => QD.segments[i]?.size || 0;
   const solid = Object.keys(mem).filter((k) => mem[k] === 's').map(Number);
@@ -58,10 +58,8 @@ function reviewProgress(mem, reps, counts) {
 function progressBlock(p) {
   if (!p || (!p.solid_total && !p.weak_total)) return '<p class="muted">حدّد المحفوظ أولًا، ثم سجّل ما تراجعه كل يوم.</p>';
   return `<div class="q-prog">
-    ${p.solid_total ? `<div class="q-prog-row"><span><span class="q-dot s"></span>المحفوظ الجيد <small>(مرة في الأسبوع)</small></span>
+    ${p.solid_total ? `<div class="q-prog-row"><span><span class="q-dot s"></span>المحفوظ <small>(كله مرة في الأسبوع)</small></span>
       ${bar(p.solid_done, p.solid_total, 'ok')}<b>${num(p.solid_done)} / ${num(p.solid_total)} حزب</b></div>` : ''}
-    ${p.weak_total ? `<div class="q-prog-row"><span><span class="q-dot w"></span>يحتاج مراجعة <small>(${p.weak_reps > 1 ? `${p.weak_reps} مرات` : 'مرة'} في الأسبوع)</small></span>
-      ${bar(p.weak_done, p.weak_total, 'warn')}<b>${num(p.weak_done)} / ${num(p.weak_total)} حزب</b></div>` : ''}
   </div>`;
 }
 
@@ -187,7 +185,7 @@ async function quranStudentsTab(page, d) {
         return `<tr class="${a === 'absent' ? 'is-absent' : a === 'excused' ? 'is-excused' : ''} ${s.active ? '' : 'q-off'}">
           <td class="ov-name"><a href="#/quran/student/${s.id}"><b>${esc(s.full_name)}</b></a>${s.active ? '' : ' <span class="badge general">متوقف</span>'}
             <small class="q-what">${[s.group_name && esc(s.group_name), s.age && `${s.age} سنة`].filter(Boolean).join(' · ')}</small></td>
-          <td data-l="المحفوظ"><span class="nowrap"><span class="q-dot s"></span>${num(s.solid_hizb)}</span> <span class="nowrap"><span class="q-dot w"></span>${num(s.weak_hizb)}</span></td>
+          <td data-l="المحفوظ">${hizbTxt(s.solid_hizb + s.weak_hizb)}</td>
           <td data-l="المراجعة هذا الأسبوع"><div class="q-mini">${bar(r.percent || 0, 100)}<b>${r.percent ?? 0}%</b></div></td>
           <td data-l="مراجعة اليوم" class="${s.reviewed_today ? 'in' : 'muted'}">${s.reviewed_today ? hizbTxt(s.reviewed_today) : '—'}</td>
           <td data-l="الدرس">${l ? `<div class="q-mini">${bar(l.week_total, l.target, l.week_total >= l.target ? 'ok' : '')}<b>${l.week_total}/${l.target}</b></div>` : '—'}</td>
@@ -283,9 +281,7 @@ function quranStudentForm(s, d, onDone) {
        .join('')}</select></label>
      <fieldset class="q-fs"><legend>نسق المراجعة</legend>
        <label>بداية الأسبوع (عادة يوم اللقاء مع الشيخ)${daySelect('week_start', s?.week_start ?? 6)}</label>
-       <p class="muted small">المحفوظ الجيد يُراجَع كله مرة واحدة في الأسبوع. الطالب يختار كل يوم ما يراجعه.</p>
-       <label>ما يحتاج مراجعة: يُكرَّر في الأسبوع<select name="weak_reps">${[1, 2, 3, 4, 5, 6, 7]
-         .map((n) => `<option value="${n}" ${(s?.weak_reps ?? 1) === n ? 'selected' : ''}>${n === 1 ? 'مرة واحدة' : n === 2 ? 'مرتين' : `${n} مرات`}</option>`).join('')}</select></label>
+       <p class="muted small">المحفوظ يُراجَع كله مرة واحدة في الأسبوع، والطالب يختار كل يوم ما يراجعه. والدرس الجديد يُقرأ 60 مرة.</p>
      </fieldset>
      <fieldset class="q-fs"><legend>حساب الطالب</legend>
        ${s ? `<p class="muted small">اسم المستخدم: <b dir="ltr">${esc(s.username)}</b></p>` : '<label>اسم المستخدم<input name="username" required dir="ltr" autocomplete="off"></label>'}
@@ -521,8 +517,7 @@ async function viewQuranStudent(el, id, week = '') {
           : '<p class="muted">لم تسجّل مراجعة اليوم بعد.</p>'}
           <a class="btn block" href="#/quran/review/${st.id}">${todayRow?.ids.length ? '✏️ تعديل مراجعة اليوم' : '＋ سجّل ما راجعته اليوم'}</a></div>
         ${left.length ? `<details class="q-left"><summary>ما بقي هذا الأسبوع (${hizbTxt(QD.sizeOf(left))})</summary>
-          ${progress.solid_left.length ? `<p><span class="q-dot s"></span>${esc(segLabel(progress.solid_left))}</p>` : ''}
-          ${progress.weak_left.length ? `<p><span class="q-dot w"></span>${esc(segLabel(progress.weak_left))}</p>` : ''}</details>`
+          <p>${esc(segLabel(left))}</p></details>`
           : progress.percent === 100 ? '<p class="q-goal">🎉 راجعت كل محفوظك هذا الأسبوع، بارك الله فيك.</p>' : ''}` : ''}
     </section>
 
@@ -531,33 +526,32 @@ async function viewQuranStudent(el, id, week = '') {
         <b>${qShort(full.week_start)} – ${qShort(qAddDays(full.week_start, 6))}</b>
         ${nextWeek <= day ? `<a href="#/quran/student/${st.id}?week=${nextWeek}" title="الأسبوع الموالي">←</a>` : '<span></span>'}</span></div>
       <div class="q-table-wrap"><table class="q-table">
-        <thead><tr><th>اليوم</th><th><span class="q-dot s"></span>محفوظ جيد</th><th><span class="q-dot w"></span>يحتاج مراجعة</th><th>📝 قراءات الدرس</th></tr></thead>
+        <thead><tr><th>اليوم</th><th>🔁 المحفوظ (حزب)</th><th>📝 قراءات الدرس</th></tr></thead>
         <tbody>${full.week
           .map((w) => {
             const future = w.date > day;
             const click = !future && (me || staff);
             return `<tr class="${w.date === day ? 'today' : ''} ${future ? 'future' : ''} ${click ? 'clickable' : ''}" ${click ? `data-day="${w.date}"` : ''}>
               <td><b>${qDay(w.date)}</b> <small class="muted">${qShort(w.date)}</small>${w.ids.length ? `<small class="q-what">${esc(w.label)}</small>` : ''}</td>
-              <td>${w.solid ? num(w.solid) : future ? '' : '—'}</td><td>${w.weak ? num(w.weak) : future ? '' : '—'}</td><td>${w.reps || (future ? '' : '—')}</td></tr>`;
+              <td>${w.solid + w.weak + w.other ? num(w.solid + w.weak + w.other) : future ? '' : '—'}</td><td>${w.reps || (future ? '' : '—')}</td></tr>`;
           })
           .join('')}</tbody>
-        <tfoot><tr><th>المجموع</th><th>${num(sum('solid'))}</th><th>${num(sum('weak'))}</th><th>${sum('reps')}</th></tr></tfoot>
+        <tfoot><tr><th>المجموع</th><th>${num(sum('solid') + sum('weak') + sum('other'))}</th><th>${sum('reps')}</th></tr></tfoot>
       </table></div>
       <details class="q-help"><summary>كيف يُعمَّر هذا الجدول؟</summary>
         <ul>
           <li>كل سطر يوم من أيام الأسبوع، والأسبوع يبدأ يوم اللقاء مع الشيخ (${Q_DAYS[st.week_start]}).</li>
-          <li><b>محفوظ جيد / يحتاج مراجعة:</b> كمية ما راجعه الطالب ذلك اليوم بالأحزاب، حسب ما سجّله هو في «سجّل ما راجعته اليوم». تحت اسم اليوم تظهر السور التي راجعها.</li>
+          <li><b>المحفوظ:</b> كمية ما راجعه الطالب ذلك اليوم من محفوظه بالأحزاب، حسب ما سجّله هو في «سجّل ما راجعته اليوم». تحت اسم اليوم تظهر السور التي راجعها.</li>
           <li><b>قراءات الدرس:</b> عدد المرات التي قرأ فيها الدرس الجديد ذلك اليوم، من العدّاد.</li>
           <li>اضغط على يوم سابق لتسجيل أو تعديل مراجعته.</li>
-          <li>الهدف في آخر الأسبوع: مراجعة كل المحفوظ الجيد مرة، وما يحتاج مراجعة ${st.weak_reps > 1 ? `${st.weak_reps} مرات` : 'مرة'}، وقراءة الدرس ${lesson?.target || 60} مرة.</li>
+          <li>الهدف في آخر الأسبوع: مراجعة كل المحفوظ مرة، وقراءة الدرس ${lesson?.target || 60} مرة.</li>
         </ul></details>
     </section>
 
     <section class="card">
       <div class="section-head"><h3>📗 المحفوظ</h3>${me || staff ? `<a class="btn small" href="#/quran/hifz/${st.id}">${me ? 'تحديد محفوظي' : 'تحديد المحفوظ'}</a>` : ''}</div>
-      <div class="q-mem-sum"><div><span class="q-dot s"></span><b>${hizbTxt(st.solid_hizb)}</b><small>محفوظ جيد · يُراجَع كله مرة في الأسبوع</small></div>
-        <div><span class="q-dot w"></span><b>${hizbTxt(st.weak_hizb)}</b><small>يحتاج مراجعة · ${st.weak_reps > 1 ? `${st.weak_reps} مرات` : 'مرة'} في الأسبوع</small></div>
-        <div><span class="q-dot"></span><b>${hizbTxt(st.solid_hizb + st.weak_hizb)}</b><small>من 60 حزبًا</small></div></div>
+      <div class="q-mem-sum"><div><b>${hizbTxt(st.solid_hizb + st.weak_hizb)}</b><small>محفوظ · يُراجَع كله مرة في الأسبوع</small></div>
+        <div><b>${Math.round(((st.solid_hizb + st.weak_hizb) / 60) * 100)}%</b><small>من القرآن (60 حزبًا)</small></div></div>
       ${bar(st.solid_hizb + st.weak_hizb, 60)}
     </section>
 
@@ -669,7 +663,7 @@ async function viewQuranReview(el, id, dayArg = '') {
       <label class="q-date"><input type="date" id="qr-date" value="${day}" max="${day0}"></label></div>
       <p class="muted small">اختر بنفسك ما راجعته ${day === day0 ? 'اليوم' : `يوم ${qDay(day)}`}: اضغط على ربع أو جزء كامل أو على سورة. المهم أن تراجع كل محفوظك قبل آخر الأسبوع.</p>
       <p class="q-legend small"><span class="q-chip-demo done">✓ قرأته هذا الأسبوع</span> <span class="q-chip-demo on">${day === day0 ? 'اليوم' : qDay(day)}</span>
-        <span class="q-chip-demo need">لم يُقرأ بعد</span> · الإطار: <span class="q-chip-demo s">جيد</span> <span class="q-chip-demo w">يحتاج مراجعة</span></p>
+        <span class="q-chip-demo need">لم يُقرأ بعد هذا الأسبوع</span></p>
       ${meetingDay && carried.size ? '<p class="q-carry small">📌 اليوم يوم اللقاء: ما قرأته في الأسبوع الماضي يبقى ظاهرًا حتى يسجّل الشيخ الحصة، ثم يبدأ أسبوع جديد.</p>' : ''}
       <div id="qr-prog"></div></div>
     <div id="q-tree"></div>
@@ -745,10 +739,9 @@ async function viewQuranHifz(el, id) {
   };
   el.innerHTML = `<p><a href="#/quran/student/${id}">→ ${state.user.role === 'talib' ? 'متابعتي' : esc(st.full_name)}</a></p>
     <div class="card"><h2>📗 تحديد المحفوظ${state.user.role === 'talib' ? '' : ` — ${esc(st.full_name)}`}</h2>
-      <p class="muted small">اختر الحالة، ثم اضغط على ربع كامل أو جزء أو سورة. الضغط مرة ثانية يلغي التحديد. افتح الربع لترى أجزاءه، والجزء لترى سوره.</p>
+      <p class="muted small">اضغط على ربع كامل أو جزء أو سورة لتحديدها محفوظة. الضغط مرة ثانية يلغي التحديد (أو اختر «مسح»). افتح الربع لترى أجزاءه، والجزء لترى سوره.</p>
       <div class="q-modes" role="radiogroup">
-        <button type="button" class="q-mode s on" data-mode="s">✓ محفوظ جيد<small>أقرؤه من حفظي</small></button>
-        <button type="button" class="q-mode w" data-mode="w">↻ يحتاج مراجعة<small>لازمه تثبيت</small></button>
+        <button type="button" class="q-mode s on" data-mode="s">✓ محفوظ<small>أحفظه</small></button>
         <button type="button" class="q-mode c" data-mode="">✕ مسح<small>غير محفوظ</small></button>
       </div></div>
     <div id="q-tree"></div>
@@ -762,8 +755,7 @@ async function viewQuranHifz(el, id) {
   const icon = (c) => (c === 's' ? '✓' : c === 'w' ? '↻' : c === 'mix' ? '◐' : '○');
   function render() {
     const solid = Object.keys(mem).filter((k) => mem[k] === 's').map(Number);
-    const weak = Object.keys(mem).filter((k) => mem[k] === 'w').map(Number);
-    $('#q-sum').innerHTML = `<span class="q-dot s"></span> ${hizbTxt(size(solid))} <span class="q-dot w"></span> ${hizbTxt(size(weak))}`;
+    $('#q-sum').innerHTML = `المحفوظ: <b>${hizbTxt(size(solid))}</b>`;
     $('#q-tree').innerHTML = tree
       .map((q) => {
         const sq = stateOf(q.ids);

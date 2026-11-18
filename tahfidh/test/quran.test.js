@@ -94,11 +94,12 @@ test('two admins with same rights, students, chosen review, counter, meetings', 
   const r = (await talib('PUT', `/api/quran/students/${sid}/review`, { ids: juz30 })).body;
   assert.strictEqual(r.saved, juz30.length);
   assert.strictEqual(r.progress.solid_done, r.progress.solid_total);
-  assert.ok(r.progress.weak_done < r.progress.weak_total); // ما يحتاج مراجعة: مرتين
+  assert.strictEqual(r.progress.weak_total, 0); // حالة واحدة: «يحتاج مراجعة» صار محفوظًا
+  assert.strictEqual(r.progress.percent, 100);
   assert.strictEqual((await talib('PUT', `/api/quran/students/${sid}/review`, { ids: [1], date: '2099-01-01' })).status, 400);
   const after = (await talib('GET', `/api/quran/students/${sid}`)).body;
   const todayRow = after.week.find((d) => d.date === after.today);
-  assert.ok(todayRow.solid > 0 && todayRow.weak > 0);
+  assert.ok(todayRow.solid > 0 && todayRow.weak === 0);
   assert.ok(todayRow.label.length > 0);
   // إعادة الحفظ تعوّض اختيار اليوم
   await talib('PUT', `/api/quran/students/${sid}/review`, { ids: [] });

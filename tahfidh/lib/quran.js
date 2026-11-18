@@ -24,7 +24,8 @@ function cleanMemorized(value) {
   if (!value || typeof value !== 'object') return out;
   for (const [k, v] of Object.entries(value)) {
     const id = Number(k);
-    if (Number.isInteger(id) && id >= 0 && id < Q.segments.length && (v === 's' || v === 'w')) out[id] = v;
+    // حالة واحدة: محفوظ (القيمة القديمة «يحتاج مراجعة» تُعتبر محفوظًا)
+    if (Number.isInteger(id) && id >= 0 && id < Q.segments.length && (v === 's' || v === 'w')) out[id] = 's';
   }
   return out;
 }

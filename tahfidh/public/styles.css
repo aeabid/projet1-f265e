@@ -241,7 +241,7 @@ dialog .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; 
 .q-att .chip-check:has(input:checked).q-excused { background: var(--q-weak-bg); color: var(--q-weak); font-weight: 700; }
 
 /* شجرة المحفوظ */
-.q-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.q-modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
 .q-mode { font: inherit; font-weight: 700; cursor: pointer; border: 2px solid var(--border); background: var(--card); color: var(--text); border-radius: 14px; padding: .6rem .3rem; display: flex; flex-direction: column; align-items: center; gap: .1rem; }
 .q-mode small { font-weight: 400; color: var(--muted); font-size: .75rem; }
 .q-mode.s.on { border-color: var(--q-solid); background: var(--q-solid-bg); }
