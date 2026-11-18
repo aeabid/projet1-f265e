@@ -57,6 +57,8 @@ test('short range labels', () => {
   assert.strictEqual(L((s) => s.juz >= 28), 'من الجزء 28 إلى الجزء 30');
   assert.strictEqual(L((s) => s.sura >= 78 && s.sura <= 85), 'من النبأ إلى البروج');
   assert.strictEqual(L((s) => s.sura === 67), 'الملك');
+  assert.strictEqual(L((s) => s.sura >= 26 && s.sura <= 35), 'من الشعراء إلى فاطر');
+  assert.strictEqual(L((s) => s.sura >= 36), 'من يس إلى الناس');
 });
 
 test('two admins with same rights, students, chosen review, counter, meetings', async () => {
