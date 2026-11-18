@@ -481,3 +481,5 @@ select.pick-native { display: none !important; }
 .q-juz-list .q-juz:first-child { border-top: 0; }
 .q-suras-all { padding: .2rem 0; }
 .q-snum { font-size: .72rem; opacity: .6; margin-inline-end: .3rem; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin: .2rem 0 1rem; }
+.page-head h2 { margin: 0; color: var(--accent); }

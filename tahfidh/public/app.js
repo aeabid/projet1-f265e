@@ -207,7 +207,8 @@ const icon = (name) =>
 
 const NAV = {
   admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'المجموعات', 'grid'], ['#/account', 'حسابي', 'user']],
-  talib: [['#/home', 'متابعتي', 'home'], ['#/my-review', 'مراجعتي', 'star'], ['#/my-hifz', 'محفوظي', 'book'], ['#/my-history', 'سجلّي', 'calendar'], ['#/account', 'حسابي', 'user']],
+  // الطالب: اليوم (المقرر والورد) · متابعتي (الجدول والشهر والملاحظات) · حسابي (البيانات والمحفوظ)
+  talib: [['#/home', 'اليوم', 'home'], ['#/my-progress', 'متابعتي', 'calendar'], ['#/account', 'حسابي', 'user']],
 };
 
 function renderTopbar() {
@@ -281,6 +282,8 @@ async function viewAccount(el) {
   const u = state.user;
   const talib = u.role === 'talib';
   const p = talib ? (await api('GET', '/api/me/profile')).profile || {} : {};
+  const hz = talib ? (await api('GET', `/api/quran/students/${u.id}`)).student : null;
+  const memH = hz ? hz.solid_hizb + hz.weak_hizb : 0;
   el.innerHTML = `<div class="card narrow"><h2>حسابي</h2>
       <div class="me-photo">${avatar(u, 'xl')}
         <div><b>${esc(u.full_name)}</b><small class="muted">${esc(u.role_label)} · <span dir="ltr">${esc(u.username)}</span></small>
@@ -295,6 +298,10 @@ async function viewAccount(el) {
           <label>الهاتف<input name="phone" type="tel" value="${esc(u.phone || '')}"></label>
           <label>البريد الإلكتروني (يمكن الدخول به)<input name="email" type="email" dir="ltr" value="${esc(u.email || '')}"></label>`}
         <button class="btn" type="submit">حفظ بياناتي</button></form></div>
+    ${talib ? `<div class="card narrow"><div class="section-head"><h3>📗 محفوظي</h3><a class="btn small" href="#/my-hifz">تحديد المحفوظ</a></div>
+      <div class="q-mem-sum"><div><b>${hizbTxt(memH)}</b><small>محفوظ · يُراجَع كله مرة في الأسبوع</small></div>
+        <div><b>${Math.round((memH / 60) * 100)}%</b><small>من القرآن (60 حزبًا)</small></div></div>
+      ${bar(memH, 60)}</div>` : ''}
     <div class="card narrow"><h3>تغيير كلمة السر</h3>
       <form id="pw-form"><label>كلمة السر الحالية<input name="current" type="password" required autocomplete="current-password"></label>
         <label>كلمة السر الجديدة<input name="next" type="password" required minlength="6" autocomplete="new-password"></label>
@@ -381,7 +388,7 @@ async function adminsCard(box) {
 const routes = [
   [/^#\/login$/, viewLogin],
   [/^#\/account$/, viewAccount],
-  [/^#\/home$/, (el) => (state.user.role === 'talib' ? viewQuranStudent(el, state.user.id) : viewQuranHome(el))],
+  [/^#\/home$/, (el) => (state.user.role === 'talib' ? viewQuranStudent(el, state.user.id, '', 'today') : viewQuranHome(el))],
 ];
 
 let navCount = 0;
