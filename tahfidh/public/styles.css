@@ -490,3 +490,7 @@ select.pick-native { display: none !important; }
 .mem-ring { --p: 0; width: 84px; height: 84px; flex: none; border-radius: 50%; display: grid; place-content: center;
   background: radial-gradient(closest-side, var(--card) 76%, transparent 77%), conic-gradient(var(--q-solid) calc(var(--p) * 1%), var(--soft-2) 0); }
 .mem-ring b { font-size: 1.25rem !important; color: var(--q-solid); font-family: 'Oswald', 'Tajawal', sans-serif; }
+.rec-seg { margin: 0 0 1rem; }
+.rec-seg a { font-weight: 700; color: var(--muted); border-radius: 11px; padding: .55rem .3rem; text-align: center; text-decoration: none !important; }
+.rec-seg a.on { background: var(--card); color: var(--accent); box-shadow: 0 2px 8px rgba(60, 20, 110, .12); }
+.rec-year td:first-child { min-width: 70px; }

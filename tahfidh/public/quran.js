@@ -914,30 +914,52 @@ async function monthCard(box, st, month = today().slice(0, 7)) {
   enhanceSelects(box);
 }
 
-async function viewQuranHistory(el, id, year = '') {
-  const h = await api('GET', `/api/quran/students/${id}/history${year ? `?year=${year}` : ''}`);
+// ---------- سجلّي: بالأسبوع · بالشهر · بالسنة ----------
+const REC_MODES = { week: 'بالأسبوع', month: 'بالشهر', year: 'بالسنة' };
+async function viewRecords(el, id, mode = '', period = '') {
   const me = state.user.role === 'talib';
-  const y = Number(h.year);
-  const nowY = Number(today().slice(0, 4));
-  const totals = hTotals;
-  const months = [];
-  const active = (w) => w.days || w.reps || w.lessons.length || w.meetings.length;
-  // الأشهر التي لا نشاط فيها لا تظهر
-  for (const w of h.weeks.filter((x, i, all) => all.slice(i).some(active) && all.slice(0, i + 1).some(active) || active(x))) {
-    const k = w.start.slice(0, 7);
-    let m = months.find((x) => x.k === k);
-    if (!m) months.push((m = { k, weeks: [] }));
-    m.weeks.push(w);
+  try {
+    mode = REC_MODES[mode] ? mode : localStorage.getItem('qRecMode') || 'week';
+    localStorage.setItem('qRecMode', mode);
+  } catch {
+    mode = REC_MODES[mode] ? mode : 'week';
   }
-  const weekRow = hWeekRow;
-  el.innerHTML = `<p><a href="${me ? '#/my-progress' : `#/quran/student/${id}`}">→ ${me ? 'سجلّي' : esc(h.student.full_name)}</a></p>
-    <div class="card"><div class="section-head"><h2>📜 السجلّ${me ? '' : ` — ${esc(h.student.full_name)}`}</h2>
-      <span class="q-weeknav"><a href="#/${me ? 'quran/history/' + id : 'quran/history/' + id}?year=${y - 1}">→</a><b>${y}</b>${y < nowY ? `<a href="#/quran/history/${id}?year=${y + 1}">←</a>` : '<span></span>'}</span></div>
-      <p class="muted small">كل أسبوع يبدأ يوم ${Q_DAYS[h.student.week_start]}، وعدّاداته تبدأ من الصفر. هنا يبقى ما أُنجز كل أسبوع، وحصيلة كل شهر والسنة.</p>
-      <h3>حصيلة سنة ${y}</h3>${totals(h.weeks)}</div>
-    ${months.filter((m) => m.weeks.some(active)).length ? months.filter((m) => m.weeks.some(active)).map((m) => `<details class="card h-month" ${m === months[0] ? 'open' : ''}><summary><b>${Q_MONTHS[Number(m.k.slice(5)) - 1]} ${m.k.slice(0, 4)}</b> <small class="muted">${m.weeks.length} أسابيع</small></summary>
-        ${totals(m.weeks)}<ul class="h-weeks">${m.weeks.map(weekRow).join('')}</ul></details>`).join('')
-      : '<div class="card muted">لا شيء في هذه السنة.</div>'}`;
+  const t = today();
+  const year = mode === 'month' ? (period || t.slice(0, 7)).slice(0, 4) : period || t.slice(0, 4);
+  const h = await api('GET', `/api/quran/students/${id}/history?year=${year}`);
+  const active = (w) => w.days || w.reps || w.lessons.length || w.meetings.length;
+  const yNow = Number(t.slice(0, 4));
+  const href = (m, p) => (me ? `#/my-progress?${m}${p ? `=${p}` : ''}` : `#/quran/history/${id}?${m}${p ? `=${p}` : ''}`);
+  const yearNav = (y) => `<span class="q-weeknav"><a href="${href(mode, y - 1)}" title="السنة السابقة">→</a><b>${y}</b>${y < yNow ? `<a href="${href(mode, y + 1)}" title="السنة الموالية">←</a>` : '<span></span>'}</span>`;
+  let body = '';
+  if (mode === 'week') {
+    const weeks = h.weeks.filter(active);
+    body = `<div class="card"><div class="section-head"><h3>📅 الأسابيع</h3>${yearNav(Number(year))}</div>
+      ${weeks.length ? `<ul class="h-weeks">${weeks.map(hWeekRow).join('')}</ul>` : '<p class="muted">لا نشاط في هذه السنة.</p>'}</div>`;
+  } else if (mode === 'month') {
+    body = '<section class="card" id="q-month"></section>';
+  } else {
+    const months = [];
+    for (let m = 12; m >= 1; m--) {
+      const k = `${year}-${String(m).padStart(2, '0')}`;
+      const ws = h.weeks.filter((w) => w.start.slice(0, 7) === k);
+      if (ws.some(active)) months.push({ k, ws });
+    }
+    const att = (ws, a) => ws.flatMap((w) => w.meetings).filter((x) => (a === 'absent' ? x.attendance !== 'present' : x.attendance === 'present')).length;
+    body = `<div class="card"><div class="section-head"><h3>🗓 حصيلة سنة ${year}</h3>${yearNav(Number(year))}</div>${hTotals(h.weeks)}
+      ${months.length ? `<div class="q-table-wrap"><table class="q-table rec-year"><thead><tr><th>الشهر</th><th>🔁 الورد (حزب)</th><th>أيام الورد</th><th>📝 التكرارات</th><th>الحضور</th></tr></thead>
+        <tbody>${months.map(({ k, ws }) => `<tr class="clickable" data-month="${k}"><td><b>${Q_MONTHS[Number(k.slice(5)) - 1]}</b></td>
+          <td>${num(hHizb(ws))}</td><td>${hSum(ws, 'days')}</td><td>${hSum(ws, 'reps')}</td>
+          <td><span class="in">${att(ws, 'present')}</span>${att(ws, 'absent') ? ` · <span class="out">${att(ws, 'absent')} غياب</span>` : ''}</td></tr>`).join('')}</tbody></table></div>`
+        : '<p class="muted">لا نشاط في هذه السنة.</p>'}</div>`;
+  }
+  el.innerHTML = `${me ? '' : `<p><a href="#/quran/student/${id}">→ ${esc(h.student.full_name)}</a></p>`}
+    <div class="page-head"><h2>📜 ${me ? 'سجلّي' : `سجلّ ${esc(h.student.full_name)}`}</h2></div>
+    <div class="q-seg rec-seg" role="tablist">${Object.entries(REC_MODES)
+      .map(([k, l]) => `<a role="tab" href="${href(k)}" class="${k === mode ? 'on' : ''}">${l}</a>`).join('')}</div>
+    ${body}`;
+  if (mode === 'month') monthCard($('#q-month'), { id, week_start: h.student.week_start }, period || t.slice(0, 7));
+  el.querySelectorAll('tr[data-month]').forEach((tr) => tr.addEventListener('click', () => (location.hash = href('month', tr.dataset.month))));
 }
 
 // المسارات (تُضاف لقائمة app.js)
@@ -945,12 +967,12 @@ routes.unshift(
   [/^#\/quran(?:\/(students|groups|overview|signups))?$/, (el, tab) => (state.user.role === 'talib' ? viewQuranStudent(el, state.user.id, '', 'home') : viewQuranHome(el, tab || ''))],
   [/^#\/quran\/student\/(\d+)(?:\?week=(\d{4}-\d{2}-\d{2}))?$/, (el, id, week) => viewQuranStudent(el, Number(id), week || '', state.user.role === 'talib' ? 'home' : 'all')],
   [/^#\/home\?week=(\d{4}-\d{2}-\d{2})$/, (el, week) => viewQuranStudent(el, state.user.id, week, 'home')],
-  [/^#\/my-progress$/, (el) => viewQuranStudent(el, state.user.id, '', 'records')],
+  [/^#\/my-progress(?:\?(week|month|year)(?:=([\d-]+))?)?$/, (el, m, p) => viewRecords(el, state.user.id, m || '', p || '')],
   [/^#\/quran\/review\/(\d+)(?:\?date=(\d{4}-\d{2}-\d{2}))?$/, (el, id, d) => viewQuranReview(el, Number(id), d || '')],
   [/^#\/quran\/hifz\/(\d+)$/, (el, id) => viewQuranHifz(el, Number(id))],
   [/^#\/quran\/group\/(\d+)$/, (el, id) => viewQuranGroup(el, Number(id))],
   [/^#\/my-hifz$/, (el) => viewQuranHifz(el, state.user.id)],
   [/^#\/my-review$/, (el) => viewQuranReview(el, state.user.id)],
-  [/^#\/my-history$/, (el) => viewQuranHistory(el, state.user.id)],
-  [/^#\/quran\/history\/(\d+)(?:\?year=(\d{4}))?$/, (el, id, y) => viewQuranHistory(el, Number(id), y || '')]
+  [/^#\/my-history$/, (el) => viewRecords(el, state.user.id)],
+  [/^#\/quran\/history\/(\d+)(?:\?(week|month|year)(?:=([\d-]+))?)?$/, (el, id, m, p) => viewRecords(el, Number(id), m || '', p || '')]
 );
