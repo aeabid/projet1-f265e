@@ -724,7 +724,7 @@ async function viewQuranHifz(el, id) {
   const full = await api('GET', `/api/quran/students/${id}`);
   const st = full.student;
   const mem = { ...(st.memorized || {}) };
-  let mode = 's';
+  const mode = 's'; // حالة واحدة: محدّد (محفوظ) أو غير محدّد
   const tree = quranTree();
   const stateOf = (ids) => {
     const v = ids.map((i) => mem[i] || '');
@@ -741,19 +741,9 @@ async function viewQuranHifz(el, id) {
   };
   el.innerHTML = `<p><a href="#/quran/student/${id}">→ ${state.user.role === 'talib' ? 'متابعتي' : esc(st.full_name)}</a></p>
     <div class="card"><h2>📗 تحديد المحفوظ${state.user.role === 'talib' ? '' : ` — ${esc(st.full_name)}`}</h2>
-      <p class="muted small">اضغط على ربع كامل أو جزء أو سورة لتحديدها محفوظة. الضغط مرة ثانية يلغي التحديد (أو اختر «مسح»). افتح الربع لترى أجزاءه، والجزء لترى سوره.</p>
-      <div class="q-modes" role="radiogroup">
-        <button type="button" class="q-mode s on" data-mode="s">✓ محفوظ<small>أحفظه</small></button>
-        <button type="button" class="q-mode c" data-mode="">✕ مسح<small>غير محفوظ</small></button>
-      </div></div>
+      <p class="muted small">اضغط على ربع كامل أو جزء أو سورة لتحديدها محفوظة، واضغط مرة ثانية لإلغاء التحديد. افتح الربع لترى أجزاءه، والجزء لترى سوره.</p></div>
     <div id="q-tree"></div>
     <div class="q-savebar"><span id="q-sum"></span><button type="button" class="btn" id="q-save">حفظ المحفوظ</button></div>`;
-  el.querySelectorAll('.q-mode').forEach((b) =>
-    b.addEventListener('click', () => {
-      mode = b.dataset.mode;
-      el.querySelectorAll('.q-mode').forEach((x) => x.classList.toggle('on', x === b));
-    })
-  );
   const icon = (c) => (c === 's' ? '✓' : c === 'w' ? '↻' : c === 'mix' ? '◐' : '○');
   function render() {
     const solid = Object.keys(mem).filter((k) => mem[k] === 's').map(Number);
