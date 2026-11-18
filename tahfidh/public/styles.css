@@ -427,3 +427,4 @@ img.avatar { object-fit: cover; background: var(--soft); }
 .m-line small { color: var(--muted); }
 .m-line em { font-style: normal; font-weight: 700; font-size: .85rem; text-align: end; }
 .m-week .badge { align-self: flex-start; }
+.q-sura-cell { font-weight: 700; color: var(--accent); }
