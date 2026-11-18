@@ -472,3 +472,12 @@ select.pick-native { display: none !important; }
 @keyframes pick-up { from { transform: translateY(40px); opacity: 0; } }
 @keyframes pick-fade { from { opacity: 0; } }
 @media (min-width: 700px) { .pick-wrap { align-items: center; } .pick-sheet { border-radius: 24px; max-height: 70vh; } }
+
+/* طريقة عرض المراجعة: بالأرباع / بالأجزاء / بالسور */
+.q-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: .25rem; background: var(--soft); border-radius: 14px; padding: .25rem; margin-top: .7rem; }
+.q-seg button { font: inherit; font-weight: 700; border: 0; background: none; color: var(--muted); border-radius: 11px; padding: .55rem .3rem; cursor: pointer; }
+.q-seg button.on { background: var(--card); color: var(--accent); box-shadow: 0 2px 8px rgba(60, 20, 110, .12); }
+.q-juz-list { padding: 0; overflow: hidden; }
+.q-juz-list .q-juz:first-child { border-top: 0; }
+.q-suras-all { padding: .2rem 0; }
+.q-snum { font-size: .72rem; opacity: .6; margin-inline-end: .3rem; }

@@ -656,6 +656,27 @@ async function viewQuranReview(el, id, dayArg = '') {
   }
   const reps = st.weak_reps || 1;
   const tree = quranTree((sid) => mem[sid]);
+  const memSegs = QD.segments.filter((g) => mem[g.id]);
+  const suraGroup = (segs) =>
+    [...new Set(segs.map((g) => g.sura))].map((s) => {
+      const ss = segs.filter((g) => g.sura === s);
+      const from = ss[0].from;
+      const to = ss[ss.length - 1].to;
+      return { ids: ss.map((g) => g.id), name: QD.suraName(s), num: s, range: from === 1 && to === QD.AYAT[s - 1] ? '' : `${from}–${to}` };
+    });
+  const juzList = [...new Set(memSegs.map((g) => g.juz))].map((j) => {
+    const js = memSegs.filter((g) => g.juz === j);
+    return { juz: j, ids: js.map((g) => g.id), suras: suraGroup(js) };
+  });
+  const suraList = suraGroup(memSegs);
+  const VIEWS = { quarters: 'بالأرباع', juz: 'بالأجزاء', suras: 'بالسور' };
+  let view = (() => {
+    try {
+      return VIEWS[localStorage.getItem('qReviewView')] ? localStorage.getItem('qReviewView') : 'quarters';
+    } catch {
+      return 'quarters';
+    }
+  })();
   const read = (i) => (others.get(i) || 0) + (carried.get(i) || 0);
   const need = (i) => read(i) < (mem[i] === 'w' ? reps : 1);
   const stateOf = (ids) => (ids.every((i) => selected.has(i)) ? 'on' : ids.some((i) => selected.has(i)) ? 'mix' : '');
@@ -667,34 +688,52 @@ async function viewQuranReview(el, id, dayArg = '') {
       <p class="q-legend small"><span class="q-chip-demo done">✓ قرأته هذا الأسبوع</span> <span class="q-chip-demo on">${day === day0 ? 'اليوم' : qDay(day)}</span>
         <span class="q-chip-demo need">لم يُقرأ بعد هذا الأسبوع</span></p>
       ${meetingDay && carried.size ? '<p class="q-carry small">📌 اليوم يوم اللقاء: ما قرأته في الأسبوع الماضي يبقى ظاهرًا حتى يسجّل الشيخ الحصة، ثم يبدأ أسبوع جديد.</p>' : ''}
-      <div id="qr-prog"></div></div>
+      <div id="qr-prog"></div>
+      <div class="q-seg" role="tablist" aria-label="طريقة العرض">${Object.entries(VIEWS)
+        .map(([k, l]) => `<button type="button" role="tab" data-view="${k}" class="${k === view ? 'on' : ''}">${l}</button>`).join('')}</div></div>
     <div id="q-tree"></div>
     <div class="q-savebar"><span id="q-sum"></span><button type="button" class="btn" id="q-save">حفظ</button></div>`;
   $('#qr-date').addEventListener('change', (e) => (location.hash = `#/quran/review/${id}?date=${e.target.value}`));
+  el.querySelectorAll('.q-seg button').forEach((b) =>
+    b.addEventListener('click', () => {
+      view = b.dataset.view;
+      try {
+        localStorage.setItem('qReviewView', view);
+      } catch {}
+      el.querySelectorAll('.q-seg button').forEach((x) => x.classList.toggle('on', x === b));
+      render();
+    })
+  );
   const pick = (cls) => `<button type="button" class="q-pick ${cls}" title="الكل">${cls === 'on' ? '✓' : cls === 'mix' ? '◐' : '○'}</button>`;
+  const chip = (s, withNum = false) => {
+    const n = Math.min(...s.ids.map(read));
+    const today = stateOf(s.ids);
+    const done = !today && s.ids.every((i) => read(i) > 0);
+    return `<button type="button" class="q-sura ${kind(s.ids)} ${today === 'on' ? 'picked' : today === 'mix' ? 'half' : done ? 'done' : ''} ${s.ids.some(need) && !today ? 'need' : ''}" data-ids="${s.ids.join(',')}">${done ? '✓ ' : ''}${withNum ? `<b class="q-snum">${s.num}</b>` : ''}${s.name}${s.range ? ` <small>${s.range}</small>` : ''}${n > 1 ? ` <em>×${n}</em>` : ''}</button>`;
+  };
+  const juzBlock = (j, key) => `<details class="q-juz" data-key="${key}">
+      <summary><span class="q-jname">الجزء ${j.juz} <small class="muted">· ${hizbTxt(QD.sizeOf(j.ids))}</small>${j.ids.some(need) ? ' <span class="q-need">•</span>' : ''}</span>
+        <span data-ids="${j.ids.join(',')}">${pick(stateOf(j.ids))}</span></summary>
+      <div class="q-suras">${j.suras.map((s) => chip(s)).join('')}</div></details>`;
   function render() {
     const counts = new Map(others);
     for (const i of selected) counts.set(i, (counts.get(i) || 0) + 1);
     $('#qr-prog').innerHTML = progressBlock(reviewProgress(mem, reps, counts));
     $('#q-sum').innerHTML = selected.size ? `${qDay(day) === qDay(day0) && day === day0 ? 'اليوم' : qDay(day)}: <b>${hizbTxt(QD.sizeOf([...selected]))}</b>` : '<span class="muted">لم تختر شيئًا بعد</span>';
-    $('#q-tree').innerHTML = tree
-      .map((q) => `<details class="card q-quarter" data-key="r${q.n}">
-          <summary><span class="q-num">${q.n}</span><span class="q-qname"><b>${q.name}</b><small>محفوظ: ${hizbTxt(QD.sizeOf(q.ids))}${q.ids.some(need) ? ' · بقي منه' : ' · ✓ رُوجع'}</small></span>
-            <span data-ids="${q.ids.join(',')}">${pick(stateOf(q.ids))}</span></summary>
-          ${q.juzs
-            .map((j) => `<details class="q-juz" data-key="r${q.n}-${j.juz}">
-                <summary><span class="q-jname">الجزء ${j.juz} <small class="muted">· ${hizbTxt(QD.sizeOf(j.ids))}</small>${j.ids.some(need) ? ' <span class="q-need">•</span>' : ''}</span>
-                  <span data-ids="${j.ids.join(',')}">${pick(stateOf(j.ids))}</span></summary>
-                <div class="q-suras">${j.suras
-                  .map((s) => {
-                    const n = Math.min(...s.ids.map(read));
-                    const today = stateOf(s.ids);
-                    const done = !today && s.ids.every((i) => read(i) > 0);
-                    return `<button type="button" class="q-sura ${kind(s.ids)} ${today === 'on' ? 'picked' : today === 'mix' ? 'half' : done ? 'done' : ''} ${s.ids.some(need) && !today ? 'need' : ''}" data-ids="${s.ids.join(',')}">${done ? '✓ ' : ''}${s.name}${s.range ? ` <small>${s.range}</small>` : ''}${n > 1 ? ` <em>×${n}</em>` : ''}</button>`;
-                  })
-                  .join('')}</div></details>`)
-            .join('')}</details>`)
-      .join('');
+    if (view === 'suras') {
+      // بالسور: كل سور المحفوظ في قائمة واحدة
+      $('#q-tree').innerHTML = `<div class="card"><div class="q-suras q-suras-all">${suraList.map((x) => chip(x, true)).join('')}</div></div>`;
+    } else if (view === 'juz') {
+      // بالأجزاء: من الجزء 1 إلى الجزء 30 (ما فيه محفوظ فقط)، وكل جزء يُفتح على سوره
+      $('#q-tree').innerHTML = `<div class="card q-quarter q-juz-list">${juzList.map((j) => juzBlock(j, `rj-${j.juz}`)).join('')}</div>`;
+    } else {
+      $('#q-tree').innerHTML = tree
+        .map((q) => `<details class="card q-quarter" data-key="r${q.n}">
+            <summary><span class="q-num">${q.n}</span><span class="q-qname"><b>${q.name}</b><small>محفوظ: ${hizbTxt(QD.sizeOf(q.ids))}${q.ids.some(need) ? ' · بقي منه' : ' · ✓ رُوجع'}</small></span>
+              <span data-ids="${q.ids.join(',')}">${pick(stateOf(q.ids))}</span></summary>
+            ${q.juzs.map((j) => juzBlock(j, `r${q.n}-${j.juz}`)).join('')}</details>`)
+        .join('');
+    }
     $('#q-tree').querySelectorAll('[data-ids]').forEach((b) =>
       b.addEventListener('click', (e) => {
         e.preventDefault();
