@@ -413,3 +413,7 @@ img.avatar { object-fit: cover; background: var(--soft); }
 .h-week-head { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .h-week-body { display: flex; flex-direction: column; gap: .2rem; font-size: .9rem; margin-top: .25rem; }
 .out { color: var(--danger); }
+.q-sura.done { background: var(--q-solid-bg); color: var(--q-solid); border-style: solid; font-weight: 700; }
+.q-sura.done.kw { background: var(--q-weak-bg); color: var(--q-weak); }
+.q-chip-demo.done { background: var(--q-solid-bg); color: var(--q-solid); border-color: var(--q-solid); }
+.q-carry { background: var(--soft); border-radius: 12px; padding: .5rem .7rem; margin: .4rem 0; }

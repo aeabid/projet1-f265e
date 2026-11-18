@@ -639,17 +639,26 @@ async function viewQuranReview(el, id, dayArg = '') {
   // ما رُوجع في بقية أيام الأسبوع
   const others = new Map();
   for (const w of full.week) if (w.date !== day) for (const i of w.ids) others.set(i, (others.get(i) || 0) + 1);
+  // يوم اللقاء قبل تسجيل الحصة: يبقى ما قُرئ في الأسبوع الماضي ظاهرًا، ويُمحى بعد الحصة
+  const carried = new Map();
+  const meetingDay = day === full.week_start && day === day0 && !full.meetings.some((m) => m.date === day);
+  if (meetingDay) {
+    const prev = await api('GET', `/api/quran/students/${id}?week=${qAddDays(day, -7)}`);
+    for (const w of prev.week) for (const i of w.ids) carried.set(i, (carried.get(i) || 0) + 1);
+  }
   const reps = st.weak_reps || 1;
   const tree = quranTree((sid) => mem[sid]);
-  const need = (i) => (others.get(i) || 0) < (mem[i] === 'w' ? reps : 1);
+  const read = (i) => (others.get(i) || 0) + (carried.get(i) || 0);
+  const need = (i) => read(i) < (mem[i] === 'w' ? reps : 1);
   const stateOf = (ids) => (ids.every((i) => selected.has(i)) ? 'on' : ids.some((i) => selected.has(i)) ? 'mix' : '');
   const kind = (ids) => (ids.every((i) => mem[i] === 's') ? 'ks' : ids.every((i) => mem[i] === 'w') ? 'kw' : 'ksw');
   el.innerHTML = `<p><a href="#/quran/student/${id}">→ ${state.user.role === 'talib' ? 'متابعتي' : esc(st.full_name)}</a></p>
     <div class="card"><div class="section-head"><h2>🔁 ما راجعته</h2>
       <label class="q-date"><input type="date" id="qr-date" value="${day}" max="${day0}"></label></div>
       <p class="muted small">اختر بنفسك ما راجعته ${day === day0 ? 'اليوم' : `يوم ${qDay(day)}`}: اضغط على ربع أو جزء كامل أو على سورة. المهم أن تراجع كل محفوظك قبل آخر الأسبوع.</p>
-      <p class="q-legend small"><span class="q-chip-demo s">محفوظ جيد</span> <span class="q-chip-demo w">يحتاج مراجعة</span>
-        <span class="q-chip-demo on">راجعته</span> <span class="q-chip-demo need">• لم يُراجَع بعد هذا الأسبوع</span></p>
+      <p class="q-legend small"><span class="q-chip-demo done">✓ قرأته هذا الأسبوع</span> <span class="q-chip-demo on">${day === day0 ? 'اليوم' : qDay(day)}</span>
+        <span class="q-chip-demo need">لم يُقرأ بعد</span> · الإطار: <span class="q-chip-demo s">جيد</span> <span class="q-chip-demo w">يحتاج مراجعة</span></p>
+      ${meetingDay && carried.size ? '<p class="q-carry small">📌 اليوم يوم اللقاء: ما قرأته في الأسبوع الماضي يبقى ظاهرًا حتى يسجّل الشيخ الحصة، ثم يبدأ أسبوع جديد.</p>' : ''}
       <div id="qr-prog"></div></div>
     <div id="q-tree"></div>
     <div class="q-savebar"><span id="q-sum"></span><button type="button" class="btn" id="q-save">حفظ</button></div>`;
@@ -670,8 +679,10 @@ async function viewQuranReview(el, id, dayArg = '') {
                   <span data-ids="${j.ids.join(',')}">${pick(stateOf(j.ids))}</span></summary>
                 <div class="q-suras">${j.suras
                   .map((s) => {
-                    const n = Math.min(...s.ids.map((i) => others.get(i) || 0));
-                    return `<button type="button" class="q-sura ${kind(s.ids)} ${stateOf(s.ids) === 'on' ? 'picked' : stateOf(s.ids) === 'mix' ? 'half' : ''} ${s.ids.some(need) ? 'need' : ''}" data-ids="${s.ids.join(',')}">${s.name}${s.range ? ` <small>${s.range}</small>` : ''}${n ? ` <em>×${n}</em>` : ''}</button>`;
+                    const n = Math.min(...s.ids.map(read));
+                    const today = stateOf(s.ids);
+                    const done = !today && s.ids.every((i) => read(i) > 0);
+                    return `<button type="button" class="q-sura ${kind(s.ids)} ${today === 'on' ? 'picked' : today === 'mix' ? 'half' : done ? 'done' : ''} ${s.ids.some(need) && !today ? 'need' : ''}" data-ids="${s.ids.join(',')}">${done ? '✓ ' : ''}${s.name}${s.range ? ` <small>${s.range}</small>` : ''}${n > 1 ? ` <em>×${n}</em>` : ''}</button>`;
                   })
                   .join('')}</div></details>`)
             .join('')}</details>`)
