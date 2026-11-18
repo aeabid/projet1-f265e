@@ -593,3 +593,11 @@ select.pick-native { display: none !important; }
 .wk-table tfoot td { border-top: 2px solid var(--border); font-weight: 800; color: var(--accent); background: var(--card); }
 .wk-table tfoot td:first-child { padding-inline-start: .8rem; }
 .wk-table tfoot td:nth-child(3) { text-align: center; }
+/* أسماء السور كاملة في البطاقات (هاتف ضيّق) */
+.q-tile-main { gap: .4rem; padding: .55rem .5rem; }
+.q-tile-num { width: 1.65rem; height: 1.65rem; border-radius: 8px; font-size: .7rem; }
+.q-tile-mark { width: 1.2rem; height: 1.2rem; font-size: .7rem; }
+.q-tile-name b { font-size: .88rem; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.3; }
+.q-tile-name small { font-size: .66rem; }
+.q-tile-step { padding: .3rem .4rem .45rem; }
+.q-tile-step button { width: 1.8rem; height: 1.8rem; }
