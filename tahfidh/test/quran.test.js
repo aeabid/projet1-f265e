@@ -101,6 +101,13 @@ test('two admins with same rights, students, chosen review, counter, meetings', 
   const todayRow = after.week.find((d) => d.date === after.today);
   assert.ok(todayRow.solid > 0 && todayRow.weak === 0);
   assert.ok(todayRow.label.length > 0);
+  // السورة الواحدة أكثر من مرة في اليوم
+  const two = (await talib('PUT', `/api/quran/students/${sid}/review`, { ids: [juz30[0]], counts: { [juz30[0]]: 3 } })).body;
+  const one1 = (await talib('PUT', `/api/quran/students/${sid}/review`, { ids: [juz30[0]] })).body;
+  assert.ok(two.size > one1.size);
+  await talib('PUT', `/api/quran/students/${sid}/review`, { ids: [juz30[0]], counts: { [juz30[0]]: 3 } });
+  const wk = (await talib('GET', `/api/quran/students/${sid}`)).body.week.find((d) => d.ids.length);
+  assert.strictEqual(wk.counts[juz30[0]], 3);
   // إعادة الحفظ تعوّض اختيار اليوم
   await talib('PUT', `/api/quran/students/${sid}/review`, { ids: [] });
   assert.strictEqual((await talib('GET', `/api/quran/students/${sid}`)).body.progress.percent, 0);

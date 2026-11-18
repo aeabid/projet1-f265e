@@ -649,6 +649,10 @@ async function viewQuranReview(el, id, dayArg = '') {
   }
   const row = full.week.find((w) => w.date === day);
   const selected = new Set(row?.ids || []);
+  // عدد مرات قراءة كل مقطع اليوم (السورة الواحدة قد تُقرأ أكثر من مرة)
+  const times = new Map(Object.entries(row?.counts || {}).map(([k, v]) => [Number(k), v]));
+  const timesOf = (ids) => Math.min(...ids.map((i) => times.get(i) || 1));
+  const daySize = () => Math.round([...selected].reduce((t, i) => t + (QD.segments[i]?.size || 0) * (times.get(i) || 1), 0) * 10) / 10;
   // ما رُوجع في بقية أيام الأسبوع
   const others = new Map();
   for (const w of full.week) if (w.date !== day) for (const i of w.ids) others.set(i, (others.get(i) || 0) + 1);
@@ -711,6 +715,16 @@ async function viewQuranReview(el, id, dayArg = '') {
     const n = Math.min(...s.ids.map(read));
     const today = stateOf(s.ids);
     const done = !today && s.ids.every((i) => read(i) > 0);
+    const label = `${withNum ? `<b class="q-snum">${s.num}</b>` : ''}${s.name}${s.range ? ` <small>${s.range}</small>` : ''}`;
+    // سورة مختارة اليوم: زرّ لإلغائها، و − / ＋ لعدد مرات قراءتها
+    if (today === 'on') {
+      const k = timesOf(s.ids);
+      return `<span class="q-sura picked q-step ${kind(s.ids)}">
+        <button type="button" class="q-step-name" data-ids="${s.ids.join(',')}" title="إلغاء">${label}</button>
+        <button type="button" class="q-step-btn" data-times="${s.ids.join(',')}" data-d="-1" aria-label="أقل">−</button>
+        <b class="q-step-n" dir="ltr">×${k}</b>
+        <button type="button" class="q-step-btn" data-times="${s.ids.join(',')}" data-d="1" aria-label="مرة أخرى">＋</button></span>`;
+    }
     return `<button type="button" class="q-sura ${kind(s.ids)} ${today === 'on' ? 'picked' : today === 'mix' ? 'half' : done ? 'done' : ''} ${s.ids.some(need) && !today ? 'need' : ''}" data-ids="${s.ids.join(',')}">${done ? '✓ ' : ''}${withNum ? `<b class="q-snum">${s.num}</b>` : ''}${s.name}${s.range ? ` <small>${s.range}</small>` : ''}${n > 1 ? ` <em>×${n}</em>` : ''}</button>`;
   };
   const juzBlock = (j, key) => `<details class="q-juz" data-key="${key}">
@@ -721,7 +735,7 @@ async function viewQuranReview(el, id, dayArg = '') {
     const counts = new Map(others);
     for (const i of selected) counts.set(i, (counts.get(i) || 0) + 1);
     $('#qr-prog').innerHTML = progressBlock(reviewProgress(mem, reps, counts));
-    $('#q-sum').innerHTML = selected.size ? `${qDay(day) === qDay(day0) && day === day0 ? 'اليوم' : qDay(day)}: <b>${hizbTxt(QD.sizeOf([...selected]))}</b>` : '<span class="muted">لم تختر شيئًا بعد</span>';
+    $('#q-sum').innerHTML = selected.size ? `${day === day0 ? 'اليوم' : qDay(day)}: <b>${hizbTxt(daySize())}</b>` : '<span class="muted">لم تختر شيئًا بعد</span>';
     if (view === 'suras') {
       // بالسور: كل سور المحفوظ في قائمة واحدة
       $('#q-tree').innerHTML = `<div class="card"><div class="q-suras q-suras-all">${suraList.map((x) => chip(x, true)).join('')}</div></div>`;
@@ -742,7 +756,28 @@ async function viewQuranReview(el, id, dayArg = '') {
         e.stopPropagation();
         const ids = b.dataset.ids.split(',').map(Number);
         const all = ids.every((i) => selected.has(i));
-        for (const i of ids) all ? selected.delete(i) : selected.add(i);
+        for (const i of ids) {
+          if (all) {
+            selected.delete(i);
+            times.delete(i);
+          } else selected.add(i);
+        }
+        render();
+      })
+    );
+    // − / ＋ : عدد مرات قراءة السورة اليوم (− عند مرة واحدة = إلغاء)
+    $('#q-tree').querySelectorAll('[data-times]').forEach((b) =>
+      b.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const ids = b.dataset.times.split(',').map(Number);
+        const k = timesOf(ids) + Number(b.dataset.d);
+        for (const i of ids) {
+          if (k < 1) {
+            selected.delete(i);
+            times.delete(i);
+          } else times.set(i, Math.min(20, k));
+        }
         render();
       })
     );
@@ -751,7 +786,8 @@ async function viewQuranReview(el, id, dayArg = '') {
   render();
   $('#q-save').addEventListener('click', async () => {
     try {
-      const r = await api('PUT', `/api/quran/students/${id}/review`, { date: day, ids: [...selected] });
+      const counts = Object.fromEntries([...selected].filter((i) => (times.get(i) || 1) > 1).map((i) => [i, times.get(i)]));
+      const r = await api('PUT', `/api/quran/students/${id}/review`, { date: day, ids: [...selected], counts });
       toast(r.progress.percent === 100 ? '🎉 أتممت مراجعة كل محفوظك هذا الأسبوع' : 'تم الحفظ، بارك الله فيك ✓');
       location.hash = state.user.role === 'talib' ? '#/home' : `#/quran/student/${id}`;
     } catch (e) {

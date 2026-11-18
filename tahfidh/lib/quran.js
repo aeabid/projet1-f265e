@@ -31,6 +31,9 @@ function cleanMemorized(value) {
 }
 const idsOf = (mem, kind) => Object.entries(mem || {}).filter(([, v]) => v === kind).map(([k]) => Number(k));
 
+// حجم ما رُوجع بالأحزاب، مع عدد مرات القراءة (السورة الواحدة قد تُقرأ أكثر من مرة في اليوم)
+const readSize = (items) => Math.round(items.reduce((t, i) => t + (Q.segments[i.seg_id]?.size || 0) * (i.count || 1), 0) * 10) / 10;
+
 // تقدّم المراجعة في أسبوع: المحفوظ الجيد مرة واحدة على الأقل، وما يحتاج مراجعة weak_reps مرة
 // items: [{ date, seg_id }] ما راجعه الطالب في الأسبوع
 export function reviewProgress(st, items) {
@@ -97,7 +100,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     if (!students.length) return new Map();
     const ids = students.map((s) => s.id);
     const minStart = addDays(day, -6);
-    const items = await all(`SELECT student_id, date::text, seg_id FROM quran_review_items WHERE student_id = ANY($1::int[]) AND date >= $2 AND date <= $3`, [ids, minStart, day]);
+    const items = await all(`SELECT student_id, date::text, seg_id, count FROM quran_review_items WHERE student_id = ANY($1::int[]) AND date >= $2 AND date <= $3`, [ids, minStart, day]);
     const lessons = await all(
       `SELECT DISTINCT ON (l.student_id) l.id, l.student_id, l.assigned_on::text, l.content, l.athman::float8 AS athman, l.target,
          COALESCE((SELECT SUM(count) FROM quran_lesson_reps r WHERE r.lesson_id = l.id), 0)::int AS total
@@ -120,7 +123,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
       out.set(st.id, {
         week_from: start,
         review: progress,
-        reviewed_today: Q.sizeOf(items.filter((i) => i.student_id === st.id && i.date === day).map((i) => i.seg_id)),
+        reviewed_today: readSize(items.filter((i) => i.student_id === st.id && i.date === day)),
         solid_hizb: Q.sizeOf(idsOf(st.memorized, 's')),
         weak_hizb: Q.sizeOf(idsOf(st.memorized, 'w')),
         lesson: (() => {
@@ -283,7 +286,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const ref = DATE_RE.test(query.get('week') || '') ? query.get('week') : day;
     const start = weekStartOf(ref, st.week_start);
     const end = addDays(start, 6);
-    const items = await all(`SELECT date::text, seg_id FROM quran_review_items WHERE student_id = $1 AND date BETWEEN $2 AND $3 ORDER BY seg_id`, [st.id, start, end]);
+    const items = await all(`SELECT date::text, seg_id, count FROM quran_review_items WHERE student_id = $1 AND date BETWEEN $2 AND $3 ORDER BY seg_id`, [st.id, start, end]);
     const lessons = await all(
       `SELECT l.id, l.assigned_on::text, l.content, l.athman::float8 AS athman, l.target, l.created_by, u.full_name AS by_name,
          COALESCE((SELECT SUM(count) FROM quran_lesson_reps r WHERE r.lesson_id = l.id), 0)::int AS total
@@ -313,15 +316,16 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const week = [];
     for (let i = 0; i < 7; i++) {
       const d = addDays(start, i);
-      const ids = items.filter((x) => x.date === d).map((x) => x.seg_id);
-      const of = (k) => ids.filter((id) => st.memorized[id] === k);
-      const old = ids.filter((id) => !st.memorized[id]);
+      const dayItems = items.filter((x) => x.date === d);
+      const ids = dayItems.map((x) => x.seg_id);
       week.push({
         date: d,
         ids,
-        solid: Q.sizeOf(of('s')),
-        weak: Q.sizeOf(of('w')),
-        other: Q.sizeOf(old),
+        // عدد مرات قراءة كل مقطع ذلك اليوم
+        counts: Object.fromEntries(dayItems.filter((x) => x.count > 1).map((x) => [x.seg_id, x.count])),
+        solid: readSize(dayItems.filter((x) => st.memorized[x.seg_id] === 's')),
+        weak: readSize(dayItems.filter((x) => st.memorized[x.seg_id] === 'w')),
+        other: readSize(dayItems.filter((x) => !st.memorized[x.seg_id])),
         label: Q.rangeLabel(ids.map((id) => Q.segments[id])),
         reps: repsWeek.find((r) => r.date === d)?.count || 0,
       });
@@ -345,18 +349,20 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const day = body.date ? date(body.date) : today();
     if (day > today()) throw new HttpError(400, 'لا يمكن تسجيل مراجعة يوم لم يأت بعد');
     const ids = [...new Set((Array.isArray(body.ids) ? body.ids : []).map(Number))].filter((i) => Number.isInteger(i) && i >= 0 && i < Q.segments.length);
+    // counts: { [مقطع]: عدد مرات القراءة اليوم } (افتراضيًا مرة واحدة، حتى 20)
+    const counts = ids.map((i) => Math.min(20, Math.max(1, Math.floor(Number(body.counts?.[i]) || 1))));
     await pool.query('DELETE FROM quran_review_items WHERE student_id = $1 AND date = $2', [st.id, day]);
     if (ids.length) {
       await pool.query(
-        `INSERT INTO quran_review_items (student_id, date, seg_id, kind)
-         SELECT $1, $2, x, ($4::jsonb ->> x::text) FROM unnest($3::int[]) AS x ON CONFLICT DO NOTHING`,
-        [st.id, day, ids, JSON.stringify(st.memorized || {})]
+        `INSERT INTO quran_review_items (student_id, date, seg_id, kind, count)
+         SELECT $1, $2, x.id, ($4::jsonb ->> x.id::text), x.c FROM unnest($3::int[], $5::int[]) AS x(id, c) ON CONFLICT DO NOTHING`,
+        [st.id, day, ids, JSON.stringify(st.memorized || {}), counts]
       );
     }
     const start = weekStartOf(day, st.week_start);
     const items = await all('SELECT date::text, seg_id FROM quran_review_items WHERE student_id = $1 AND date BETWEEN $2 AND $3', [st.id, start, addDays(start, 6)]);
     const { solid_left, weak_left, ...progress } = reviewProgress(st, items);
-    return { saved: ids.length, size: Q.sizeOf(ids), progress };
+    return { saved: ids.length, size: readSize(ids.map((id, k) => ({ seg_id: id, count: counts[k] }))), progress };
   });
 
   // ---------- الدرس الجديد وعدّاد القراءات ----------
@@ -440,7 +446,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const year = /^\d{4}$/.test(query.get('year') || '') ? query.get('year') : day.slice(0, 4);
     const from = weekStartOf(`${year}-01-01`, st.week_start);
     const to = `${year}-12-31` < day ? `${year}-12-31` : day;
-    const items = await all('SELECT date::text, seg_id, kind FROM quran_review_items WHERE student_id = $1 AND date BETWEEN $2 AND $3', [st.id, from, addDays(to, 6)]);
+    const items = await all('SELECT date::text, seg_id, kind, count FROM quran_review_items WHERE student_id = $1 AND date BETWEEN $2 AND $3', [st.id, from, addDays(to, 6)]);
     const reps = await all(
       `SELECT r.date::text, SUM(r.count)::int AS count FROM quran_lesson_reps r JOIN quran_lessons l ON l.id = r.lesson_id
        WHERE l.student_id = $1 AND r.date BETWEEN $2 AND $3 GROUP BY r.date`,
@@ -462,7 +468,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
       const e = addDays(w, 6);
       const its = items.filter((i) => i.date >= w && i.date <= e);
       const kindOf = (i) => i.kind || st.memorized[i.seg_id] || '';
-      const size = (list) => Math.round(list.reduce((t, i) => t + (Q.segments[i.seg_id]?.size || 0), 0) * 100) / 100;
+      const size = (list) => Math.round(list.reduce((t, i) => t + (Q.segments[i.seg_id]?.size || 0) * (i.count || 1), 0) * 100) / 100;
       weeks.push({
         start: w,
         solid: size(its.filter((i) => kindOf(i) === 's')),

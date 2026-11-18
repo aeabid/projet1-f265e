@@ -494,3 +494,11 @@ select.pick-native { display: none !important; }
 .rec-seg a { font-weight: 700; color: var(--muted); border-radius: 11px; padding: .55rem .3rem; text-align: center; text-decoration: none !important; }
 .rec-seg a.on { background: var(--card); color: var(--accent); box-shadow: 0 2px 8px rgba(60, 20, 110, .12); }
 .rec-year td:first-child { min-width: 70px; }
+
+/* قراءة السورة أكثر من مرة: − ×2 ＋ */
+.q-sura.q-step { display: inline-flex; align-items: center; gap: .15rem; padding: .15rem .25rem .15rem .35rem; }
+.q-step-name { font: inherit; font-weight: 700; color: inherit; background: none; border: 0; cursor: pointer; padding: .2rem .4rem; }
+.q-step-name small { color: rgba(255, 255, 255, .8); }
+.q-step-btn { font: inherit; font-weight: 800; width: 1.9rem; height: 1.9rem; border-radius: 50%; border: 0; cursor: pointer; background: rgba(255, 255, 255, .22); color: #fff; line-height: 1; }
+.q-step-btn:active { transform: scale(.92); }
+.q-step-n { min-width: 1.8rem; text-align: center; font-size: .85rem; }
