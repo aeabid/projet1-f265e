@@ -428,3 +428,5 @@ img.avatar { object-fit: cover; background: var(--soft); }
 .m-line em { font-style: normal; font-weight: 700; font-size: .85rem; text-align: end; }
 .m-week .badge { align-self: flex-start; }
 .q-sura-cell { font-weight: 700; color: var(--accent); }
+/* حقول متجاورة: الخانات على نفس الخط حتى لو طال عنوان أحدها */
+.row > label { display: flex; flex-direction: column; justify-content: flex-end; }

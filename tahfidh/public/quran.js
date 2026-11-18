@@ -387,7 +387,7 @@ function lessonDateSelect(st, current = '') {
 function quranLessonForm(st, onDone, l = null) {
   openModal(
     l ? '✏️ تعديل الدرس' : '📝 درس جديد',
-    `<div class="row"><label>السورة (ما أملاه الشيخ)${suraSelect(l?.content || '')}</label>
+    `<div class="row"><label>السورة${suraSelect(l?.content || '')}</label>
        <label>المقدار${athmanSel(l?.athman ?? 1)}</label></div>
      <p class="muted small">يُكرَّر الدرس 60 مرة في الأسبوع.</p>
      <label>تاريخ الإملاء (يوم اللقاء)${lessonDateSelect(st, l?.assigned_on)}</label>`,
