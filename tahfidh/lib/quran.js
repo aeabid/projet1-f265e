@@ -326,7 +326,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
         solid: readSize(dayItems.filter((x) => st.memorized[x.seg_id] === 's')),
         weak: readSize(dayItems.filter((x) => st.memorized[x.seg_id] === 'w')),
         other: readSize(dayItems.filter((x) => !st.memorized[x.seg_id])),
-        label: Q.rangeLabel(ids.map((id) => Q.segments[id])),
+        label: Q.rangeLabel(ids.map((id) => Q.segments[id]), Object.fromEntries(dayItems.map((x) => [x.seg_id, x.count]))),
         reps: repsWeek.find((r) => r.date === d)?.count || 0,
       });
     }

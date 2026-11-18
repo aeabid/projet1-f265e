@@ -56,15 +56,18 @@
     const end = b.to === AYAT[b.sura - 1] ? suraName(b.sura) : `${suraName(b.sura)} ${b.to}`;
     return `من ${start} إلى ${end}`;
   }
-  function rangeLabel(segs) {
+  // counts (اختياري): { [مقطع]: عدد مرات القراءة } — ما قُرئ أكثر من مرة يُكتب وحده: «الشعراء (3 مرات)»
+  function rangeLabel(segs, counts = {}) {
     const list = [...new Map(segs.filter(Boolean).map((g) => [g.id, g])).values()].sort((a, b) => a.id - b.id);
+    const n = (g) => counts[g.id] || 1;
     const runs = [];
     for (const g of list) {
       const last = runs[runs.length - 1];
-      if (last && last[last.length - 1].id + 1 === g.id) last.push(g);
+      if (last && last[last.length - 1].id + 1 === g.id && n(last[last.length - 1]) === n(g)) last.push(g);
       else runs.push([g]);
     }
-    return runs.map(runLabel).join('، ');
+    const times = (k) => (k === 2 ? 'مرتين' : k <= 10 ? `${k} مرات` : `${k} مرة`);
+    return runs.map((r) => runLabel(r) + (n(r[0]) > 1 ? ` (${times(n(r[0]))})` : '')).join('، ');
   }
 
   // تقسيم المحفوظ إلى n حصص متوازنة (حسب الحجم)، مع احترام ترتيب المصحف

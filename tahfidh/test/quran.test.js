@@ -59,6 +59,8 @@ test('short range labels', () => {
   assert.strictEqual(L((s) => s.sura === 67), 'الملك');
   assert.strictEqual(L((s) => s.sura >= 26 && s.sura <= 35), 'من الشعراء إلى فاطر');
   assert.strictEqual(L((s) => s.sura >= 36), 'من يس إلى الناس');
+  const c3 = Object.fromEntries(S.filter((s) => s.sura === 26).map((s) => [s.id, 3]));
+  assert.strictEqual(Q().rangeLabel(S.filter((s) => s.sura >= 26 && s.sura <= 35), c3), 'الشعراء (3 مرات)، من النمل إلى فاطر');
 });
 
 test('two admins with same rights, students, chosen review, counter, meetings', async () => {
