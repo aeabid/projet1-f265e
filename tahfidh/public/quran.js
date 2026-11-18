@@ -24,8 +24,13 @@ const daySelect = (name, value) =>
   `<select name="${name}">${Q_DAYS.map((d, i) => `<option value="${i}" ${Number(value) === i ? 'selected' : ''}>${d}</option>`).join('')}</select>`;
 const athmanTxt = (a) => (a === 0.5 ? 'نصف ثمن' : a === 1 ? 'ثمن' : a === 2 ? 'ثمنان' : a === 4 ? 'ربع حزب' : `${num(a)} أثمان`);
 const athmanSel = (v = 1) =>
-  `<select name="athman">${[[0.5, 'نصف ثمن'], [1, 'ثمن'], [2, 'ثمنان'], [3, '3 أثمان'], [4, 'ربع حزب']]
+  `<select name="athman">${[[0.5, 'نصف ثمن'], [1, 'ثمن'], [2, 'ثمنان']]
     .map(([k, l]) => `<option value="${k}" ${Number(v) === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+// اختيار السورة: من الفاتحة إلى الناس
+const suraSelect = (value = '', required = true) =>
+  `<select name="content" ${required ? 'required' : ''}><option value="">— اختر السورة —</option>${QD.NAMES
+    .map((n, i) => `<option value="${n}" ${n === value ? 'selected' : ''}>${i + 1}. ${n}</option>`).join('')}
+    ${value && !QD.NAMES.includes(value) ? `<option value="${esc(value)}" selected>${esc(value)}</option>` : ''}</select>`;
 const athmanSelect = athmanSel(1);
 const segLabel = (ids) => QD.rangeLabel([...ids].sort((a, b) => a - b).map((i) => QD.segments[i]));
 
@@ -281,7 +286,6 @@ function quranStudentForm(s, d, onDone) {
        <p class="muted small">المحفوظ الجيد يُراجَع كله مرة واحدة في الأسبوع. الطالب يختار كل يوم ما يراجعه.</p>
        <label>ما يحتاج مراجعة: يُكرَّر في الأسبوع<select name="weak_reps">${[1, 2, 3, 4, 5, 6, 7]
          .map((n) => `<option value="${n}" ${(s?.weak_reps ?? 1) === n ? 'selected' : ''}>${n === 1 ? 'مرة واحدة' : n === 2 ? 'مرتين' : `${n} مرات`}</option>`).join('')}</select></label>
-       <label>عدد قراءات الدرس الجديد في الأسبوع<input name="lesson_target" type="number" min="1" max="1000" value="${s?.lesson_target ?? 70}"></label>
      </fieldset>
      <fieldset class="q-fs"><legend>حساب الطالب</legend>
        ${s ? `<p class="muted small">اسم المستخدم: <b dir="ltr">${esc(s.username)}</b></p>` : '<label>اسم المستخدم<input name="username" required dir="ltr" autocomplete="off"></label>'}
@@ -362,26 +366,25 @@ function quranMeetingForm(full, preset = {}, onDone) {
      <label>ملاحظة يراها الطالب<textarea name="note" rows="2">${esc(m.note || '')}</textarea></label>
      <fieldset class="q-fs"><legend>📝 الدرس الجديد (اللوح)</legend>
        <label class="check"><input type="checkbox" name="new_lesson" ${m.id ? '' : 'checked'}> إملاء درس جديد لهذا الأسبوع</label>
-       <label>المقطع<input name="content" placeholder="مثال: الملك 1–14" maxlength="300"></label>
-       <div class="row"><label>عدد الأثمان${athmanSelect}</label>
-         <label>عدد القراءات<input name="target" type="number" min="1" value="${st.lesson_target}"></label></div></fieldset>`,
+       <div class="row"><label>السورة${suraSelect('', false)}</label>
+         <label>المقدار${athmanSelect}</label></div>
+       <p class="muted small">يُقرأ 60 مرة في الأسبوع.</p></fieldset>`,
     async (data) => {
-      const { new_lesson, content, athman, target, ...meeting } = data;
-      if (new_lesson && !String(content || '').trim()) throw new Error('اكتب مقطع الدرس الجديد، أو أزل علامة «إملاء درس جديد»');
+      const { new_lesson, content, athman, ...meeting } = data;
+      if (new_lesson && !String(content || '').trim()) throw new Error('اختر سورة الدرس الجديد، أو أزل علامة «إملاء درس جديد»');
       await api('POST', `/api/quran/students/${st.id}/meetings`, meeting);
-      if (new_lesson) await api('POST', `/api/quran/students/${st.id}/lessons`, { content, athman: Number(athman), target, assigned_on: meeting.date });
+      if (new_lesson) await api('POST', `/api/quran/students/${st.id}/lessons`, { content, athman: Number(athman), assigned_on: meeting.date });
       onDone();
     }
   );
 }
 
 function quranLessonForm(st, onDone, l = null) {
-  const canTarget = isStaff() || !l || l.created_by === state.user.id;
   openModal(
     l ? '✏️ تعديل الدرس' : '📝 درس جديد',
-    `<label>المقطع (ما أملاه الشيخ)<input name="content" required placeholder="مثال: الملك 1–14" maxlength="300" value="${esc(l?.content || '')}"></label>
-     <div class="row"><label>عدد الأثمان${athmanSel(l?.athman ?? 1)}</label>
-       <label>عدد القراءات في الأسبوع<input name="target" type="number" min="1" value="${l?.target ?? st.lesson_target}" ${canTarget ? '' : 'disabled'}></label></div>
+    `<div class="row"><label>السورة (ما أملاه الشيخ)${suraSelect(l?.content || '')}</label>
+       <label>المقدار${athmanSel(l?.athman ?? 1)}</label></div>
+     <p class="muted small">يُقرأ الدرس 60 مرة في الأسبوع.</p>
      <label>تاريخ الإملاء<input type="date" name="assigned_on" value="${l?.assigned_on || today()}" max="${today()}"></label>`,
     async (data) => {
       await api(l ? 'PUT' : 'POST', l ? `/api/quran/lessons/${l.id}` : `/api/quran/students/${st.id}/lessons`, { ...data, athman: Number(data.athman) });
@@ -537,7 +540,7 @@ async function viewQuranStudent(el, id, week = '') {
           <li><b>محفوظ جيد / يحتاج مراجعة:</b> كمية ما راجعه الطالب ذلك اليوم بالأحزاب، حسب ما سجّله هو في «سجّل ما راجعته اليوم». تحت اسم اليوم تظهر السور التي راجعها.</li>
           <li><b>قراءات الدرس:</b> عدد المرات التي قرأ فيها الدرس الجديد ذلك اليوم، من العدّاد.</li>
           <li>اضغط على يوم سابق لتسجيل أو تعديل مراجعته.</li>
-          <li>الهدف في آخر الأسبوع: مراجعة كل المحفوظ الجيد مرة، وما يحتاج مراجعة ${st.weak_reps > 1 ? `${st.weak_reps} مرات` : 'مرة'}، وقراءة الدرس ${lesson?.target || st.lesson_target} مرة.</li>
+          <li>الهدف في آخر الأسبوع: مراجعة كل المحفوظ الجيد مرة، وما يحتاج مراجعة ${st.weak_reps > 1 ? `${st.weak_reps} مرات` : 'مرة'}، وقراءة الدرس ${lesson?.target || 60} مرة.</li>
         </ul></details>
     </section>
 

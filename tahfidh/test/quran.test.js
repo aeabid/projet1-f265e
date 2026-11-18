@@ -106,7 +106,8 @@ test('two admins with same rights, students, chosen review, counter, meetings', 
 
   // الدرس الجديد: 70 قراءة
   const lesson = (await ayoub('POST', `/api/quran/students/${sid}/lessons`, { content: 'الملك 1-14', athman: 1 })).body.lesson;
-  assert.strictEqual(lesson.target, 70);
+  assert.strictEqual(lesson.target, 60);
+  assert.strictEqual((await ayoub('POST', `/api/quran/students/${sid}/lessons`, { content: 'الملك', athman: 3 })).status, 400);
   await talib('PUT', `/api/quran/lessons/${lesson.id}/reps`, {});
   let c = (await talib('PUT', `/api/quran/lessons/${lesson.id}/reps`, { add: 5 })).body;
   assert.strictEqual(c.total, 6);
@@ -121,7 +122,7 @@ test('two admins with same rights, students, chosen review, counter, meetings', 
   assert.strictEqual(ov0.lesson.week_total, 72);
   // الطالب يعدّل الدرس الذي تلقّاه (لا عدد القراءات الذي حدّده الشيخ)
   const ed = await talib('PUT', `/api/quran/lessons/${lesson.id}`, { content: 'الملك 1-15', athman: 2, target: 5 });
-  assert.deepStrictEqual([ed.body.lesson.content, ed.body.lesson.athman, ed.body.lesson.target], ['الملك 1-15', 2, 70]);
+  assert.deepStrictEqual([ed.body.lesson.content, ed.body.lesson.athman, ed.body.lesson.target], ['الملك 1-15', 2, 60]);
   // السجلّ: أسابيع السنة، وأسبوع جانفي فيه 40 قراءة
   const hist = (await talib('GET', `/api/quran/students/${sid}/history?year=2026`)).body;
   assert.ok(hist.weeks.length > 40);

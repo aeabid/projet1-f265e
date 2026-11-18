@@ -1,11 +1,14 @@
 // حلقة التحفيظ: متابعة حفظ ومراجعة الطلبة
-// المحفوظ (جيد / يحتاج مراجعة) ← مراجعة يختارها الطالب كل يوم، الدرس الجديد وعدّاد الـ70، اللقاء الأسبوعي والتقييم
+// المحفوظ (جيد / يحتاج مراجعة) ← مراجعة يختارها الطالب كل يوم، الدرس الجديد وعدّاد الـ60، اللقاء الأسبوعي والتقييم
 import '../public/quran-data.js';
 
 const Q = globalThis.QURAN;
 const RATINGS = ['excellent', 'good', 'average', 'weak'];
 const ATTENDANCE = ['present', 'absent', 'excused'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// الدرس الجديد: 60 قراءة في الأسبوع دائمًا، ومقداره نصف ثمن أو ثمن أو ثمنان
+const LESSON_TARGET = 60;
+const ATHMAN = [0.5, 1, 2];
 
 // ---------- التواريخ (نصوص YYYY-MM-DD بتوقيت UTC) ----------
 const toDay = (d) => d.toISOString().slice(0, 10);
@@ -233,7 +236,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
       groupId,
       weekStart: int(weekStart, { min: 0, max: 6, def: existing?.week_start ?? 6, name: 'بداية الأسبوع' }),
       weakReps: int(body.weak_reps, { min: 1, max: 14, def: existing?.weak_reps ?? 1, name: 'تكرار ما يحتاج مراجعة في الأسبوع' }),
-      target: int(body.lesson_target, { min: 1, max: 1000, def: existing?.lesson_target ?? 70, name: 'عدد قراءات الدرس' }),
+      target: LESSON_TARGET,
       active: body.active === undefined ? existing?.active ?? true : !!body.active,
     };
   }
@@ -360,12 +363,12 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
   q('POST', '/api/quran/students/:id/lessons', ['admin', 'talib'], async ({ user, params, body }) => {
     const st = await loadStudent(user, params.id);
     const athman = Number(body.athman ?? 1);
-    if (!(athman > 0 && athman <= 16)) throw new HttpError(400, 'عدد الأثمان غير صالح');
+    if (!ATHMAN.includes(athman)) throw new HttpError(400, 'المقدار: نصف ثمن أو ثمن أو ثمنان');
     const lesson = await one(
       `INSERT INTO quran_lessons (student_id, assigned_on, content, athman, target, created_by) VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, assigned_on::text, content, athman::float8 AS athman, target`,
       [st.id, body.assigned_on ? date(body.assigned_on) : today(), text(body.content, { required: true, max: 300, name: 'الدرس' }), athman,
-        int(body.target, { min: 1, max: 1000, def: st.lesson_target, name: 'عدد القراءات' }), user.id]
+        LESSON_TARGET, user.id]
     );
     return [201, { lesson }];
   });
@@ -408,17 +411,15 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     return { total, week_total: week, day_count: count, target: l.target, reached: week >= l.target };
   });
 
-  // تعديل الدرس: الطالب يصحّح ما تلقّاه (المقطع، الأثمان، التاريخ)، والمشرف أيضًا عدد القراءات
+  // تعديل الدرس: الطالب يصحّح ما تلقّاه (السورة، المقدار، التاريخ)
   q('PUT', '/api/quran/lessons/:id', ['admin', 'talib'], async ({ user, params, body }) => {
     const l = await loadLesson(user, params.id);
     const athman = Number(body.athman ?? 1);
-    if (!(athman > 0 && athman <= 16)) throw new HttpError(400, 'عدد الأثمان غير صالح');
-    const target = int(body.target, { min: 1, max: 1000, def: l.target, name: 'عدد القراءات' });
+    if (!ATHMAN.includes(athman)) throw new HttpError(400, 'المقدار: نصف ثمن أو ثمن أو ثمنان');
     const lesson = await one(
-      `UPDATE quran_lessons SET content = $1, athman = $2, assigned_on = $3, target = $4 WHERE id = $5
+      `UPDATE quran_lessons SET content = $1, athman = $2, assigned_on = $3 WHERE id = $4
        RETURNING id, assigned_on::text, content, athman::float8 AS athman, target`,
-      [text(body.content, { required: true, max: 300, name: 'الدرس' }), athman, body.assigned_on ? date(body.assigned_on) : l.assigned_on,
-        user.role === 'admin' || l.created_by === user.id ? target : l.target, l.id]
+      [text(body.content, { required: true, max: 300, name: 'الدرس' }), athman, body.assigned_on ? date(body.assigned_on) : l.assigned_on, l.id]
     );
     return { lesson };
   });
