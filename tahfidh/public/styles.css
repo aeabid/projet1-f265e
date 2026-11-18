@@ -483,3 +483,10 @@ select.pick-native { display: none !important; }
 .q-snum { font-size: .72rem; opacity: .6; margin-inline-end: .3rem; }
 .page-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin: .2rem 0 1rem; }
 .page-head h2 { margin: 0; color: var(--accent); }
+.mem-big { display: flex; align-items: center; gap: 1rem; margin: .4rem 0 .8rem; }
+.mem-big > div:last-child { display: flex; flex-direction: column; gap: .15rem; }
+.mem-big b { font-size: 1.1rem; }
+.mem-big small { color: var(--muted); }
+.mem-ring { --p: 0; width: 84px; height: 84px; flex: none; border-radius: 50%; display: grid; place-content: center;
+  background: radial-gradient(closest-side, var(--card) 76%, transparent 77%), conic-gradient(var(--q-solid) calc(var(--p) * 1%), var(--soft-2) 0); }
+.mem-ring b { font-size: 1.25rem !important; color: var(--q-solid); font-family: 'Oswald', 'Tajawal', sans-serif; }
