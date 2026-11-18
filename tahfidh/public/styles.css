@@ -417,3 +417,13 @@ img.avatar { object-fit: cover; background: var(--soft); }
 .q-sura.done.kw { background: var(--q-weak-bg); color: var(--q-weak); }
 .q-chip-demo.done { background: var(--q-solid-bg); color: var(--q-solid); border-color: var(--q-solid); }
 .q-carry { background: var(--soft); border-radius: 12px; padding: .5rem .7rem; margin: .4rem 0; }
+
+/* اختيار الأسبوع وخلاصة الشهر */
+.q-week-sel { width: auto; max-width: 260px; margin: 0; padding: .35rem .6rem !important; font-size: .85rem; }
+.m-weeks { display: flex; flex-direction: column; gap: .5rem; margin: .4rem 0 .6rem; }
+.m-week { display: flex; flex-direction: column; gap: .3rem; background: var(--soft); border-radius: 14px; padding: .6rem .8rem; }
+.m-week > b { font-size: .9rem; }
+.m-line { display: grid; grid-template-columns: 5.5rem 1fr 4.5rem; align-items: center; gap: .5rem; }
+.m-line small { color: var(--muted); }
+.m-line em { font-style: normal; font-weight: 700; font-size: .85rem; text-align: end; }
+.m-week .badge { align-self: flex-start; }

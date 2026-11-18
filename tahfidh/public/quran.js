@@ -523,7 +523,7 @@ async function viewQuranStudent(el, id, week = '') {
 
     <section class="card">
       <div class="section-head"><h3>📅 جدول الأسبوع</h3><span class="q-weeknav"><a href="#/quran/student/${st.id}?week=${prevWeek}" title="الأسبوع السابق">→</a>
-        <b>${qShort(full.week_start)} – ${qShort(qAddDays(full.week_start, 6))}</b>
+        ${weekSelect(st, full.week_start, day)}
         ${nextWeek <= day ? `<a href="#/quran/student/${st.id}?week=${nextWeek}" title="الأسبوع الموالي">←</a>` : '<span></span>'}</span></div>
       <div class="q-table-wrap"><table class="q-table">
         <thead><tr><th>اليوم</th><th>🔁 المحفوظ (حزب)</th><th>📝 قراءات الدرس</th></tr></thead>
@@ -539,6 +539,8 @@ async function viewQuranStudent(el, id, week = '') {
         <tfoot><tr><th>المجموع</th><th>${num(sum('solid') + sum('weak') + sum('other'))}</th><th>${sum('reps')}</th></tr></tfoot>
       </table></div>
     </section>
+
+    <section class="card" id="q-month"></section>
 
     <section class="card">
       <div class="section-head"><h3>📗 المحفوظ</h3>${me || staff ? `<a class="btn small" href="#/quran/hifz/${st.id}">${me ? 'تحديد محفوظي' : 'تحديد المحفوظ'}</a>` : ''}</div>
@@ -566,6 +568,8 @@ async function viewQuranStudent(el, id, week = '') {
         .join('')}</ul>` : '<p class="muted">لا دروس.</p>'}</section>` : ''}`;
 
   const reload = () => viewQuranStudent(el, id, week);
+  $('#q-week-sel')?.addEventListener('change', (e) => (location.hash = `#/quran/student/${st.id}?week=${e.target.value}`));
+  monthCard($('#q-month'), st);
   $('#q-lesson-me')?.addEventListener('click', () => quranLessonForm(st, reload));
   el.querySelectorAll('[data-edit-lesson]').forEach((b) =>
     b.addEventListener('click', () => quranLessonForm(st, reload, full.lessons.find((l) => l.id === Number(b.dataset.editLesson))))
@@ -791,26 +795,93 @@ async function viewQuranHifz(el, id) {
 
 // ---------- السجلّ: الأسابيع الماضية، مجمّعة حسب الشهر، مع حصيلة السنة ----------
 const Q_MONTHS = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const hSum = (list, k) => list.reduce((t, w) => t + (w[k] || 0), 0);
+const hHizb = (list) => hSum(list, 'solid') + hSum(list, 'weak') + hSum(list, 'other');
+function hTotals(list) {
+  const m = list.flatMap((w) => w.meetings);
+  const present = m.filter((x) => x.attendance === 'present').length;
+  const absent = m.filter((x) => x.attendance === 'absent').length;
+  const excused = m.filter((x) => x.attendance === 'excused').length;
+  return `<div class="h-tot">
+    <span><b>${num(hHizb(list))}</b><small>حزب روجع</small></span>
+    <span><b>${hSum(list, 'days')}</b><small>يوم مراجعة</small></span>
+    <span><b>${hSum(list, 'reps')}</b><small>قراءة للدروس</small></span>
+    <span><b>${list.reduce((t, w) => t + w.lessons.length, 0)}</b><small>درس جديد</small></span>
+    <span><b class="in">${present}</b><small>حضور</small></span>
+    <span><b class="${absent ? 'out' : ''}">${absent + excused}</b><small>غياب${excused ? ` (${excused} بعذر)` : ''}</small></span></div>`;
+}
+function hWeekRow(w) {
+  const m = w.meetings[w.meetings.length - 1];
+  return `<li class="h-week"><div class="h-week-head"><b>أسبوع ${qShort(w.start)} – ${qShort(qAddDays(w.start, 6))}</b>
+      ${w.meetings.map((x) => `<span class="badge ${Q_ATT_CLS[x.attendance]}">${Q_ATT[x.attendance]}</span>`).join(' ')}</div>
+    <div class="h-week-body">
+      <span>🔁 ${w.days ? `${hizbTxt(w.solid + w.weak + w.other)} في ${w.days} ${w.days > 2 ? 'أيام' : 'يوم'}` : '<em class="muted">لا مراجعة</em>'}</span>
+      <span>📝 ${w.reps} قراءة${w.lessons.length ? ` · ${w.lessons.map((l) => esc(l.content)).join('، ')}` : ''}</span>
+      ${w.label ? `<small class="q-what">${esc(w.label)}</small>` : ''}
+      ${m ? `<span>${ratingBadge(m.review_eval, 'المراجعة')} ${ratingBadge(m.hifz_eval, 'الحفظ')} ${ratingBadge(m.ada_eval, 'الأداء')}</span>` : ''}
+    </div></li>`;
+}
+
+// قائمة الأسابيع: الرجوع مباشرة إلى أي أسبوع (حتى سنة إلى الوراء)
+function weekSelect(st, current, day) {
+  const cur = qAddDays(day, -((new Date(`${day}T00:00:00Z`).getUTCDay() - st.week_start + 7) % 7));
+  const ago = (n) => (n === 0 ? 'هذا الأسبوع' : n === 1 ? 'الأسبوع الماضي' : n === 2 ? 'قبل أسبوعين' : n <= 10 ? `قبل ${n} أسابيع` : `قبل ${n} أسبوعًا`);
+  const opts = [];
+  for (let n = 0; n < 53; n++) {
+    const w = qAddDays(cur, -7 * n);
+    opts.push(`<option value="${w}" ${w === current ? 'selected' : ''}>${ago(n)} · ${qShort(w)} – ${qShort(qAddDays(w, 6))}</option>`);
+  }
+  return `<select id="q-week-sel" class="q-week-sel" aria-label="اختيار الأسبوع">${opts.join('')}</select>`;
+}
+
+// خلاصة الشهر في صفحة الطالب: تقدّمه أسبوعًا بأسبوع طيلة الشهر
+const hCache = new Map();
+async function monthCard(box, st, month = today().slice(0, 7)) {
+  if (!box) return;
+  const year = month.slice(0, 4);
+  const key = `${st.id}:${year}`;
+  if (!hCache.has(key)) hCache.set(key, api('GET', `/api/quran/students/${st.id}/history?year=${year}`));
+  let h;
+  try {
+    h = await hCache.get(key);
+  } catch (e) {
+    hCache.delete(key);
+    box.innerHTML = `<p class="error">${esc(e.message)}</p>`;
+    return;
+  }
+  hCache.delete(key);
+  const weeks = h.weeks.filter((w) => w.start.slice(0, 7) === month).reverse();
+  const months = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(`${today().slice(0, 7)}-01T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() - i);
+    months.push(d.toISOString().slice(0, 7));
+  }
+  const maxH = Math.max(1, ...weeks.map((w) => w.solid + w.weak + w.other));
+  const maxR = Math.max(60, ...weeks.map((w) => w.reps));
+  box.innerHTML = `<div class="section-head"><h3>📆 خلاصة الشهر</h3>
+      <select id="q-month-sel" class="q-week-sel">${months.map((m) => `<option value="${m}" ${m === month ? 'selected' : ''}>${Q_MONTHS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}</option>`).join('')}</select></div>
+    ${weeks.length ? `${hTotals(weeks)}
+      <div class="m-weeks">${weeks
+        .map((w) => {
+          const hz = w.solid + w.weak + w.other;
+          return `<div class="m-week"><b>${qShort(w.start)} – ${qShort(qAddDays(w.start, 6))}</b>
+            <span class="m-line"><small>🔁 المحفوظ</small>${bar(hz, maxH, 'ok')}<em>${num(hz)} حزب</em></span>
+            <span class="m-line"><small>📝 الدرس</small>${bar(w.reps, maxR)}<em>${w.reps}</em></span>
+            ${w.meetings.map((x) => `<span class="badge ${Q_ATT_CLS[x.attendance]}">${Q_ATT[x.attendance]}</span>`).join(' ')}</div>`;
+        })
+        .join('')}</div>
+      <p class="small"><a href="#/quran/history/${st.id}?year=${year}">📜 السجلّ الكامل ←</a></p>`
+      : '<p class="muted">لا نشاط في هذا الشهر.</p>'}`;
+  $('#q-month-sel').addEventListener('change', (e) => monthCard(box, st, e.target.value));
+}
+
 async function viewQuranHistory(el, id, year = '') {
   const h = await api('GET', `/api/quran/students/${id}/history${year ? `?year=${year}` : ''}`);
   const me = state.user.role === 'talib';
   const y = Number(h.year);
   const nowY = Number(today().slice(0, 4));
-  const sum = (list, k) => list.reduce((t, w) => t + (w[k] || 0), 0);
-  const att = (list) => {
-    const m = list.flatMap((w) => w.meetings);
-    return { present: m.filter((x) => x.attendance === 'present').length, absent: m.filter((x) => x.attendance === 'absent').length, excused: m.filter((x) => x.attendance === 'excused').length };
-  };
-  const totals = (list) => {
-    const a = att(list);
-    return `<div class="h-tot">
-      <span><b>${num(sum(list, 'solid') + sum(list, 'weak') + sum(list, 'other'))}</b><small>حزب روجع</small></span>
-      <span><b>${sum(list, 'days')}</b><small>يوم مراجعة</small></span>
-      <span><b>${sum(list, 'reps')}</b><small>قراءة للدروس</small></span>
-      <span><b>${list.reduce((t, w) => t + w.lessons.length, 0)}</b><small>درس جديد</small></span>
-      <span><b class="in">${a.present}</b><small>حضور</small></span>
-      <span><b class="${a.absent ? 'out' : ''}">${a.absent + a.excused}</b><small>غياب${a.excused ? ` (${a.excused} بعذر)` : ''}</small></span></div>`;
-  };
+  const totals = hTotals;
   const months = [];
   const active = (w) => w.days || w.reps || w.lessons.length || w.meetings.length;
   // الأشهر التي لا نشاط فيها لا تظهر
@@ -820,17 +891,7 @@ async function viewQuranHistory(el, id, year = '') {
     if (!m) months.push((m = { k, weeks: [] }));
     m.weeks.push(w);
   }
-  const weekRow = (w) => {
-    const m = w.meetings[w.meetings.length - 1];
-    return `<li class="h-week"><div class="h-week-head"><b>أسبوع ${qShort(w.start)} – ${qShort(qAddDays(w.start, 6))}</b>
-        ${w.meetings.map((x) => `<span class="badge ${Q_ATT_CLS[x.attendance]}">${Q_ATT[x.attendance]}</span>`).join(' ')}</div>
-      <div class="h-week-body">
-        <span>🔁 ${w.days ? `${hizbTxt(w.solid + w.weak + w.other)} في ${w.days} ${w.days > 2 ? 'أيام' : 'يوم'}` : '<em class="muted">لا مراجعة</em>'}</span>
-        <span>📝 ${w.reps} قراءة${w.lessons.length ? ` · ${w.lessons.map((l) => esc(l.content)).join('، ')}` : ''}</span>
-        ${w.label ? `<small class="q-what">${esc(w.label)}</small>` : ''}
-        ${m ? `<span>${ratingBadge(m.review_eval, 'المراجعة')} ${ratingBadge(m.hifz_eval, 'الحفظ')} ${ratingBadge(m.ada_eval, 'الأداء')}</span>` : ''}
-      </div></li>`;
-  };
+  const weekRow = hWeekRow;
   el.innerHTML = `<p><a href="#/${me ? 'home' : `quran/student/${id}`}">→ ${me ? 'متابعتي' : esc(h.student.full_name)}</a></p>
     <div class="card"><div class="section-head"><h2>📜 السجلّ${me ? '' : ` — ${esc(h.student.full_name)}`}</h2>
       <span class="q-weeknav"><a href="#/${me ? 'quran/history/' + id : 'quran/history/' + id}?year=${y - 1}">→</a><b>${y}</b>${y < nowY ? `<a href="#/quran/history/${id}?year=${y + 1}">←</a>` : '<span></span>'}</span></div>
