@@ -537,3 +537,59 @@ select.pick-native { display: none !important; }
 .wk-go { color: var(--muted); font-size: 1.4rem; line-height: 1; }
 .wk-total { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin-top: .8rem; padding-top: .7rem; border-top: 1px dashed var(--border); font-weight: 800; }
 .wk-total > span:first-child { margin-inline-end: auto; color: var(--accent); }
+
+/* ---------- بطاقات السور في شاشة الورد ---------- */
+.q-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46%, 165px), 1fr)); gap: .55rem; padding: .3rem 0; align-items: start; }
+.q-juz .q-tiles { padding: .7rem 1rem 1rem; }
+.q-tile { display: flex; flex-direction: column; border-radius: 16px; background: var(--card); border: 1.5px solid var(--border); overflow: hidden; transition: transform .12s, box-shadow .12s, border-color .12s; }
+.q-tile:active { transform: scale(.98); }
+.q-tile-main { display: flex; align-items: center; gap: .55rem; width: 100%; padding: .65rem .65rem; font: inherit; color: inherit; text-align: start; background: none; border: 0; cursor: pointer; }
+.q-tile-num { width: 2rem; height: 2rem; flex: none; display: grid; place-content: center; border-radius: 10px; background: var(--soft); color: var(--accent); font-size: .78rem; font-weight: 800; }
+.q-tile-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.q-tile-name b { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-tile-name small { font-size: .7rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-tile-mark { width: 1.4rem; height: 1.4rem; flex: none; display: grid; place-content: center; border-radius: 50%; font-size: .8rem; font-weight: 800; border: 1.5px solid var(--border); color: transparent; }
+/* لم تُقرأ بعد هذا الأسبوع */
+.q-tile.need { border-style: dashed; border-color: #c9b8dd; }
+/* قُرئت هذا الأسبوع */
+.q-tile.done { background: var(--q-solid-bg); border-color: transparent; }
+.q-tile.done .q-tile-num { background: rgba(31, 157, 99, .14); color: var(--q-solid); }
+.q-tile.done .q-tile-name b, .q-tile.done .q-tile-name small { color: var(--q-solid); }
+.q-tile.done .q-tile-mark { background: var(--q-solid); border-color: var(--q-solid); color: #fff; }
+/* مختارة اليوم */
+.q-tile.picked { background: var(--gradient); border-color: transparent; color: #fff; box-shadow: 0 6px 18px rgba(74, 11, 147, .28); }
+.q-tile.picked .q-tile-num { background: rgba(255, 255, 255, .18); color: #fff; }
+.q-tile.picked .q-tile-name small { color: rgba(255, 255, 255, .8); }
+.q-tile.picked .q-tile-mark { background: #fff; border-color: #fff; color: var(--purple); }
+.q-tile.half { border-color: var(--accent); background: var(--soft); }
+.q-tile-step { display: flex; align-items: center; justify-content: space-between; gap: .4rem; padding: .35rem .5rem .5rem; border-top: 1px solid rgba(255, 255, 255, .18); }
+.q-tile-step b { font-size: .85rem; }
+.q-tile-step button { width: 2rem; height: 2rem; border-radius: 10px; border: 0; cursor: pointer; font: inherit; font-weight: 800; font-size: 1.05rem; line-height: 1; background: rgba(255, 255, 255, .2); color: #fff; }
+.q-tile-step button:active { transform: scale(.92); }
+
+/* جدول الأسبوع: جدول حديث بثلاثة أعمدة */
+.wk-tablewrap { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.wk-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.wk-table thead th { background: var(--gradient); color: #fff; font-weight: 700; font-size: .82rem; padding: .65rem .5rem; text-align: center; }
+.wk-table thead th:first-child { text-align: start; padding-inline-start: .8rem; }
+.wk-table td { padding: .6rem .5rem; border-top: 1px solid var(--border); vertical-align: middle; }
+.wk-table tbody tr:nth-child(even) td { background: rgba(97, 3, 141, .025); }
+.wk-td-day { width: 5.2rem; padding-inline-start: .8rem !important; }
+.wk-td-day b { display: block; font-size: .92rem; }
+.wk-td-day small, .wk-table tfoot small { display: block; color: var(--muted); font-size: .72rem; font-weight: 400; }
+.wk-td-ward { line-height: 1.5; }
+.wk-td-ward .wk-label { display: block; font-weight: 600; font-size: .88rem; margin-bottom: .2rem; }
+.wk-td-ward .wk-pill { margin-inline-end: .25rem; }
+.wk-td-reps { width: 5.6rem; text-align: center; }
+.wk-reps { display: inline-grid; place-content: center; min-width: 2.2rem; height: 2.2rem; padding: 0 .45rem; border-radius: 12px; background: #efe6fb; color: var(--accent); font-weight: 800; font-size: 1rem; font-family: 'Oswald', 'Tajawal', sans-serif; }
+.wk-reps.total { background: var(--gradient); color: #fff; }
+@media (prefers-color-scheme: dark) { .wk-reps { background: #2e2140; } }
+.wk-table tr.today td { background: var(--soft) !important; }
+.wk-table tr.today .wk-td-day b { color: var(--accent); }
+.wk-table tr.today td:first-child { box-shadow: inset -4px 0 0 var(--accent); }
+.wk-table tr.future td { opacity: .45; padding-block: .4rem; }
+.wk-table tr.clickable { cursor: pointer; }
+.wk-table tr.clickable:hover td { background: var(--soft); }
+.wk-table tfoot td { border-top: 2px solid var(--border); font-weight: 800; color: var(--accent); background: var(--card); }
+.wk-table tfoot td:first-child { padding-inline-start: .8rem; }
+.wk-table tfoot td:nth-child(3) { text-align: center; }

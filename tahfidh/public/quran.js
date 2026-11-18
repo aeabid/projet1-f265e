@@ -493,23 +493,26 @@ function weekView(full, day, canEdit) {
         <div class="wk-bar"><i style="height:${Math.round((size(w) / max) * 100)}%"></i>${w.reps ? '<span class="wk-dot"></span>' : ''}</div>
         <small>${short(w.date)}</small></div>`).join('')}</div>
     ${suras.length === 1 ? `<div class="wk-lesson">📖 المقرر هذا الأسبوع: <b>${esc(suras[0])}</b></div>` : ''}
-    <ul class="wk-days">${full.week
-      .map((w) => {
-        const future = w.date > day;
-        const click = !future && canEdit;
-        const sura = lessonOf(w.date);
-        const showSura = !future && sura && sura !== prevSura;
-        if (!future) prevSura = sura;
-        return `<li class="wk-day ${w.date === day ? 'today' : ''} ${future ? 'future' : ''} ${click ? 'clickable' : ''}" ${click ? `data-day="${w.date}"` : ''}>
-          <div class="wk-date"><b>${qDay(w.date)}</b><small>${qShort(w.date)}</small></div>
-          <div class="wk-body">${future ? '<span class="muted small">—</span>'
-            : `${size(w) ? `<span class="wk-label">${esc(w.label)}</span>` : '<span class="wk-none">لا ورد</span>'}
-            <span class="wk-pills">${size(w) ? `<span class="wk-pill g">🔁 ${hizbTxt(size(w))}</span>` : ''}
-              ${w.reps ? `<span class="wk-pill p">📝 ${w.reps} تكرار</span>` : ''}${showSura ? `<span class="wk-pill s">📖 ${esc(sura)}</span>` : ''}</span>`}</div>
-          ${click ? '<span class="wk-go" aria-hidden="true">‹</span>' : ''}</li>`;
-      })
-      .join('')}</ul>
-    <div class="wk-total"><span>المجموع</span><span class="wk-pill g">🔁 ${hizbTxt(totalH)}</span><span class="wk-pill p">📝 ${totalR} تكرار</span><span class="wk-pill">📆 ${days} ${days === 1 ? 'يوم' : days === 2 ? 'يومان' : 'أيام'} ورد</span></div>`;
+    <div class="wk-tablewrap"><table class="wk-table">
+      <thead><tr><th>اليوم</th><th>🔁 الورد</th><th>📝 تكرار المقرر</th></tr></thead>
+      <tbody>${full.week
+        .map((w) => {
+          const future = w.date > day;
+          const click = !future && canEdit;
+          const sura = lessonOf(w.date);
+          const showSura = !future && sura && sura !== prevSura;
+          if (!future) prevSura = sura;
+          return `<tr class="${w.date === day ? 'today' : ''} ${future ? 'future' : ''} ${click ? 'clickable' : ''}" ${click ? `data-day="${w.date}"` : ''}>
+            <td class="wk-td-day"><b>${qDay(w.date)}</b><small>${qShort(w.date)}</small></td>
+            <td class="wk-td-ward">${future ? '' : size(w)
+              ? `<span class="wk-label">${esc(w.label)}</span><span class="wk-pill g">${hizbTxt(size(w))}</span>`
+              : '<span class="wk-none">—</span>'}${showSura ? `<span class="wk-pill s">📖 ${esc(sura)}</span>` : ''}</td>
+            <td class="wk-td-reps">${future ? '' : w.reps ? `<span class="wk-reps">${w.reps}</span>` : '<span class="wk-none">—</span>'}</td></tr>`;
+        })
+        .join('')}</tbody>
+      <tfoot><tr><td>المجموع<small>${days} ${days === 1 ? 'يوم' : days === 2 ? 'يومان' : 'أيام'} ورد</small></td>
+        <td><span class="wk-pill g">${hizbTxt(totalH)}</span></td><td><span class="wk-reps total">${totalR}</span></td></tr></tfoot>
+    </table></div>`;
 }
 
 // ---------- صفحة الطالب ----------
@@ -732,26 +735,32 @@ async function viewQuranReview(el, id, dayArg = '') {
     })
   );
   const pick = (cls) => `<button type="button" class="q-pick ${cls}" title="الكل">${cls === 'on' ? '✓' : cls === 'mix' ? '◐' : '○'}</button>`;
-  const chip = (s, withNum = false) => {
+  // بطاقة سورة: الرقم، الاسم، الحالة (قُرئت هذا الأسبوع / مختارة اليوم / لم تُقرأ)، وعدد المرات للمختارة
+  const timesTxt = (k) => (k === 1 ? 'مرة' : k === 2 ? 'مرتين' : k <= 10 ? `${k} مرات` : `${k} مرة`);
+  const chip = (s) => {
     const n = Math.min(...s.ids.map(read));
     const today = stateOf(s.ids);
     const done = !today && s.ids.every((i) => read(i) > 0);
-    const label = `${withNum ? `<b class="q-snum">${s.num}</b>` : ''}${s.name}${s.range ? ` <small>${s.range}</small>` : ''}`;
-    // سورة مختارة اليوم: زرّ لإلغائها، و − / ＋ لعدد مرات قراءتها
-    if (today === 'on') {
-      const k = timesOf(s.ids);
-      return `<span class="q-sura picked q-step ${kind(s.ids)}">
-        <button type="button" class="q-step-name" data-ids="${s.ids.join(',')}" title="إلغاء">${label}</button>
-        <button type="button" class="q-step-btn" data-times="${s.ids.join(',')}" data-d="-1" aria-label="أقل">−</button>
-        <b class="q-step-n" dir="ltr">×${k}</b>
-        <button type="button" class="q-step-btn" data-times="${s.ids.join(',')}" data-d="1" aria-label="مرة أخرى">＋</button></span>`;
-    }
-    return `<button type="button" class="q-sura ${kind(s.ids)} ${today === 'on' ? 'picked' : today === 'mix' ? 'half' : done ? 'done' : ''} ${s.ids.some(need) && !today ? 'need' : ''}" data-ids="${s.ids.join(',')}">${done ? '✓ ' : ''}${withNum ? `<b class="q-snum">${s.num}</b>` : ''}${s.name}${s.range ? ` <small>${s.range}</small>` : ''}${n > 1 ? ` <em>×${n}</em>` : ''}</button>`;
+    const state = today === 'on' ? 'picked' : today === 'mix' ? 'half' : done ? 'done' : s.ids.some(need) ? 'need' : '';
+    const mark = today === 'on' ? '✓' : done ? '✓' : '';
+    const sub = [s.range && `الآيات ${s.range}`, done ? (n > 1 ? `قُرئت ${timesTxt(n)}` : 'قُرئت') : today === 'on' ? 'اليوم' : 'لم تُقرأ'].filter(Boolean).join(' · ');
+    const ids = s.ids.join(',');
+    return `<div class="q-tile ${state}">
+      <button type="button" class="q-tile-main" data-ids="${ids}">
+        <span class="q-tile-num">${s.num ?? s.sura}</span>
+        <span class="q-tile-name"><b>${s.name}</b><small>${sub}</small></span>
+        <span class="q-tile-mark" aria-hidden="true">${mark}</span>
+      </button>
+      ${today === 'on' ? `<div class="q-tile-step">
+        <button type="button" data-times="${ids}" data-d="-1" aria-label="أقل">−</button>
+        <b>${timesTxt(timesOf(s.ids))}</b>
+        <button type="button" data-times="${ids}" data-d="1" aria-label="مرة أخرى">＋</button></div>` : ''}
+    </div>`;
   };
   const juzBlock = (j, key) => `<details class="q-juz" data-key="${key}">
       <summary><span class="q-jname">الجزء ${j.juz} <small class="muted">· ${hizbTxt(QD.sizeOf(j.ids))}</small>${j.ids.some(need) ? ' <span class="q-need">•</span>' : ''}</span>
         <span data-ids="${j.ids.join(',')}">${pick(stateOf(j.ids))}</span></summary>
-      <div class="q-suras">${j.suras.map((s) => chip(s)).join('')}</div></details>`;
+      <div class="q-tiles">${j.suras.map((s) => chip(s)).join('')}</div></details>`;
   function render() {
     const counts = new Map(others);
     for (const i of selected) counts.set(i, (counts.get(i) || 0) + 1);
@@ -759,7 +768,7 @@ async function viewQuranReview(el, id, dayArg = '') {
     $('#q-sum').innerHTML = selected.size ? `${day === day0 ? 'اليوم' : qDay(day)}: <b>${hizbTxt(daySize())}</b>` : '<span class="muted">لم تختر شيئًا بعد</span>';
     if (view === 'suras') {
       // بالسور: كل سور المحفوظ في قائمة واحدة
-      $('#q-tree').innerHTML = `<div class="card"><div class="q-suras q-suras-all">${suraList.map((x) => chip(x, true)).join('')}</div></div>`;
+      $('#q-tree').innerHTML = `<div class="card"><div class="q-tiles">${suraList.map((x) => chip(x)).join('')}</div></div>`;
     } else if (view === 'juz') {
       // بالأجزاء: من الجزء 1 إلى الجزء 30 (ما فيه محفوظ فقط)، وكل جزء يُفتح على سوره
       $('#q-tree').innerHTML = `<div class="card q-quarter q-juz-list">${juzList.map((j) => juzBlock(j, `rj-${j.juz}`)).join('')}</div>`;
