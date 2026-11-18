@@ -78,6 +78,14 @@ export function createHandler(pool, {
          SELECT $1, $2, $3, $4, 'admin' WHERE NOT EXISTS (SELECT 1 FROM users WHERE role = 'admin')`,
         [adminUsername, adminEmail, hashPassword(adminPassword), adminName]
       );
+      // بريد المشرف الأول (ADMIN_EMAIL): إن لم يكن على أي حساب، يُكتب على حساب المشرف الأول ليدخل به (وبـ Google)
+      if (adminEmail) {
+        await pool.query(
+          `UPDATE users SET email = $1 WHERE id = (SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1)
+             AND NOT EXISTS (SELECT 1 FROM users WHERE lower(email) = lower($1))`,
+          [adminEmail]
+        );
+      }
     })().catch((err) => {
       bootstrapped = null;
       throw err;

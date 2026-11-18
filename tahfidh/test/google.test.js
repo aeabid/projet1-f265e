@@ -33,6 +33,11 @@ const as = (cookie) => (m, u, b) => call(m, u, b, cookie);
 
 test('google signup: request, admin accepts, student logs in with google', async () => {
   assert.strictEqual((await call('GET', '/api/auth/config')).body.google_client_id, 'cid');
+  // بريد المشرف الأول يُعاد إن حُذف
+  await pool.query(`UPDATE users SET email = NULL WHERE role = 'admin'`);
+  const h2 = createHandler(pool, { adminPassword: 'admin123', adminEmail: 'alaa@example.com', googleClientId: 'cid', verifyGoogle });
+  await h2(new Request('http://localhost/api/auth/config'));
+  assert.strictEqual((await pool.query(`SELECT email FROM users WHERE role = 'admin' ORDER BY id LIMIT 1`)).rows[0].email, 'alaa@example.com');
   // المشرف ببريده: يُربط ويدخل
   const a = await call('POST', '/api/auth/google', { credential: 'tok:g-admin:alaa@example.com' });
   assert.strictEqual(a.body.user.role, 'admin');
