@@ -555,6 +555,13 @@ async function viewQuranStudent(el, id, week = '') {
       ${bar(st.solid_hizb + st.weak_hizb, 60)}
     </section>
 
+    ${full.lessons.length ? `<section class="card"><h3>📚 الدروس</h3>
+      ${full.lessons.length ? `<ul class="levels">${full.lessons
+        .map((l) => `<li><span>${fmtDate(l.assigned_on)} — <b>${esc(l.content)}</b> <small class="muted">${athmanTxt(l.athman)}</small></span><span>${l.total} تكرار
+          ${me || staff ? `<button type="button" class="link small" data-edit-lesson="${l.id}">تعديل</button>` : ''}
+          ${staff || l.created_by === state.user.id ? `<button type="button" class="link small danger" data-del-lesson="${l.id}">حذف</button>` : ''}</span></li>`)
+        .join('')}</ul>` : '<p class="muted">لا دروس.</p>'}</section>` : ''}
+
     <section class="card">
       <h3>🗒 اللقاءات وملاحظات الشيخ</h3>
       ${full.meetings.length ? `<ul class="notes">${full.meetings
@@ -564,14 +571,7 @@ async function viewQuranStudent(el, id, week = '') {
           ${m.lesson_content ? `<p class="muted small">الدرس المسمَّع: ${esc(m.lesson_content)}</p>` : ''}
           ${m.note ? `<p>${esc(m.note)}</p>` : ''}</li>`)
         .join('')}</ul>` : '<p class="muted">لا لقاءات مسجّلة بعد.</p>'}
-    </section>
-
-    ${full.lessons.length ? `<section class="card"><h3>📚 الدروس</h3>
-      ${full.lessons.length ? `<ul class="levels">${full.lessons
-        .map((l) => `<li><span>${fmtDate(l.assigned_on)} — <b>${esc(l.content)}</b> <small class="muted">${athmanTxt(l.athman)}</small></span><span>${l.total} تكرار
-          ${me || staff ? `<button type="button" class="link small" data-edit-lesson="${l.id}">تعديل</button>` : ''}
-          ${staff || l.created_by === state.user.id ? `<button type="button" class="link small danger" data-del-lesson="${l.id}">حذف</button>` : ''}</span></li>`)
-        .join('')}</ul>` : '<p class="muted">لا دروس.</p>'}</section>` : ''}`;
+    </section>`;
 
   const reload = () => viewQuranStudent(el, id, week);
   $('#q-week-sel')?.addEventListener('change', (e) => (location.hash = `#/quran/student/${st.id}?week=${e.target.value}`));
