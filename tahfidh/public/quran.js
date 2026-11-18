@@ -538,14 +538,6 @@ async function viewQuranStudent(el, id, week = '') {
           .join('')}</tbody>
         <tfoot><tr><th>المجموع</th><th>${num(sum('solid') + sum('weak') + sum('other'))}</th><th>${sum('reps')}</th></tr></tfoot>
       </table></div>
-      <details class="q-help"><summary>كيف يُعمَّر هذا الجدول؟</summary>
-        <ul>
-          <li>كل سطر يوم من أيام الأسبوع، والأسبوع يبدأ يوم اللقاء مع الشيخ (${Q_DAYS[st.week_start]}).</li>
-          <li><b>المحفوظ:</b> كمية ما راجعه الطالب ذلك اليوم من محفوظه بالأحزاب، حسب ما سجّله هو في «سجّل ما راجعته اليوم». تحت اسم اليوم تظهر السور التي راجعها.</li>
-          <li><b>قراءات الدرس:</b> عدد المرات التي قرأ فيها الدرس الجديد ذلك اليوم، من العدّاد.</li>
-          <li>اضغط على يوم سابق لتسجيل أو تعديل مراجعته.</li>
-          <li>الهدف في آخر الأسبوع: مراجعة كل المحفوظ مرة، وقراءة الدرس ${lesson?.target || 60} مرة.</li>
-        </ul></details>
     </section>
 
     <section class="card">
