@@ -473,6 +473,9 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .dh-back{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:99px;padding:6px 12px;font-weight:700;font-size:13px}
 .dh-sub{font-size:13px;opacity:.8;margin-top:2px}
 .mic-sm{font-size:17px;background:var(--soft)}
+.toast{gap:12px}
+.toast-undo{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:4px 12px;font-weight:800;font-size:13px}
+#g-undo{font-size:17px;padding:4px 12px}
 .update-card{text-align:center;padding:28px 16px}
 .update-card .big{font-size:36px;display:block;margin-bottom:6px}
 
@@ -1559,7 +1562,7 @@ function renderDay() {
   const up = upcomingAppts().slice(0, 12);
   $('#main').innerHTML = `<div class="grid">
     <section class="card span"><div class="card-h"><h2>${base ? 'الأساسي' : 'الجدول'}</h2>
-        <span style="display:flex;gap:6px">${base ? '' : '<button class="edit-toggle" id="g-base" title="اجعل جدول هذا الأسبوع هو الجدول الأساسي">⭐ اجعله الأساسي</button>'}
+        <span style="display:flex;gap:6px">${UNDO.length ? `<button class="edit-toggle" id="g-undo" title="تراجع: ${esc(UNDO[UNDO.length - 1].label)}" aria-label="تراجع عن آخر تغيير">↶</button>` : ''}${base ? '' : '<button class="edit-toggle" id="g-base" title="اجعل جدول هذا الأسبوع هو الجدول الأساسي">⭐ الأساسي</button>'}
         <button class="edit-toggle ${UI.editGrid ? 'on' : ''}" id="g-edit" aria-pressed="${UI.editGrid}">${UI.editGrid ? '✓ إنهاء' : '✏️ تعديل'}</button></span></div>
       ${UI.editGrid ? '<div class="edit-bar">✋ اسحب الخانة لتغيير وقتها أو يومها · ↕️ اسحب الحافّة العليا أو السفلى للتكبير والتصغير · ➕ اضغط مكانًا فارغًا للإضافة · اضغط الخانة لتعديل تفاصيلها</div>' : ''}
       ${g}
@@ -1572,6 +1575,7 @@ function renderDay() {
   $('#add-appt').onclick = () => openPlan({ kind: 'appt' });
   $('#v-appt').onclick = () => openVoice('appt');
   $$('.ap').forEach((el) => (el.onclick = (e) => { if (!e.target.closest('.gcal')) openPlan({ appt: S.appts.find((a) => a.id === Number(el.dataset.id)) }); }));
+  $('#g-undo') && ($('#g-undo').onclick = undoLast);
   $('#g-base') && ($('#g-base').onclick = () => {
     if (!isMat(wk)) return toast('هذا الأسبوع مطابق للجدول الأساسي أصلًا ✓');
     weekToBase();
@@ -1597,15 +1601,25 @@ function apptRow(a) {
 let DRAG = null;
 function bindGrid() {
   const grid = $('#wgrid'); if (!grid) return;
+  grid.onpointerup = (e) => {
+    const tp = UI.tap; UI.tap = null;
+    if (UI.editGrid || !tp) return;
+    if (Math.hypot(e.clientX - tp.x, e.clientY - tp.y) < 10 && Date.now() - tp.t < 700) { UI.tapAt = Date.now(); openFromBlock(tp.blk); }
+  };
+  grid.onpointercancel = () => (UI.tap = null);
   grid.onpointerdown = (e) => {
-    if (!UI.editGrid) return; // الجدول مقفل: لا شيء يتغيّر بالضغط
+    if (!UI.editGrid) { // الجدول مقفل: الضغط يفتح التفاصيل فقط، ولا شيء يتغيّر
+      const blk = e.target.closest('.blk');
+      UI.tap = blk ? { blk, x: e.clientX, y: e.clientY, t: Date.now() } : null;
+      return;
+    }
     const blk = e.target.closest('.blk'); if (!blk || e.button > 0) return;
     const g = e.target.closest('.grip');
     DRAG = { blk, resize: g ? g.dataset.g : null, x0: e.clientX, y0: e.clientY, pid: e.pointerId, started: false };
     if (DRAG.resize) startDrag();
   };
   grid.onclick = (e) => {
-    if (UI.editGrid) return; // في وضع التعديل تتكفّل أحداث السحب بالنقرة
+    if (UI.editGrid || Date.now() - (UI.tapAt || 0) < 800) return; // فُتحت من الضغطة نفسها
     const blk = e.target.closest('.blk');
     if (blk) openFromBlock(blk);
   };
@@ -1701,6 +1715,7 @@ function resolveSlot(key, wk) {
 // تعديل خانة. في أسبوع لم يُعدَّل بعد: يُنسخ الأساسي أولًا، إلا إن طُلب التطبيق على الأساسي فقط
 async function saveSlot(key, patch, alsoBase = false) {
   let wk = curWeekKey(), fresh = false;
+  const snap = snapSchedule(wk);
   try {
     let cur;
     if (wk !== null && !isMat(wk) && alsoBase) { // الأسبوع نسخة من الأساسي: نعدّل الأساسي مباشرة
@@ -1714,12 +1729,13 @@ async function saveSlot(key, patch, alsoBase = false) {
     const r = await rpc('slot_save', { p_id: cur ? cur.id : null, p_week: wk, p_day: x.day, p_title: x.title, p_icon: x.icon, p_color: x.color,
       p_start: x.start, p_end: x.end, p_also_base: alsoBase });
     upsertSlot(r.slot); upsertSlot(r.base);
-    if (fresh) toast('صار لهذا الأسبوع جدوله الخاص ✓ والجدول الأساسي لم يتغيّر');
+    pushUndo(fresh ? 'صار لهذا الأسبوع جدوله الخاص' : `«${x.title}» ${DAYS[x.day]} ${fmtT(x.start)}`, snap);
   } catch (err) { if (!onAuthError(err)) toast(err.message, true); }
   render();
 }
 async function removeSlot(key, alsoBase) {
   let wk = curWeekKey();
+  const snap = snapSchedule(wk);
   try {
     if (wk !== null && !isMat(wk) && alsoBase) {
       const src = Number(key.slice(1).split('-')[0]);
@@ -1733,33 +1749,111 @@ async function removeSlot(key, alsoBase) {
         S.slots = S.slots.filter((s) => s.id !== cur.id && !(alsoBase && s.id === cur.source));
       }
     }
-    toast('تمّ الحذف');
+    pushUndo('تمّ الحذف', snap);
   } catch (err) { if (!onAuthError(err)) toast(err.message, true); }
   render();
 }
 async function saveAppt(a, quiet) {
+  const snap = snapSchedule(null);
   try {
     const r = await rpc('appt_save', { p_id: a.id ?? null, p_date: a.date, p_start: a.start, p_end: a.end, p_title: a.title, p_note: a.note ?? null,
       p_icon: a.icon, p_color: a.color, p_done: !!a.done });
     const i = S.appts.findIndex((x) => x.id === r.id);
     i < 0 ? S.appts.push(r) : (S.appts[i] = r);
-    if (!quiet) toast(a.id ? 'تمّ التعديل ✓' : 'تمّت إضافة الموعد ✓');
+    pushUndo(a.id ? `الموعد «${r.title}» ${fmtT(r.start)}` : 'تمّت إضافة الموعد', snap);
     render();
     return r;
   } catch (err) { if (!onAuthError(err)) toast(err.message, true); render(); throw err; }
 }
 async function weekReset() {
   if (!confirm('إرجاع هذا الأسبوع إلى الجدول الأساسي؟ ستضيع تعديلات هذا الأسبوع.')) return;
-  const wk = ymd(UI.dayWeek);
-  try { await rpc('week_reset', { p_week: wk }); S.slots = S.slots.filter((s) => s.week !== wk); S.weeks.delete(wk); toast('رجع الأسبوع إلى الجدول الأساسي'); }
+  const wk = ymd(UI.dayWeek), snap = snapSchedule(wk);
+  try { await rpc('week_reset', { p_week: wk }); S.slots = S.slots.filter((s) => s.week !== wk); S.weeks.delete(wk); pushUndo('رجع الأسبوع إلى الجدول الأساسي', snap); }
   catch (err) { if (!onAuthError(err)) toast(err.message, true); }
-  renderDay();
+  render();
 }
 async function weekToBase() {
   if (!confirm('جعل جدول هذا الأسبوع هو الجدول الأساسي؟ سيُنسخ في كل الأسابيع التي لم تعدّلها.')) return;
-  try { await rpc('week_to_base', { p_week: ymd(UI.dayWeek) }); await loadLife(); toast('صار هذا الجدول هو الأساسي ✓'); }
+  const snap = snapSchedule(ymd(UI.dayWeek));
+  try { await rpc('week_to_base', { p_week: ymd(UI.dayWeek) }); await loadLife(); pushUndo('صار هذا الجدول هو الأساسي', snap); }
   catch (err) { if (!onAuthError(err)) toast(err.message, true); }
-  renderDay();
+  render();
+}
+
+/* ---------- التراجع في الجدول (retour arrière) ---------- */
+// قبل كل تغيير: نسخة من الأسبوع والجدول الأساسي والمواعيد. التراجع يعيدها كما كانت.
+const UNDO = [];
+let UNDO_BUSY = false, UNDO_BATCH = 0;
+const cloneSlots = (k) => S.slots.filter((s) => (s.week ?? null) === k).map((s) => ({ ...s }));
+function snapSchedule(wk) {
+  return { wk, mat: wk ? isMat(wk) : false, rows: wk ? cloneSlots(wk) : [], base: cloneSlots(null), appts: S.appts.map((a) => ({ ...a })) };
+}
+function pushUndo(label, snap) {
+  if (UNDO_BUSY || UNDO_BATCH > 0) return;
+  UNDO.push({ label, snap });
+  if (UNDO.length > 20) UNDO.shift();
+  toastUndo(label);
+}
+// تجميع عدّة تغييرات (مثلًا إضافة نشاط في عدّة أيام) في خطوة تراجع واحدة
+async function undoBatch(label, wk, fn) {
+  const snap = snapSchedule(wk);
+  UNDO_BATCH++;
+  try { await fn(); } finally { UNDO_BATCH--; }
+  pushUndo(label, snap);
+}
+async function restoreSlots(k, rows) {
+  for (const c of S.slots.filter((s) => (s.week ?? null) === k)) {
+    if (rows.some((r) => r.id === c.id)) continue;
+    await rpc('slot_delete', { p_id: c.id, p_also_base: false });
+    S.slots = S.slots.filter((x) => x.id !== c.id);
+  }
+  for (const r of rows) {
+    const c = S.slots.find((x) => x.id === r.id);
+    if (c && c.day === r.day && c.start === r.start && c.end === r.end && c.title === r.title && c.icon === r.icon && c.color === r.color) continue;
+    const res = await rpc('slot_save', { p_id: c ? r.id : null, p_week: k, p_day: r.day, p_title: r.title, p_icon: r.icon, p_color: r.color, p_start: r.start, p_end: r.end, p_also_base: false });
+    upsertSlot(res.slot);
+  }
+}
+async function restoreSnap(sn) {
+  await restoreSlots(null, sn.base);
+  if (sn.wk) {
+    if (!sn.mat) {
+      if (isMat(sn.wk)) { await rpc('week_reset', { p_week: sn.wk }); S.slots = S.slots.filter((s) => s.week !== sn.wk); S.weeks.delete(sn.wk); }
+    } else {
+      await ensureWeek(sn.wk);
+      await restoreSlots(sn.wk, sn.rows);
+    }
+  }
+  for (const c of [...S.appts]) {
+    if (sn.appts.some((a) => a.id === c.id)) continue;
+    await rpc('appt_delete', { p_id: c.id });
+    S.appts = S.appts.filter((x) => x.id !== c.id);
+  }
+  for (const a of sn.appts) {
+    const c = S.appts.find((x) => x.id === a.id);
+    if (c && c.date === a.date && c.start === a.start && c.end === a.end && c.title === a.title && c.note === a.note && c.icon === a.icon && c.color === a.color && c.done === a.done) continue;
+    const r = await rpc('appt_save', { p_id: c ? a.id : null, p_date: a.date, p_start: a.start, p_end: a.end, p_title: a.title, p_note: a.note, p_icon: a.icon, p_color: a.color, p_done: !!a.done });
+    const i = S.appts.findIndex((x) => x.id === r.id);
+    i < 0 ? S.appts.push(r) : (S.appts[i] = r);
+  }
+}
+async function undoLast() {
+  const e = UNDO.pop();
+  if (!e || UNDO_BUSY) return;
+  UNDO_BUSY = true;
+  $$('.toast').forEach((t) => t.remove());
+  try { await restoreSnap(e.snap); toast(`↶ تمّ التراجع: ${e.label}`); }
+  catch (err) { if (!onAuthError(err)) toast('تعذّر التراجع: ' + err.message, true); try { await loadLife(); } catch (er) {} }
+  finally { UNDO_BUSY = false; render(); }
+}
+function toastUndo(label) {
+  $$('.toast').forEach((t) => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span>✓ ${esc(label)}</span><button type="button" class="toast-undo">↶ تراجع</button>`;
+  el.querySelector('button').onclick = () => { el.remove(); undoLast(); };
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 6000);
 }
 
 /* ---------- نافذة الإضافة / التعديل ---------- */
@@ -1876,8 +1970,7 @@ $('#form-plan').onsubmit = async (e) => {
     } else {
       const alsoBase = $('#p-base').checked, x = { title: PE.title, icon: PE.icon, color: PE.color, start: PE.start, end: PE.end };
       if (PE.edit) await saveSlot(PE.key, { ...x, day: WEEK_ORDER.find((i) => PE.mask & (1 << i)) }, alsoBase);
-      else for (const d of WEEK_ORDER.filter((i) => PE.mask & (1 << i))) await saveSlot(null, { ...x, day: d }, alsoBase);
-      if (!PE.edit) toast('تمّت الإضافة ✓');
+      else await undoBatch(`إضافة «${x.title}»`, curWeekKey(), async () => { for (const d of WEEK_ORDER.filter((i) => PE.mask & (1 << i))) await saveSlot(null, { ...x, day: d }, alsoBase); });
     }
     $('#sheet-plan').close();
     if (UI.view !== 'cats') UI.view = 'day';
@@ -1887,7 +1980,8 @@ $('#form-plan').onsubmit = async (e) => {
 $('#p-del').onclick = async () => {
   if (PE.kind === 'appt') {
     if (!confirm(`حذف الموعد «${PE.title}»؟`)) return;
-    try { await rpc('appt_delete', { p_id: PE.id }); S.appts = S.appts.filter((a) => a.id !== PE.id); toast('تمّ الحذف'); }
+    const snap = snapSchedule(null);
+    try { await rpc('appt_delete', { p_id: PE.id }); S.appts = S.appts.filter((a) => a.id !== PE.id); pushUndo('تمّ حذف الموعد', snap); }
     catch (err) { if (!onAuthError(err)) toast(err.message, true); }
     $('#sheet-plan').close(); return render();
   }
@@ -2358,14 +2452,16 @@ function adminDay() {
   $$('[data-wview]').forEach((b) => (b.onclick = () => { UI.dayMode = 'week'; UI.dayWeek = parse(b.dataset.wview); go('day'); }));
   $$('[data-wbase]').forEach((b) => (b.onclick = async () => {
     if (!confirm('جعل جدول هذا الأسبوع هو الجدول الأساسي؟ سيُنسخ في كل الأسابيع التي لم تعدّلها.')) return;
-    try { await rpc('week_to_base', { p_week: b.dataset.wbase }); await loadLife(); toast('صار هذا الجدول هو الأساسي ✓'); }
+    const snap = snapSchedule(b.dataset.wbase);
+    try { await rpc('week_to_base', { p_week: b.dataset.wbase }); await loadLife(); pushUndo('صار هذا الجدول هو الأساسي', snap); }
     catch (err) { onAuthError(err) || toast(err.message, true); }
     adminDay();
   }));
   $$('[data-wreset]').forEach((b) => (b.onclick = async () => {
     if (!confirm('إرجاع هذا الأسبوع إلى الجدول الأساسي؟')) return;
     const w = b.dataset.wreset;
-    try { await rpc('week_reset', { p_week: w }); S.slots = S.slots.filter((s) => s.week !== w); S.weeks.delete(w); toast('تمّ'); }
+    const snap = snapSchedule(w);
+    try { await rpc('week_reset', { p_week: w }); S.slots = S.slots.filter((s) => s.week !== w); S.weeks.delete(w); pushUndo('رجع الأسبوع إلى الجدول الأساسي', snap); }
     catch (err) { onAuthError(err) || toast(err.message, true); }
     adminDay();
   }));
