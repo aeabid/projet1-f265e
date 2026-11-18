@@ -103,8 +103,81 @@ function openModal(title, bodyHtml, onSubmit) {
   };
   $('#modal-cancel').onclick = () => dialog.close();
   dialog.showModal();
+  enhanceSelects(dialog);
 }
 const confirmAction = (message) => window.confirm(message);
+
+// ---------- قائمة الاختيار: لوحة من أسفل الشاشة بدل القائمة الأصلية للهاتف ----------
+// الـ <select> الأصلي يبقى (القيم والأحداث كما هي)، ونضيف فوقه زرًّا ولوحة اختيار
+function enhanceSelects(root = document) {
+  root.querySelectorAll('select:not([data-picked]):not([multiple])').forEach((sel) => {
+    sel.dataset.picked = '1';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `pick-btn ${sel.className}`;
+    sel.classList.add('pick-native');
+    sel.after(btn);
+    const sync = () => {
+      const o = sel.selectedOptions[0];
+      const [main, sub] = (o?.textContent || '').split(' · ');
+      btn.innerHTML = `<span class="pick-txt">${esc(main)}${sub ? `<small>${esc(sub)}</small>` : ''}</span><span class="pick-caret" aria-hidden="true">▾</span>`;
+      btn.classList.toggle('empty', !o || o.value === '');
+      btn.disabled = sel.disabled;
+    };
+    sync();
+    sel.addEventListener('change', sync);
+    sel._pickSync = sync;
+    btn.addEventListener('click', () => openPicker(sel));
+  });
+}
+function pickerTitle(sel) {
+  if (sel.getAttribute('aria-label')) return sel.getAttribute('aria-label');
+  const label = sel.closest('label');
+  if (label) return [...label.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').trim();
+  return 'اختر';
+}
+function openPicker(sel) {
+  const host = sel.closest('dialog') || document.body;
+  const opts = [...sel.options];
+  const search = opts.length > 60;
+  const wrap = document.createElement('div');
+  wrap.className = 'pick-wrap';
+  wrap.innerHTML = `<div class="pick-back"></div>
+    <div class="pick-sheet" role="dialog" aria-modal="true">
+      <div class="pick-head"><b>${esc(pickerTitle(sel))}</b><button type="button" class="pick-close" aria-label="إغلاق">✕</button></div>
+      ${search ? '<input type="search" class="pick-search" placeholder="🔍 بحث…" autocomplete="off">' : ''}
+      <ul class="pick-list" role="listbox">${opts
+        .map((o, i) => {
+          const [main, sub] = o.textContent.split(' · ');
+          const num = /^(\d+)\.\s(.+)$/.exec(main);
+          return `<li role="option" data-i="${i}" class="${o.selected ? 'on' : ''} ${o.value === '' ? 'ph' : ''}" aria-selected="${o.selected}">
+            ${num ? `<span class="pick-num">${num[1]}</span>` : ''}<span class="pick-main">${esc(num ? num[2] : main)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+            <span class="pick-tick">✓</span></li>`;
+        })
+        .join('')}</ul></div>`;
+  host.append(wrap);
+  document.body.classList.add('no-scroll');
+  const close = () => {
+    wrap.classList.add('out');
+    document.body.classList.remove('no-scroll');
+    setTimeout(() => wrap.remove(), 160);
+  };
+  wrap.querySelector('.pick-back').addEventListener('click', close);
+  wrap.querySelector('.pick-close').addEventListener('click', close);
+  wrap.querySelector('.pick-list').addEventListener('click', (e) => {
+    const li = e.target.closest('li');
+    if (!li) return;
+    sel.selectedIndex = Number(li.dataset.i);
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    close();
+  });
+  const input = wrap.querySelector('.pick-search');
+  input?.addEventListener('input', () => {
+    const q = input.value.trim();
+    wrap.querySelectorAll('.pick-list li').forEach((li) => (li.hidden = !!q && !li.textContent.includes(q)));
+  });
+  wrap.querySelector('.pick-list li.on')?.scrollIntoView({ block: 'center' });
+}
 
 function heroBanner({ sub = '', art = '📖', actions = '' } = {}) {
   const h = new Date().getHours();
@@ -336,6 +409,7 @@ async function router() {
     el.innerHTML = '<p class="muted loading">جاري التحميل…</p>';
     try {
       await view(el, ...m.slice(1));
+      enhanceSelects(el);
     } catch (err) {
       if (nav === navCount) el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p><p><button class="btn small ghost" onclick="location.reload()">إعادة تحميل الصفحة</button></p></div>`;
     }

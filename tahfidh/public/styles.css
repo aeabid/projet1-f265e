@@ -430,3 +430,45 @@ img.avatar { object-fit: cover; background: var(--soft); }
 .q-sura-cell { font-weight: 700; color: var(--accent); }
 /* حقول متجاورة: الخانات على نفس الخط حتى لو طال عنوان أحدها */
 .row > label { display: flex; flex-direction: column; justify-content: flex-end; }
+
+/* ---------- قائمة الاختيار (بدل القائمة الأصلية للهاتف) ---------- */
+select.pick-native { display: none !important; }
+.pick-btn { display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; margin-top: .3rem; font: inherit; color: var(--text); text-align: start;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: .6rem .8rem; cursor: pointer; min-height: 44px; transition: border-color .12s, box-shadow .12s; }
+.pick-btn:hover, .pick-btn:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(97, 3, 141, .12); outline: none; }
+.pick-btn:disabled { opacity: .6; cursor: default; }
+.pick-btn.empty .pick-txt { color: var(--muted); }
+.pick-txt { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.pick-txt small { color: var(--muted); font-size: .78rem; direction: ltr; text-align: end; }
+.pick-caret { color: var(--accent); font-size: .9rem; flex: none; }
+.pick-btn.q-week-sel { width: auto; min-width: 190px; margin: 0; padding: .4rem .8rem; min-height: 0; background: var(--soft); border-color: transparent; border-radius: 999px; }
+.pick-btn.q-week-sel .pick-txt { font-weight: 700; color: var(--accent); flex-direction: row; gap: .4rem; align-items: baseline; }
+.pick-btn.ov-filter { width: auto; margin: 0; }
+
+.pick-wrap { position: fixed; inset: 0; z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
+.pick-back { position: absolute; inset: 0; background: rgba(30, 10, 60, .45); animation: pick-fade .16s ease-out; }
+.pick-sheet { position: relative; width: min(520px, 100%); max-height: 78vh; display: flex; flex-direction: column; background: var(--card); color: var(--text);
+  border-radius: 24px 24px 0 0; box-shadow: 0 -12px 40px rgba(30, 10, 60, .25); padding: .4rem 0 calc(.6rem + env(safe-area-inset-bottom)); animation: pick-up .2s ease-out; }
+.pick-sheet::before { content: ''; width: 42px; height: 5px; border-radius: 99px; background: var(--border); margin: .3rem auto .4rem; }
+.pick-head { display: flex; align-items: center; justify-content: space-between; padding: 0 1.1rem .5rem; border-bottom: 1px solid var(--border); }
+.pick-head b { font-size: 1.05rem; color: var(--accent); }
+.pick-close { font: inherit; background: var(--soft); border: 0; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; color: var(--muted); }
+.pick-search { margin: .6rem 1rem .2rem; width: auto; }
+.pick-list { list-style: none; margin: 0; padding: .3rem .6rem; overflow-y: auto; overscroll-behavior: contain; }
+.pick-list li { display: flex; align-items: center; gap: .7rem; padding: .75rem .8rem; border-radius: 14px; cursor: pointer; }
+.pick-list li + li { margin-top: 2px; }
+.pick-list li:hover { background: var(--soft); }
+.pick-list li.ph { color: var(--muted); }
+.pick-list li.on { background: var(--gradient); color: #fff; }
+.pick-list li.on small { color: rgba(255, 255, 255, .8); }
+.pick-main { flex: 1; display: flex; justify-content: space-between; gap: .6rem; align-items: baseline; font-weight: 600; }
+.pick-main small { color: var(--muted); font-weight: 400; font-size: .82rem; direction: ltr; }
+.pick-num { width: 30px; height: 30px; flex: none; display: grid; place-content: center; border-radius: 10px; background: var(--soft); color: var(--accent); font-size: .8rem; font-weight: 700; }
+.pick-list li.on .pick-num { background: rgba(255, 255, 255, .2); color: #fff; }
+.pick-tick { width: 1.2rem; text-align: center; font-weight: 800; visibility: hidden; }
+.pick-list li.on .pick-tick { visibility: visible; }
+.pick-wrap.out .pick-sheet { transform: translateY(30px); opacity: 0; transition: .15s; }
+.pick-wrap.out .pick-back { opacity: 0; transition: .15s; }
+@keyframes pick-up { from { transform: translateY(40px); opacity: 0; } }
+@keyframes pick-fade { from { opacity: 0; } }
+@media (min-width: 700px) { .pick-wrap { align-items: center; } .pick-sheet { border-radius: 24px; max-height: 70vh; } }

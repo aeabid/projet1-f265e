@@ -76,6 +76,7 @@ function viewSignup(el, r) {
       <button class="btn block" type="submit">إرسال طلب التسجيل</button>
     </form>
     <p class="muted small">الشيخ يراجع الطلب ويؤكّده، ثم تدخل بنفس حساب Google.</p></div>`;
+  enhanceSelects(el);
   $('#signup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button[type=submit]');

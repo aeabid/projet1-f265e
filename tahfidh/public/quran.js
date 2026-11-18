@@ -298,7 +298,10 @@ function quranStudentForm(s, d, onDone) {
   const sel = $('#modal-form select[name=group_id]');
   sel.addEventListener('change', () => {
     const day = sel.selectedOptions[0]?.dataset.day;
-    if (day !== undefined) $('#modal-form select[name=week_start]').value = day;
+    if (day !== undefined) {
+      $('#modal-form select[name=week_start]').value = day;
+      $('#modal-form select[name=week_start]')._pickSync?.();
+    }
   });
 }
 
@@ -863,7 +866,7 @@ async function monthCard(box, st, month = today().slice(0, 7)) {
   const maxH = Math.max(1, ...weeks.map((w) => w.solid + w.weak + w.other));
   const maxR = Math.max(60, ...weeks.map((w) => w.reps));
   box.innerHTML = `<div class="section-head"><h3>📆 خلاصة الشهر</h3>
-      <select id="q-month-sel" class="q-week-sel">${months.map((m) => `<option value="${m}" ${m === month ? 'selected' : ''}>${Q_MONTHS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}</option>`).join('')}</select></div>
+      <select id="q-month-sel" class="q-week-sel" aria-label="اختيار الشهر">${months.map((m) => `<option value="${m}" ${m === month ? 'selected' : ''}>${Q_MONTHS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}</option>`).join('')}</select></div>
     ${weeks.length ? `${hTotals(weeks)}
       <div class="m-weeks">${weeks
         .map((w) => {
@@ -877,6 +880,7 @@ async function monthCard(box, st, month = today().slice(0, 7)) {
       <p class="small"><a href="#/quran/history/${st.id}?year=${year}">📜 السجلّ الكامل ←</a></p>`
       : '<p class="muted">لا نشاط في هذا الشهر.</p>'}`;
   $('#q-month-sel').addEventListener('change', (e) => monthCard(box, st, e.target.value));
+  enhanceSelects(box);
 }
 
 async function viewQuranHistory(el, id, year = '') {
