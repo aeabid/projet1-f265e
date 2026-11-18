@@ -476,6 +476,42 @@ function openCounter(lesson, todayCount, onClose) {
   paint();
 }
 
+// ---------- جدول الأسبوع: رسم صغير للأيام السبعة، ثم بطاقة لكل يوم ----------
+function weekView(full, day, canEdit) {
+  const size = (w) => w.solid + w.weak + w.other;
+  const max = Math.max(1, ...full.week.map(size));
+  const lessonOf = (d) => full.lessons.find((l) => l.assigned_on <= d)?.content || '';
+  const past = full.week.filter((w) => w.date <= day);
+  const suras = [...new Set(past.map((w) => lessonOf(w.date)).filter(Boolean))];
+  const totalH = full.week.reduce((t, w) => t + size(w), 0);
+  const totalR = full.week.reduce((t, w) => t + (w.reps || 0), 0);
+  const days = past.filter((w) => size(w) > 0).length;
+  const short = (d) => qDay(d).replace(/^ال/, '');
+  let prevSura = suras.length === 1 ? suras[0] : '';
+  return `<div class="wk-chart" aria-hidden="true">${full.week
+      .map((w) => `<div class="wk-col ${w.date === day ? 'today' : ''} ${w.date > day ? 'future' : ''}">
+        <div class="wk-bar"><i style="height:${Math.round((size(w) / max) * 100)}%"></i>${w.reps ? '<span class="wk-dot"></span>' : ''}</div>
+        <small>${short(w.date)}</small></div>`).join('')}</div>
+    ${suras.length === 1 ? `<div class="wk-lesson">📖 المقرر هذا الأسبوع: <b>${esc(suras[0])}</b></div>` : ''}
+    <ul class="wk-days">${full.week
+      .map((w) => {
+        const future = w.date > day;
+        const click = !future && canEdit;
+        const sura = lessonOf(w.date);
+        const showSura = !future && sura && sura !== prevSura;
+        if (!future) prevSura = sura;
+        return `<li class="wk-day ${w.date === day ? 'today' : ''} ${future ? 'future' : ''} ${click ? 'clickable' : ''}" ${click ? `data-day="${w.date}"` : ''}>
+          <div class="wk-date"><b>${qDay(w.date)}</b><small>${qShort(w.date)}</small></div>
+          <div class="wk-body">${future ? '<span class="muted small">—</span>'
+            : `${size(w) ? `<span class="wk-label">${esc(w.label)}</span>` : '<span class="wk-none">لا ورد</span>'}
+            <span class="wk-pills">${size(w) ? `<span class="wk-pill g">🔁 ${hizbTxt(size(w))}</span>` : ''}
+              ${w.reps ? `<span class="wk-pill p">📝 ${w.reps} تكرار</span>` : ''}${showSura ? `<span class="wk-pill s">📖 ${esc(sura)}</span>` : ''}</span>`}</div>
+          ${click ? '<span class="wk-go" aria-hidden="true">‹</span>' : ''}</li>`;
+      })
+      .join('')}</ul>
+    <div class="wk-total"><span>المجموع</span><span class="wk-pill g">🔁 ${hizbTxt(totalH)}</span><span class="wk-pill p">📝 ${totalR} تكرار</span><span class="wk-pill">📆 ${days} ${days === 1 ? 'يوم' : days === 2 ? 'يومان' : 'أيام'} ورد</span></div>`;
+}
+
 // ---------- صفحة الطالب ----------
 // صفحة الطالب. part: home (الرئيسية: المقرر، الورد، جدول الأسبوع، ملاحظات الشيخ)، records (سجلّي: خلاصة الشهر وقائمة المقرر)، all (المشرف: كل شيء)
 async function viewQuranStudent(el, id, week = '', part = 'all') {
@@ -533,22 +569,7 @@ async function viewQuranStudent(el, id, week = '', part = 'all') {
       <div class="section-head"><h3>📅 جدول الأسبوع</h3><span class="q-weeknav"><a href="${base}?week=${prevWeek}" title="الأسبوع السابق">→</a>
         ${weekSelect(st, full.week_start, day)}
         ${nextWeek <= day ? `<a href="${base}?week=${nextWeek}" title="الأسبوع الموالي">←</a>` : '<span></span>'}</span></div>
-      <div class="q-table-wrap"><table class="q-table">
-        <thead><tr><th>اليوم</th><th>🔁 الورد (حزب)</th><th>📖 السورة</th><th>📝 عدد التكرارات</th></tr></thead>
-        <tbody>${full.week
-          .map((w) => {
-            const future = w.date > day;
-            // السورة: سورة الدرس الذي كان يُكرَّر ذلك اليوم
-            const ls = future ? null : full.lessons.find((l) => l.assigned_on <= w.date);
-            const click = !future && (me || staff);
-            return `<tr class="${w.date === day ? 'today' : ''} ${future ? 'future' : ''} ${click ? 'clickable' : ''}" ${click ? `data-day="${w.date}"` : ''}>
-              <td><b>${qDay(w.date)}</b> <small class="muted">${qShort(w.date)}</small>${w.ids.length ? `<small class="q-what">${esc(w.label)}</small>` : ''}</td>
-              <td>${w.solid + w.weak + w.other ? num(w.solid + w.weak + w.other) : future ? '' : '—'}</td>
-              <td class="q-sura-cell">${ls ? esc(ls.content) : future ? '' : '—'}</td><td>${w.reps || (future ? '' : '—')}</td></tr>`;
-          })
-          .join('')}</tbody>
-        <tfoot><tr><th>المجموع</th><th>${num(sum('solid') + sum('weak') + sum('other'))}</th><th></th><th>${sum('reps')}</th></tr></tfoot>
-      </table></div>
+      ${weekView(full, day, me || staff)}
     </section>` : ''}
 
     ${show('month') ? '<section class="card" id="q-month"></section>' : ''}
@@ -593,7 +614,7 @@ async function viewQuranStudent(el, id, week = '', part = 'all') {
     })
   );
   $('#q-open-counter')?.addEventListener('click', () => openCounter(lesson, todayReps, reload));
-  el.querySelectorAll('tr[data-day]').forEach((tr) => tr.addEventListener('click', () => (location.hash = `#/quran/review/${st.id}?date=${tr.dataset.day}`)));
+  el.querySelectorAll('[data-day]').forEach((tr) => tr.addEventListener('click', () => (location.hash = `#/quran/review/${st.id}?date=${tr.dataset.day}`)));
   $('#q-set')?.addEventListener('click', () =>
     openModal(
       '✏️ عدد التكرارات',
