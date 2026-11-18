@@ -555,7 +555,7 @@ async function viewQuranStudent(el, id, week = '') {
       ${bar(st.solid_hizb + st.weak_hizb, 60)}
     </section>
 
-    ${full.lessons.length ? `<section class="card"><h3>📚 الدروس</h3>
+    ${full.lessons.length ? `<section class="card"><h3>📚 المقرر الأسبوعي</h3>
       ${full.lessons.length ? `<ul class="levels">${full.lessons
         .map((l) => `<li><span>${fmtDate(l.assigned_on)} — <b>${esc(l.content)}</b> <small class="muted">${athmanTxt(l.athman)}</small></span><span>${l.total} تكرار
           ${me || staff ? `<button type="button" class="link small" data-edit-lesson="${l.id}">تعديل</button>` : ''}
@@ -840,7 +840,7 @@ function hTotals(list) {
   return `<div class="h-tot">
     <span><b>${num(hHizb(list))}</b><small>حزب من الورد</small></span>
     <span><b>${hSum(list, 'days')}</b><small>يوم ورد</small></span>
-    <span><b>${hSum(list, 'reps')}</b><small>تكرار للدروس</small></span>
+    <span><b>${hSum(list, 'reps')}</b><small>تكرار للمقرر</small></span>
     <span><b>${list.reduce((t, w) => t + w.lessons.length, 0)}</b><small>درس جديد</small></span>
     <span><b class="in">${present}</b><small>حضور</small></span>
     <span><b class="${absent ? 'out' : ''}">${absent + excused}</b><small>غياب${excused ? ` (${excused} بعذر)` : ''}</small></span></div>`;
