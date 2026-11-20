@@ -680,13 +680,7 @@ async function viewQuranReview(el, id, dayArg = '') {
   // ما رُوجع في بقية أيام الأسبوع
   const others = new Map();
   for (const w of full.week) if (w.date !== day) for (const i of w.ids) others.set(i, (others.get(i) || 0) + 1);
-  // يوم اللقاء قبل تسجيل الحصة: يبقى ما قُرئ في الأسبوع الماضي ظاهرًا، ويُمحى بعد الحصة
-  const carried = new Map();
-  const meetingDay = day === full.week_start && day === day0 && !full.meetings.some((m) => m.date === day);
-  if (meetingDay) {
-    const prev = await api('GET', `/api/quran/students/${id}?week=${qAddDays(day, -7)}`);
-    for (const w of prev.week) for (const i of w.ids) carried.set(i, (carried.get(i) || 0) + 1);
-  }
+  // الأسبوع الجديد (يوم اللقاء) يبدأ فارغًا: لا يظهر بالأخضر إلا ما قُرئ في هذا الأسبوع
   const reps = st.weak_reps || 1;
   const tree = quranTree((sid) => mem[sid]);
   const memSegs = QD.segments.filter((g) => mem[g.id]);
@@ -710,14 +704,13 @@ async function viewQuranReview(el, id, dayArg = '') {
       return 'quarters';
     }
   })();
-  const read = (i) => (others.get(i) || 0) + (carried.get(i) || 0);
+  const read = (i) => others.get(i) || 0;
   const need = (i) => read(i) < (mem[i] === 'w' ? reps : 1);
   const stateOf = (ids) => (ids.every((i) => selected.has(i)) ? 'on' : ids.some((i) => selected.has(i)) ? 'mix' : '');
   const kind = (ids) => (ids.every((i) => mem[i] === 's') ? 'ks' : ids.every((i) => mem[i] === 'w') ? 'kw' : 'ksw');
   el.innerHTML = `<p><a href="${state.user.role === 'talib' ? '#/home' : `#/quran/student/${id}`}">→ ${state.user.role === 'talib' ? 'الرئيسية' : esc(st.full_name)}</a></p>
     <div class="card"><div class="section-head"><h2>🔁 ورد ${day === day0 ? 'اليوم' : `يوم ${qDay(day)}`}</h2>
       <label class="q-date"><input type="date" id="qr-date" value="${day}" max="${day0}"></label></div>
-      ${meetingDay && carried.size ? '<p class="q-carry small">📌 اليوم يوم اللقاء: ما قرأته في الأسبوع الماضي يبقى ظاهرًا حتى يسجّل الشيخ الحصة، ثم يبدأ أسبوع جديد.</p>' : ''}
       <div id="qr-prog"></div>
       <div class="q-seg" role="tablist" aria-label="طريقة العرض">${Object.entries(VIEWS)
         .map(([k, l]) => `<button type="button" role="tab" data-view="${k}" class="${k === view ? 'on' : ''}">${l}</button>`).join('')}</div></div>
@@ -817,9 +810,11 @@ async function viewQuranReview(el, id, dayArg = '') {
   $('#q-save').addEventListener('click', async () => {
     try {
       const counts = Object.fromEntries([...selected].filter((i) => (times.get(i) || 1) > 1).map((i) => [i, times.get(i)]));
-      const r = await api('PUT', `/api/quran/students/${id}/review`, { date: day, ids: [...selected], counts });
+      const btn = $('#q-save');
+      btn.disabled = true;
+      const r = await api('PUT', `/api/quran/students/${id}/review`, { date: day, ids: [...selected], counts }).finally(() => (btn.disabled = false));
+      // يبقى الطالب في نفس المكان من الصفحة
       toast(r.progress.percent === 100 ? '🎉 أتممت مراجعة كل محفوظك هذا الأسبوع' : 'تم الحفظ، بارك الله فيك ✓');
-      location.hash = state.user.role === 'talib' ? '#/home' : `#/quran/student/${id}`;
     } catch (e) {
       toast(e.message, true);
     }
