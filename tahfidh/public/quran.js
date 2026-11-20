@@ -507,12 +507,19 @@ function weekView(full, day, canEdit) {
             <td class="wk-td-ward">${future ? '' : size(w)
               ? `<span class="wk-label">${esc(w.label)}</span><span class="wk-pill g">${hizbTxt(size(w))}</span>`
               : '<span class="wk-none">—</span>'}${showSura ? `<span class="wk-pill s">📖 ${esc(sura)}</span>` : ''}</td>
-            <td class="wk-td-reps">${future ? '' : w.reps ? `<span class="wk-reps">${w.reps}</span>` : '<span class="wk-none">—</span>'}</td></tr>`;
+            <td class="wk-td-reps">${future ? ''
+              : (() => {
+                  // عدد التكرارات قابل للتعديل (اليوم والأيام الماضية) إذا كان هناك مقرر ذلك اليوم
+                  const l = full.lessons.find((x) => x.assigned_on <= w.date);
+                  const inner = w.reps ? `<span class="wk-reps">${w.reps}</span>` : `<span class="wk-reps empty">${canEdit && l ? '＋' : '—'}</span>`;
+                  return canEdit && l ? `<button type="button" class="wk-reps-btn" data-reps-day="${w.date}" data-lesson="${l.id}" data-count="${w.reps || 0}" title="تعديل عدد التكرارات">${inner}</button>` : inner;
+                })()}</td></tr>`;
         })
         .join('')}</tbody>
       <tfoot><tr><td>المجموع<small>${days} ${days === 1 ? 'يوم' : days === 2 ? 'يومان' : 'أيام'} ورد</small></td>
         <td><span class="wk-pill g">${hizbTxt(totalH)}</span></td><td><span class="wk-reps total">${totalR}</span></td></tr></tfoot>
-    </table></div>`;
+    </table></div>
+    ${canEdit ? '<p class="muted small wk-hint">✏️ اضغط على اليوم لتعديل ورده (إضافة سور أو حذفها)، وعلى عدد التكرارات لتعديله.</p>' : ''}`;
 }
 
 // ---------- صفحة الطالب ----------
@@ -618,6 +625,37 @@ async function viewQuranStudent(el, id, week = '', part = 'all') {
   );
   $('#q-open-counter')?.addEventListener('click', () => openCounter(lesson, todayReps, reload));
   el.querySelectorAll('[data-day]').forEach((tr) => tr.addEventListener('click', () => (location.hash = `#/quran/review/${st.id}?date=${tr.dataset.day}`)));
+  // تعديل عدد تكرارات المقرر ليوم (اليوم أو يوم ماضٍ)
+  el.querySelectorAll('[data-reps-day]').forEach((b) =>
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const d = b.dataset.repsDay;
+      const l = full.lessons.find((x) => x.id === Number(b.dataset.lesson));
+      openModal(
+        `📝 تكرار المقرر · ${qDay(d)} ${qShort(d)}`,
+        `<p class="muted small">المقرر: <b>${esc(l?.content || '')}</b></p>
+         <div class="reps-step"><button type="button" data-step="-1" aria-label="أقل">−</button>
+           <input type="number" name="count" min="0" max="1000" value="${b.dataset.count}" inputmode="numeric">
+           <button type="button" data-step="1" aria-label="أكثر">＋</button></div>
+         <div class="reps-quick">${[5, 10, 20].map((n) => `<button type="button" class="chip-check" data-add="${n}">＋${n}</button>`).join('')}</div>`,
+        async (data) => {
+          await api('PUT', `/api/quran/lessons/${l.id}/reps`, { date: d, count: Math.max(0, Number(data.count) || 0) });
+          toast('تم الحفظ ✓');
+          reload();
+        }
+      );
+      const input = $('#modal-form input[name=count]');
+      const set = (v) => (input.value = Math.max(0, Math.min(1000, v)));
+      $('#modal-form .reps-step').addEventListener('click', (ev) => {
+        const k = ev.target.closest('[data-step]');
+        if (k) set((Number(input.value) || 0) + Number(k.dataset.step));
+      });
+      $('#modal-form .reps-quick').addEventListener('click', (ev) => {
+        const k = ev.target.closest('[data-add]');
+        if (k) set((Number(input.value) || 0) + Number(k.dataset.add));
+      });
+    })
+  );
   $('#q-set')?.addEventListener('click', () =>
     openModal(
       '✏️ عدد التكرارات',

@@ -601,3 +601,13 @@ select.pick-native { display: none !important; }
 .q-tile-name small { font-size: .66rem; }
 .q-tile-step { padding: .3rem .4rem .45rem; }
 .q-tile-step button { width: 1.8rem; height: 1.8rem; }
+/* تعديل تكرارات يوم من الجدول */
+.wk-reps-btn { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.wk-reps-btn:hover .wk-reps { box-shadow: 0 0 0 2px var(--accent); }
+.wk-reps.empty { background: var(--soft-2); color: var(--muted); font-family: inherit; }
+.wk-hint { margin: .6rem 0 0; }
+.reps-step { display: flex; align-items: center; justify-content: center; gap: .6rem; margin: .8rem 0; }
+.reps-step button { width: 3rem; height: 3rem; border-radius: 14px; border: 0; cursor: pointer; font: inherit; font-size: 1.5rem; font-weight: 800; background: var(--soft); color: var(--accent); }
+.reps-step input { width: 6rem; text-align: center; font-size: 1.6rem; font-weight: 800; margin: 0; font-family: 'Oswald', 'Tajawal', sans-serif; }
+.reps-quick { display: flex; justify-content: center; gap: .4rem; }
+.reps-quick .chip-check { border: 0; font: inherit; font-weight: 700; padding: .35rem .8rem; }
