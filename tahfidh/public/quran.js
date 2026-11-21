@@ -866,55 +866,98 @@ async function viewQuranHifz(el, id) {
   const full = await api('GET', `/api/quran/students/${id}`);
   const st = full.student;
   const mem = { ...(st.memorized || {}) };
-  const mode = 's'; // حالة واحدة: محدّد (محفوظ) أو غير محدّد
-  const tree = quranTree();
-  const stateOf = (ids) => {
-    const v = ids.map((i) => mem[i] || '');
-    if (v.every((x) => x === 's')) return 's';
-    if (v.every((x) => x === 'w')) return 'w';
-    if (v.every((x) => !x)) return '';
-    return 'mix';
-  };
-  const size = (ids) => QD.sizeOf(ids);
-  const apply = (ids) => {
-    const clear = mode === '' || stateOf(ids) === mode;
-    for (const i of ids) clear ? delete mem[i] : (mem[i] = mode);
+  const me = state.user.role === 'talib';
+  // حالة واحدة: محدّد (محفوظ) أو غير محدّد
+  const stateOf = (ids) => (ids.every((i) => mem[i]) ? 'on' : ids.some((i) => mem[i]) ? 'mix' : '');
+  const toggle = (ids) => {
+    const all = stateOf(ids) === 'on';
+    for (const i of ids) all ? delete mem[i] : (mem[i] = 's');
     render();
   };
-  el.innerHTML = `<p><a href="${state.user.role === 'talib' ? '#/account' : `#/quran/student/${id}`}">→ ${state.user.role === 'talib' ? 'حسابي' : esc(st.full_name)}</a></p>
-    <div class="card"><h2>📗 تحديد المحفوظ${state.user.role === 'talib' ? '' : ` — ${esc(st.full_name)}`}</h2>
-      <p class="muted small">اضغط على ربع كامل أو جزء أو سورة لتحديدها محفوظة، واضغط مرة ثانية لإلغاء التحديد. افتح الربع لترى أجزاءه، والجزء لترى سوره.</p></div>
+  // نفس طرق العرض في شاشة الورد: بالأرباع، بالأجزاء، بالسور
+  const tree = quranTree();
+  const suraGroup = (segs) =>
+    [...new Set(segs.map((g) => g.sura))].map((n) => {
+      const ss = segs.filter((g) => g.sura === n);
+      const from = ss[0].from;
+      const to = ss[ss.length - 1].to;
+      return { ids: ss.map((g) => g.id), name: QD.suraName(n), num: n, range: from === 1 && to === QD.AYAT[n - 1] ? '' : `${from}–${to}` };
+    });
+  const juzList = Array.from({ length: 30 }, (_, k) => {
+    const js = QD.segments.filter((g) => g.juz === k + 1);
+    return { juz: k + 1, ids: js.map((g) => g.id), hizbs: [...new Set(js.map((g) => g.hizb))], suras: suraGroup(js) };
+  });
+  const suraList = suraGroup(QD.segments);
+  const VIEWS = { quarters: 'بالأرباع', juz: 'بالأجزاء', suras: 'بالسور' };
+  let view = (() => {
+    try {
+      return VIEWS[localStorage.getItem('qHifzView')] ? localStorage.getItem('qHifzView') : 'quarters';
+    } catch {
+      return 'quarters';
+    }
+  })();
+  el.innerHTML = `<p><a href="${me ? '#/account' : `#/quran/student/${id}`}">→ ${me ? 'حسابي' : esc(st.full_name)}</a></p>
+    <div class="card"><h2>📗 تحديد المحفوظ${me ? '' : ` — ${esc(st.full_name)}`}</h2>
+      <p class="muted small">اضغط على ربع أو جزء أو سورة لتحديدها محفوظة، واضغط مرة ثانية لإلغاء التحديد.</p>
+      <div class="q-seg" role="tablist" aria-label="طريقة العرض">${Object.entries(VIEWS)
+        .map(([k, l]) => `<button type="button" role="tab" data-view="${k}" class="${k === view ? 'on' : ''}">${l}</button>`).join('')}</div></div>
     <div id="q-tree"></div>
     <div class="q-savebar"><span id="q-sum"></span><button type="button" class="btn" id="q-save">حفظ المحفوظ</button></div>`;
-  const icon = (c) => (c === 's' ? '✓' : c === 'w' ? '↻' : c === 'mix' ? '◐' : '○');
+  el.querySelectorAll('.q-seg button').forEach((b) =>
+    b.addEventListener('click', () => {
+      view = b.dataset.view;
+      try {
+        localStorage.setItem('qHifzView', view);
+      } catch {}
+      el.querySelectorAll('.q-seg button').forEach((x) => x.classList.toggle('on', x === b));
+      render();
+    })
+  );
+  const pick = (ids, title) => {
+    const c = stateOf(ids);
+    return `<button type="button" class="q-pick ${c}" data-ids="${ids.join(',')}" title="${title}">${c === 'on' ? '✓' : c === 'mix' ? '◐' : '○'}</button>`;
+  };
+  // بطاقة سورة بنفس مظهر شاشة الورد
+  const tile = (s) => {
+    const c = stateOf(s.ids);
+    const sub = [s.range && `الآيات ${s.range}`, c === 'on' ? 'محفوظة' : c === 'mix' ? 'جزء منها' : ''].filter(Boolean).join(' · ') || 'غير محفوظة';
+    return `<div class="q-tile ${c === 'on' ? 'picked' : c === 'mix' ? 'half' : ''}">
+      <button type="button" class="q-tile-main" data-ids="${s.ids.join(',')}">
+        <span class="q-tile-num">${s.num ?? s.sura}</span>
+        <span class="q-tile-name"><b>${s.name}</b><small>${sub}</small></span>
+        <span class="q-tile-mark" aria-hidden="true">${c === 'on' ? '✓' : ''}</span>
+      </button></div>`;
+  };
+  const juzBlock = (j, key) => {
+    const memIds = j.ids.filter((i) => mem[i]);
+    return `<details class="q-juz" data-key="${key}">
+      <summary><span class="q-jname">الجزء ${j.juz} <small class="muted">· ${memIds.length ? `${hizbTxt(QD.sizeOf(memIds))} محفوظ` : `الحزب ${j.hizbs.join(' و')}`}</small></span>
+        ${pick(j.ids, 'كل الجزء')}</summary>
+      <div class="q-tiles">${j.suras.map(tile).join('')}</div></details>`;
+  };
   function render() {
-    const solid = Object.keys(mem).filter((k) => mem[k] === 's').map(Number);
-    $('#q-sum').innerHTML = `المحفوظ: <b>${hizbTxt(size(solid))}</b>`;
-    $('#q-tree').innerHTML = tree
-      .map((q) => {
-        const sq = stateOf(q.ids);
-        const memIds = q.ids.filter((i) => mem[i]);
-        return `<details class="card q-quarter" data-key="q${q.n}">
-          <summary><span class="q-num">${q.n}</span><span class="q-qname"><b>${q.name}</b><small>${hizbTxt(size(memIds))} من ${hizbTxt(size(q.ids))}</small>${bar(size(memIds), size(q.ids))}</span>
-            <button type="button" class="q-pick ${sq}" data-ids="${q.ids.join(',')}" title="كل الربع">${icon(sq)}</button></summary>
-          ${q.juzs
-            .map((j) => {
-              const sj = stateOf(j.ids);
-              return `<details class="q-juz" data-key="j${q.n}-${j.juz}">
-                <summary><span class="q-jname">الجزء ${j.juz} <small class="muted">· الحزب ${j.hizbs.join(' و')}</small></span>
-                  <button type="button" class="q-pick ${sj}" data-ids="${j.ids.join(',')}" title="كل الجزء">${icon(sj)}</button></summary>
-                <div class="q-suras">${j.suras
-                  .map((s) => `<button type="button" class="q-sura ${stateOf(s.ids)}" data-ids="${s.ids.join(',')}">${s.name}${s.range ? ` <small>${s.range}</small>` : ''}</button>`)
-                  .join('')}</div></details>`;
-            })
-            .join('')}</details>`;
-      })
-      .join('');
+    const ids = Object.keys(mem).map(Number);
+    $('#q-sum').innerHTML = `المحفوظ: <b>${hizbTxt(QD.sizeOf(ids))}</b> <small class="muted">من 60</small>`;
+    if (view === 'suras') {
+      $('#q-tree').innerHTML = `<div class="card"><div class="q-tiles">${suraList.map(tile).join('')}</div></div>`;
+    } else if (view === 'juz') {
+      $('#q-tree').innerHTML = `<div class="card q-quarter q-juz-list">${juzList.map((j) => juzBlock(j, `hj-${j.juz}`)).join('')}</div>`;
+    } else {
+      $('#q-tree').innerHTML = tree
+        .map((q) => {
+          const memIds = q.ids.filter((i) => mem[i]);
+          return `<details class="card q-quarter" data-key="q${q.n}">
+            <summary><span class="q-num">${q.n}</span><span class="q-qname"><b>${q.name}</b><small>${hizbTxt(QD.sizeOf(memIds))} من ${hizbTxt(QD.sizeOf(q.ids))}</small>${bar(QD.sizeOf(memIds), QD.sizeOf(q.ids))}</span>
+              ${pick(q.ids, 'كل الربع')}</summary>
+            ${q.juzs.map((j) => juzBlock(j, `j${q.n}-${j.juz}`)).join('')}</details>`;
+        })
+        .join('');
+    }
     $('#q-tree').querySelectorAll('[data-ids]').forEach((b) =>
       b.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        apply(b.dataset.ids.split(',').map(Number));
+        toggle(b.dataset.ids.split(',').map(Number));
       })
     );
     rememberOpen($('#q-tree'), 'qOpen');
@@ -924,7 +967,7 @@ async function viewQuranHifz(el, id) {
     try {
       await api('PUT', `/api/quran/students/${id}/memorized`, { memorized: mem });
       toast('تم حفظ المحفوظ ✓');
-      location.hash = state.user.role === 'talib' ? '#/account' : `#/quran/student/${id}`;
+      location.hash = me ? '#/account' : `#/quran/student/${id}`;
     } catch (e) {
       toast(e.message, true);
     }
