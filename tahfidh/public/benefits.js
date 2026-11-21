@@ -16,15 +16,16 @@ const benefitCard = (b, admin = false) => `<article class="ben-card">
 
 // ---------- الطالب ----------
 async function viewBenefits(el, tab = '') {
-  tab = ['mine', 'polls'].includes(tab) ? tab : 'sheikh';
+  tab = tab === 'mine' ? 'mine' : 'sheikh';
   el.innerHTML = `<div class="page-head"><h2>💡 الفوائد</h2></div>
     <div class="q-seg rec-seg" role="tablist">
       <a role="tab" href="#/benefits?sheikh" class="${tab === 'sheikh' ? 'on' : ''}">من الشيخ</a>
       <a role="tab" href="#/benefits?mine" class="${tab === 'mine' ? 'on' : ''}">ملاحظاتي</a>
-      <a role="tab" href="#/benefits?polls" class="${tab === 'polls' ? 'on' : ''}">📊 الاستبيانات</a></div>
+      <span></span></div>
     <div id="ben-page"></div>`;
+  el.querySelector('.rec-seg').style.gridTemplateColumns = '1fr 1fr';
+  el.querySelector('.rec-seg span').remove();
   const page = $('#ben-page');
-  if (tab === 'polls') return studentPolls(page);
   if (tab === 'sheikh') {
     const { benefits } = await api('GET', '/api/quran/benefits');
     page.innerHTML = benefits.length
@@ -103,4 +104,4 @@ async function benefitsTab(page, groups) {
   );
 }
 
-routes.unshift([/^#\/benefits(?:\?(sheikh|mine|polls))?$/, (el, tab) => viewBenefits(el, tab || '')]);
+routes.unshift([/^#\/benefits(?:\?(sheikh|mine))?$/, (el, tab) => viewBenefits(el, tab || '')]);
