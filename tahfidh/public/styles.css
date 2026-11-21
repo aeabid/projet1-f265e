@@ -611,3 +611,15 @@ select.pick-native { display: none !important; }
 .reps-step input { width: 6rem; text-align: center; font-size: 1.6rem; font-weight: 800; margin: 0; font-family: 'Oswald', 'Tajawal', sans-serif; }
 .reps-quick { display: flex; justify-content: center; gap: .4rem; }
 .reps-quick .chip-check { border: 0; font: inherit; font-weight: 700; padding: .35rem .8rem; }
+
+/* ركن الفوائد */
+.ben-list { display: flex; flex-direction: column; gap: .7rem; }
+.ben-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: .9rem 1rem; box-shadow: var(--shadow); border-inline-start: 4px solid var(--gold); }
+.ben-card.mine { border-inline-start-color: var(--accent); }
+.ben-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem; margin-bottom: .35rem; }
+.ben-card h4 { margin: .2rem 0 .3rem; color: var(--accent); font-size: 1.02rem; }
+.ben-body { margin: 0; white-space: pre-wrap; line-height: 1.8; }
+.ben-card .q-actions { margin-top: .6rem; }
+.note-new textarea { resize: vertical; }
+.note-new .btn { margin-top: .2rem; }
+.center { text-align: center; }
