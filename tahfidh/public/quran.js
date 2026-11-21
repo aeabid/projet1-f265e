@@ -101,7 +101,7 @@ async function viewQuranHome(el, tab = '') {
   const avg = withReview.length ? Math.round(withReview.reduce((t, s) => t + s.review.percent, 0) / withReview.length) : 0;
   const reached = active.filter((s) => s.lesson && s.lesson.week_total >= s.lesson.target).length;
   tab = tab === 'overview' ? 'students' : tab || sessionStorage.getItem('qTab') || 'students';
-  if (!['students', 'groups', 'signups', 'benefits'].includes(tab)) tab = 'students';
+  if (!['students', 'groups', 'signups', 'benefits', 'polls'].includes(tab)) tab = 'students';
   sessionStorage.setItem('qTab', tab);
   el.innerHTML = `
     ${heroBanner({ sub: 'تابع مراجعة الطلبة وحفظهم أسبوعًا بأسبوع.', art: '📖',
@@ -117,6 +117,7 @@ async function viewQuranHome(el, tab = '') {
       <a href="#/quran/students" class="${tab === 'students' ? 'on' : ''}"><span>👥</span>الطلبة</a>
       <a href="#/quran/groups" class="${tab === 'groups' ? 'on' : ''}"><span>🕌</span>المجموعات</a>
       <a href="#/quran/benefits" class="${tab === 'benefits' ? 'on' : ''}"><span>💡</span>الفوائد</a>
+      <a href="#/quran/polls" class="${tab === 'polls' ? 'on' : ''}"><span>📊</span>سبر الآراء</a>
       <a href="#/quran/signups" class="${tab === 'signups' ? 'on' : ''}"><span>📝</span>طلبات التسجيل<b class="tab-badge" id="signup-badge" hidden></b></a>
     </div>
     <div id="q-page"></div>`;
@@ -127,6 +128,7 @@ async function viewQuranHome(el, tab = '') {
   refreshSignupBadge();
   if (tab === 'signups') return signupsTab(page, d.groups);
   if (tab === 'benefits') return benefitsTab(page, d.groups);
+  if (tab === 'polls') return pollsTab(page, d.groups);
   return quranStudentsTab(page, d);
 }
 
@@ -614,6 +616,16 @@ async function viewQuranStudent(el, id, week = '', part = 'all') {
   const reload = () => viewQuranStudent(el, id, week, part);
   $('#q-week-sel')?.addEventListener('change', (e) => (location.hash = `${base}?week=${e.target.value}`));
   if (show('month')) monthCard($('#q-month'), st);
+  // تنبيه في الرئيسية: استبيان مفتوح لم يجب عنه الطالب بعد
+  if (me && part === 'home')
+    api('GET', '/api/quran/polls')
+      .then(({ polls }) => {
+        const n = polls.filter((p) => !p.closed && !p.my_answers).length;
+        const hero = el.querySelector('.hero');
+        if (!n || !hero || !hero.isConnected) return;
+        hero.insertAdjacentHTML('afterend', `<a href="#/benefits?polls" class="signup-alert">📊 <span>${n === 1 ? 'استبيان بانتظار جوابك' : `${n} استبيانات بانتظار جوابك`}</span> <b>أجب ←</b></a>`);
+      })
+      .catch(() => {});
   $('#q-lesson-me')?.addEventListener('click', () => quranLessonForm(st, reload));
   el.querySelectorAll('[data-edit-lesson]').forEach((b) =>
     b.addEventListener('click', () => quranLessonForm(st, reload, full.lessons.find((l) => l.id === Number(b.dataset.editLesson))))
@@ -1065,7 +1077,7 @@ async function viewRecords(el, id, mode = '', period = '') {
 
 // المسارات (تُضاف لقائمة app.js)
 routes.unshift(
-  [/^#\/quran(?:\/(students|groups|overview|signups|benefits))?$/, (el, tab) => (state.user.role === 'talib' ? viewQuranStudent(el, state.user.id, '', 'home') : viewQuranHome(el, tab || ''))],
+  [/^#\/quran(?:\/(students|groups|overview|signups|benefits|polls))?$/, (el, tab) => (state.user.role === 'talib' ? viewQuranStudent(el, state.user.id, '', 'home') : viewQuranHome(el, tab || ''))],
   [/^#\/quran\/student\/(\d+)(?:\?week=(\d{4}-\d{2}-\d{2}))?$/, (el, id, week) => viewQuranStudent(el, Number(id), week || '', state.user.role === 'talib' ? 'home' : 'all')],
   [/^#\/home\?week=(\d{4}-\d{2}-\d{2})$/, (el, week) => viewQuranStudent(el, state.user.id, week, 'home')],
   [/^#\/my-progress(?:\?(week|month|year)(?:=([\d-]+))?)?$/, (el, m, p) => viewRecords(el, state.user.id, m || '', p || '')],

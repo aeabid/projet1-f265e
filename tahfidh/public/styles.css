@@ -623,3 +623,26 @@ select.pick-native { display: none !important; }
 .note-new textarea { resize: vertical; }
 .note-new .btn { margin-top: .2rem; }
 .center { text-align: center; }
+
+/* سبر الآراء */
+.poll-card.closed { opacity: .75; border-inline-start-color: var(--border); }
+.poll-card .q-bar { margin: .3rem 0 .6rem; }
+.poll-q { border: 1px solid var(--border); border-radius: 14px; padding: .7rem; margin-bottom: .6rem; background: var(--soft); }
+.poll-q > * { margin-top: .4rem; }
+.poll-q-head { display: flex; justify-content: space-between; align-items: center; margin: 0; }
+.poll-q-head b { color: var(--accent); }
+.poll-anon { align-self: end; margin-bottom: 1rem; }
+.poll-res h3 { margin-bottom: .7rem; }
+.poll-bar { display: grid; grid-template-columns: minmax(0, 1.2fr) 1fr auto; align-items: center; gap: .6rem; margin: .45rem 0; font-size: .92rem; }
+.poll-bar b { white-space: nowrap; }
+.poll-bar small { color: var(--muted); font-weight: 400; }
+.poll-avg { font-size: 1.1rem; margin: 0 0 .5rem; }
+.stars { color: var(--gold); letter-spacing: 2px; font-size: 1.3rem; }
+.poll-qa { margin: .9rem 0; }
+.poll-qa > div { display: flex; flex-direction: column; gap: .35rem; margin-top: .45rem; }
+.poll-opt { display: flex; align-items: center; gap: .55rem; margin: 0; padding: .55rem .75rem; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; background: var(--card); }
+.poll-opt:has(input:checked) { border-color: var(--accent); background: var(--soft); font-weight: 700; }
+.poll-opt input { width: auto; margin: 0; accent-color: var(--accent); }
+.poll-stars { flex-direction: row !important; gap: .2rem !important; }
+.poll-stars button { font-size: 2rem; line-height: 1; background: none; border: 0; cursor: pointer; color: var(--border); padding: 0 .1rem; }
+.poll-stars button.on { color: var(--gold); }

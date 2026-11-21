@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { registerQuranRoutes } from './quran.js';
 import { registerGoogleRoutes, verifyGoogleToken } from './google.js';
 import { registerBenefitRoutes } from './benefits.js';
+import { registerPollRoutes } from './polls.js';
 
 const SESSION_COOKIE = 'tsid';
 const SESSION_TTL_S = 60 * 24 * 60 * 60;
@@ -218,6 +219,7 @@ export function createHandler(pool, {
   // ---------- المتابعة ----------
   registerQuranRoutes({ route, pool, all, one, HttpError, text, date, hashPassword, password, today });
   registerBenefitRoutes({ route, pool, all, one, HttpError, text });
+  registerPollRoutes({ route, pool, all, one, HttpError, text });
 
   return async function handle(request) {
     const url = new URL(request.url);
