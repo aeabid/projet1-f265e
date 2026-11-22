@@ -1,5 +1,5 @@
 // ركن الفوائد: فوائد الشيخ (لمجموعة أو لكل الطلبة) وملاحظات الطالب الخاصة به
-export function registerBenefitRoutes({ route, pool, all, one, HttpError, text }) {
+export function registerBenefitRoutes({ route, pool, all, one, HttpError, text, notify }) {
   const body = (b) => text(b.body, { required: !(b.images?.length || b.keep_images?.length || b.youtube?.length), max: 8000, name: 'النص' }) || '';
   // روابط يوتيوب: نحتفظ برقم الفيديو فقط (11 حرفًا)
   function youtube(list) {
@@ -62,6 +62,13 @@ export function registerBenefitRoutes({ route, pool, all, one, HttpError, text }
       await pool.query('DELETE FROM quran_benefits WHERE id = $1', [row.id]);
       throw e;
     }
+    const gid = await groupOf(b.group_id);
+    await notify(
+      gid
+        ? { sql: 'SELECT s.user_id AS id FROM quran_students s WHERE s.active AND s.group_id = $1', params: [gid] }
+        : { sql: 'SELECT s.user_id AS id FROM quran_students s WHERE s.active' },
+      { kind: 'benefit', title: `💡 فائدة جديدة${b.title ? `: ${String(b.title).trim().slice(0, 100)}` : ''}`, body: b.body || null, link: '#/benefits' }
+    );
     return [201, { id: row.id }];
   });
   route('PUT', '/api/quran/benefits/:id', ['admin'], async ({ params, body: b }) => {

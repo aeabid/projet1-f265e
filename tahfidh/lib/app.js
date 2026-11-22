@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { registerQuranRoutes } from './quran.js';
 import { registerGoogleRoutes, verifyGoogleToken } from './google.js';
 import { registerBenefitRoutes } from './benefits.js';
+import { makeNotifier, registerNotificationRoutes } from './notify.js';
 
 const SESSION_COOKIE = 'tsid';
 const SESSION_TTL_S = 60 * 24 * 60 * 60;
@@ -181,7 +182,9 @@ export function createHandler(pool, {
   });
 
   // ---------- Google: الدخول، وتسجيل الطلبة الجدد (يؤكده المشرف) ----------
-  registerGoogleRoutes({ route, pool, all, one, HttpError, text, hashPassword, today, startSession, googleClientId, verifyGoogle, ANY });
+  const notify = makeNotifier(pool);
+  registerNotificationRoutes({ route, pool, all, one, ANY });
+  registerGoogleRoutes({ route, pool, all, one, HttpError, text, hashPassword, today, startSession, googleClientId, verifyGoogle, ANY, notify });
 
   // ---------- المشرفون: الشيخ والإدارة، بنفس الصلاحيات ----------
   route('GET', '/api/admins', ['admin'], async () => ({
@@ -216,8 +219,8 @@ export function createHandler(pool, {
   });
 
   // ---------- المتابعة ----------
-  registerQuranRoutes({ route, pool, all, one, HttpError, text, date, hashPassword, password, today });
-  registerBenefitRoutes({ route, pool, all, one, HttpError, text });
+  registerQuranRoutes({ route, pool, all, one, HttpError, text, date, hashPassword, password, today, notify });
+  registerBenefitRoutes({ route, pool, all, one, HttpError, text, notify });
 
   return async function handle(request) {
     const url = new URL(request.url);

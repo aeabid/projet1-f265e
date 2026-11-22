@@ -72,3 +72,20 @@ test('benefit images and youtube links', async () => {
   assert.strictEqual((await admin('POST', '/api/quran/benefits', { images: ['data:text/html;base64,AAAA'] })).status, 400);
   assert.strictEqual((await admin('POST', '/api/quran/benefits', { youtube: ['nope'] })).status, 400);
 });
+
+test('notifications: new benefit and sheikh note reach students', async () => {
+  const admin = await login('admin', 'admin123');
+  const g = (await admin('POST', '/api/quran/groups', { name: 'ج', meet_day: 5 })).body.group;
+  const s = (await admin('POST', '/api/quran/students', { username: 'n1', password: 'secret1', first_name: 'ن1', group_id: g.id })).body.student;
+  const st = await login('n1', 'secret1');
+  assert.strictEqual((await st('GET', '/api/notifications/count')).body.unread, 0);
+  await admin('POST', '/api/quran/benefits', { group_id: g.id, title: 'تنبيه', body: 'نص' });
+  await admin('POST', `/api/quran/students/${s.id}/meetings`, { attendance: 'present', note: 'أحسنت' });
+  await admin('POST', `/api/quran/students/${s.id}/meetings`, { attendance: 'present', note: 'أحسنت' });
+  assert.strictEqual((await st('GET', '/api/notifications/count')).body.unread, 2);
+  const list = (await st('GET', '/api/notifications')).body.notifications;
+  assert.deepStrictEqual(list.map((n) => n.kind).sort(), ['benefit', 'note']);
+  await st('POST', '/api/notifications/read');
+  assert.strictEqual((await st('GET', '/api/notifications/count')).body.unread, 0);
+  assert.strictEqual((await admin('DELETE', `/api/quran/students/${s.id}`)).status, 200);
+});

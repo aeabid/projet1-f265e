@@ -84,6 +84,11 @@ function bindBenefitMedia(root) {
 
 // ---------- الطالب ----------
 async function viewBenefits(el, tab = '') {
+  if (state.user.role === 'admin') {
+    const { groups } = await api('GET', '/api/quran/overview');
+    el.innerHTML = '<div id="ben-admin"></div>';
+    return benefitsTab($('#ben-admin'), groups);
+  }
   tab = tab === 'mine' ? 'mine' : 'sheikh';
   el.innerHTML = `<div class="page-head"><h2>💡 الفوائد</h2></div>
     <div class="q-seg rec-seg" role="tablist">

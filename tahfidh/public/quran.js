@@ -96,42 +96,39 @@ function rememberOpen(root, key) {
 // ---------- الرئيسية (المشرفون) ----------
 async function viewQuranHome(el, tab = '') {
   const d = await api('GET', '/api/quran/overview');
+  if (tab === 'overview') tab = 'students';
+  if (tab === 'students' || tab === 'groups') {
+    const st = tab === 'students';
+    el.innerHTML = `<div class="page-head"><h2>${st ? '👥 الطلبة' : '🕌 المجموعات'}</h2>
+        <button type="button" class="btn small" id="q-add">${st ? '＋ طالب جديد' : '＋ مجموعة'}</button></div>
+      <div id="q-page"></div>`;
+    $('#q-add').addEventListener('click', () =>
+      st ? quranStudentForm(null, d, () => viewQuranHome(el, 'students')) : quranGroupForm(null, () => viewQuranHome(el, 'groups'))
+    );
+    return st ? quranStudentsTab($('#q-page'), d, el) : quranGroupsTab($('#q-page'), d, el);
+  }
+  if (tab === 'benefits') return (location.hash = '#/benefits');
   const active = d.students.filter((s) => s.active);
   const withReview = active.filter((s) => s.review?.percent !== null && s.review?.percent !== undefined);
   const avg = withReview.length ? Math.round(withReview.reduce((t, s) => t + s.review.percent, 0) / withReview.length) : 0;
   const reached = active.filter((s) => s.lesson && s.lesson.week_total >= s.lesson.target).length;
-  tab = tab === 'overview' ? 'students' : tab || sessionStorage.getItem('qTab') || 'students';
-  if (!['students', 'groups', 'signups', 'benefits'].includes(tab)) tab = 'students';
-  sessionStorage.setItem('qTab', tab);
   el.innerHTML = `
     ${heroBanner({ sub: 'تابع مراجعة الطلبة وحفظهم أسبوعًا بأسبوع.', art: '📖',
       actions: '<button type="button" class="btn" id="q-add-st">＋ طالب جديد</button><button type="button" class="btn ghost" id="q-add-g">＋ مجموعة</button>' })}
     <div class="kpis">
-      <div class="kpi"><b>${active.length}</b><span>طالب</span></div>
-      <div class="kpi"><b>${d.groups.length}</b><span>مجموعة</span></div>
+      <a class="kpi" href="#/quran/students"><b>${active.length}</b><span>طالب</span></a>
+      <a class="kpi" href="#/quran/groups"><b>${d.groups.length}</b><span>مجموعة</span></a>
       <div class="kpi"><b>${avg}%</b><span>معدّل إنجاز المراجعة هذا الأسبوع</span></div>
       <div class="kpi"><b class="in">${reached}</b><span>بلغ هدف تكرار المقرر</span></div>
     </div>
-    <a href="#/quran/signups" class="signup-alert" id="signup-alert" hidden>📝 <span></span> <b>عرض ←</b></a>
-    <div class="board-tabs" role="tablist">
-      <a href="#/quran/students" class="${tab === 'students' ? 'on' : ''}"><span>👥</span>الطلبة</a>
-      <a href="#/quran/groups" class="${tab === 'groups' ? 'on' : ''}"><span>🕌</span>المجموعات</a>
-      <a href="#/quran/benefits" class="${tab === 'benefits' ? 'on' : ''}"><span>💡</span>الفوائد</a>
-      <a href="#/quran/signups" class="${tab === 'signups' ? 'on' : ''}"><span>📝</span>طلبات التسجيل<b class="tab-badge" id="signup-badge" hidden></b></a>
-    </div>
     <div id="q-page"></div>`;
-  $('#q-add-st').addEventListener('click', () => quranStudentForm(null, d, () => viewQuranHome(el, 'students')));
-  $('#q-add-g').addEventListener('click', () => quranGroupForm(null, () => viewQuranHome(el, 'groups')));
-  const page = $('#q-page');
-  if (tab === 'groups') return quranGroupsTab(page, d, el);
-  refreshSignupBadge();
-  if (tab === 'signups') return signupsTab(page, d.groups);
-  if (tab === 'benefits') return benefitsTab(page, d.groups);
-  return quranStudentsTab(page, d);
+  $('#q-add-st').addEventListener('click', () => quranStudentForm(null, d, () => viewQuranHome(el)));
+  $('#q-add-g').addEventListener('click', () => quranGroupForm(null, () => viewQuranHome(el)));
+  return signupsTab($('#q-page'), d.groups);
 }
 
 // الطلبة: جدول تقدّم كل الطلبة + حضور / غيابات اليوم المختار، في صفحة واحدة
-async function quranStudentsTab(page, d) {
+async function quranStudentsTab(page, d, root) {
   if (!d.students.length) {
     page.innerHTML = '<div class="card empty-state"><span>📖</span><p>لا يوجد طلبة بعد. أضف مجموعة ثم طالبًا جديدًا.</p></div>';
     return;
@@ -185,7 +182,8 @@ async function quranStudentsTab(page, d) {
         const l = s.lesson;
         const a = draft[s.id];
         return `<tr class="${a === 'absent' ? 'is-absent' : a === 'excused' ? 'is-excused' : ''} ${s.active ? '' : 'q-off'}">
-          <td class="ov-name"><a href="#/quran/student/${s.id}"><b>${esc(s.full_name)}</b></a>${s.active ? '' : ' <span class="badge general">متوقف</span>'}
+          <td class="ov-name"><button type="button" class="ov-del" data-del-st="${s.id}" title="حذف الطالب" aria-label="حذف الطالب">🗑</button>
+            <a href="#/quran/student/${s.id}"><b>${esc(s.full_name)}</b></a>${s.active ? '' : ' <span class="badge general">متوقف</span>'}
             <small class="q-what">${[s.group_name && esc(s.group_name), s.age && `${s.age} سنة`].filter(Boolean).join(' · ')}</small></td>
           <td data-l="المحفوظ">${hizbTxt(s.solid_hizb + s.weak_hizb)}</td>
           <td data-l="المراجعة هذا الأسبوع"><div class="q-mini">${bar(r.percent || 0, 100)}<b>${r.percent ?? 0}%</b></div></td>
@@ -194,6 +192,19 @@ async function quranStudentsTab(page, d) {
           <td class="ov-att">${att(s)}</td></tr>`;
       })
       .join('') || '<tr><td colspan="6" class="muted">لا نتائج.</td></tr>';
+    $('#ov-body').querySelectorAll('[data-del-st]').forEach((x) =>
+      x.addEventListener('click', async () => {
+        const s = d.students.find((y) => y.id === Number(x.dataset.delSt));
+        if (!confirmAction(`حذف ${s.full_name} وكل متابعته نهائيًا؟\n(إن كان سيعود لاحقًا فالأفضل تعديله إلى «متوقف»)`)) return;
+        try {
+          await api('DELETE', `/api/quran/students/${s.id}`);
+          toast('تم حذف الطالب');
+          viewQuranHome(root, 'students');
+        } catch (e) {
+          toast(e.message, true);
+        }
+      })
+    );
     summary();
   };
   const load = async () => {

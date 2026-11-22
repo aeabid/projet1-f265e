@@ -13,7 +13,7 @@ export async function verifyGoogleToken(credential, clientId, HttpError) {
   return { sub: info.sub, email: info.email, name: info.name || info.email };
 }
 
-export function registerGoogleRoutes({ route, pool, all, one, HttpError, text, hashPassword, today, startSession, googleClientId, verifyGoogle, ANY }) {
+export function registerGoogleRoutes({ route, pool, all, one, HttpError, text, hashPassword, today, startSession, googleClientId, verifyGoogle, ANY, notify }) {
   const enabled = () => {
     if (!googleClientId) throw new HttpError(400, 'الدخول بـ Google غير مفعّل بعد');
   };
@@ -71,6 +71,10 @@ export function registerGoogleRoutes({ route, pool, all, one, HttpError, text, h
          phone = $7, group_id = $8, note = $9, status = 'pending', handled_by = NULL, created_at = now()`,
       values
     );
+    await notify({ sql: `SELECT id FROM users WHERE role = 'admin'` }, {
+      kind: 'signup', title: `📝 طلب تسجيل جديد: ${[values[3], values[4]].filter(Boolean).join(' ')}`,
+      body: values[8] || g.email, link: '#/home',
+    });
     return [201, { status: 'pending' }];
   });
 

@@ -52,6 +52,7 @@ test('google signup: request, admin accepts, student logs in with google', async
   assert.strictEqual((await call('POST', '/api/auth/google/signup', { credential: cred, first_name: 'أحمد', last_name: 'بن علي', age: 12, group_id: g.id })).status, 201);
   assert.strictEqual((await call('POST', '/api/auth/google', { credential: cred })).body.status, 'pending');
   assert.strictEqual((await admin('GET', '/api/signups/count')).body.pending, 1);
+  assert.ok((await admin('GET', '/api/notifications')).body.notifications.some((n) => n.kind === 'signup'));
 
   const list = (await admin('GET', '/api/signups')).body.signups;
   const acc = await admin('POST', `/api/signups/${list[0].id}/accept`, {});

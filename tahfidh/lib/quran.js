@@ -59,7 +59,7 @@ export function reviewProgress(st, items) {
   };
 }
 
-export function registerQuranRoutes({ route, pool, all, one, HttpError, text, date, hashPassword, password, today }) {
+export function registerQuranRoutes({ route, pool, all, one, HttpError, text, date, hashPassword, password, today, notify }) {
   const STAFF = ['admin'];
   const q = (method, path, roles, handler) =>
     route(method, path, roles, handler);
@@ -492,6 +492,8 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     if (!ATTENDANCE.includes(attendance)) throw new HttpError(400, 'الحضور غير صالح');
     let lessonId = null;
     if (body.lesson_id) lessonId = (await loadLesson(user, body.lesson_id, { write: true })).id;
+    const day = body.date ? date(body.date) : today();
+    const prevNote = (await one('SELECT note FROM quran_meetings WHERE student_id = $1 AND date = $2', [st.id, day]))?.note || '';
     const meeting = await one(
       `INSERT INTO quran_meetings (student_id, date, attendance, review_eval, hifz_eval, ada_eval, tajweed_eval, lesson_id, note, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -499,9 +501,13 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
          hifz_eval = EXCLUDED.hifz_eval, ada_eval = EXCLUDED.ada_eval, tajweed_eval = EXCLUDED.tajweed_eval,
          lesson_id = EXCLUDED.lesson_id, note = EXCLUDED.note
        RETURNING id, date::text, attendance`,
-      [st.id, body.date ? date(body.date) : today(), attendance, rating(body.review_eval, 'تقييم المراجعة'), rating(body.hifz_eval, 'تقييم الحفظ'),
+      [st.id, day, attendance, rating(body.review_eval, 'تقييم المراجعة'), rating(body.hifz_eval, 'تقييم الحفظ'),
         rating(body.ada_eval, 'تقييم الأداء'), rating(body.tajweed_eval, 'تقييم التجويد'), lessonId, text(body.note, { max: 1000, name: 'الملاحظة' }), user.id]
     );
+    const note = text(body.note, { max: 1000, name: 'الملاحظة' }) || '';
+    if (note && note !== prevNote) {
+      await notify([st.id], { kind: 'note', title: `📝 ملاحظة جديدة من ${user.full_name}`, body: note, link: '#/home' });
+    }
     return [201, { meeting }];
   });
   q('DELETE', '/api/quran/meetings/:id', STAFF, async ({ user, params }) => {

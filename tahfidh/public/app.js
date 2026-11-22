@@ -207,7 +207,7 @@ const icon = (name) =>
   `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ICON_PATHS.grid}</svg>`;
 
 const NAV = {
-  admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'المجموعات', 'grid'], ['#/account', 'حسابي', 'user']],
+  admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'المجموعات', 'grid'], ['#/benefits', 'الفوائد', 'bulb'], ['#/account', 'حسابي', 'user']],
   // الطالب: الرئيسية (المقرر، الورد، الجدول، ملاحظات الشيخ) · الورد (تسجيل ورد اليوم) · سجلّي (بالأسبوع/بالشهر/بالسنة) · حسابي (البيانات والمحفوظ)
   talib: [['#/home', 'الرئيسية', 'home'], ['#/my-review', 'الورد', 'star'], ['#/my-progress', 'سجلّي', 'calendar'], ['#/benefits', 'الفوائد', 'bulb'], ['#/account', 'حسابي', 'user']],
 };
@@ -230,6 +230,53 @@ function renderTopbar() {
   $('#tabbar').innerHTML = items.map(([h, l, ic]) => `<a href="${h}" class="${on(h) ? 'on' : ''}">${icon(ic)}<span>${l}</span></a>`).join('');
   $('#who-name').textContent = `${state.user.full_name} · ${state.user.role_label}`;
   $('#who-photo').innerHTML = `<a href="#/account" title="حسابي">${avatar(state.user, 'sm')}</a>`;
+  refreshBell();
+}
+
+// ---------- الإشعارات ----------
+async function refreshBell() {
+  const el = $('#bell');
+  if (!el) return;
+  el.hidden = !state.user;
+  if (!state.user) return;
+  try {
+    const { unread } = await api('GET', '/api/notifications/count');
+    const b = el.querySelector('b');
+    b.textContent = unread > 9 ? '9+' : unread;
+    b.hidden = !unread;
+    el.classList.toggle('ring', unread > 0);
+  } catch {}
+}
+setInterval(() => state.user && !document.hidden && refreshBell(), 60000);
+document.addEventListener('visibilitychange', () => !document.hidden && state.user && refreshBell());
+
+const fmtAgo = (t) => {
+  const m = Math.round((Date.now() - new Date(t)) / 60000);
+  if (m < 1) return 'الآن';
+  if (m < 60) return `منذ ${m} د`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `منذ ${h} س`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'أمس' : d < 30 ? `منذ ${d} أيام` : new Date(t).toLocaleDateString('ar-TN');
+};
+async function viewNotifications(el) {
+  const { notifications: list } = await api('GET', '/api/notifications');
+  const ico = { benefit: '💡', note: '📝', signup: '🙋' };
+  el.innerHTML = `<div class="page-head"><h2>🔔 الإشعارات</h2>
+      ${list.length ? '<button type="button" class="btn small ghost" id="nt-clear">مسح الكل</button>' : ''}</div>
+    ${list.length
+      ? `<ul class="notifs">${list.map((n) => `<li class="${n.read ? '' : 'unread'}"><a href="${esc(n.link || '#/home')}">
+          <span class="nt-ico">${ico[n.kind] || '🔔'}</span>
+          <span class="nt-txt"><b>${esc(n.title.replace(/^\p{Extended_Pictographic}\s*/u, ''))}</b>${n.body ? `<small>${esc(n.body)}</small>` : ''}
+          <small class="muted">${fmtAgo(n.created_at)}</small></span></a></li>`).join('')}</ul>`
+      : '<div class="card empty-state"><span>🔔</span><p>لا توجد إشعارات. ستصلك هنا الفوائد والملاحظات الجديدة.</p></div>'}`;
+  $('#nt-clear')?.addEventListener('click', async () => {
+    if (!confirmAction('مسح كل الإشعارات؟')) return;
+    await api('DELETE', '/api/notifications');
+    viewNotifications(el);
+  });
+  if (list.some((n) => !n.read)) await api('POST', '/api/notifications/read').catch(() => {});
+  refreshBell();
 }
 
 $('#logout').addEventListener('click', async () => {
@@ -389,6 +436,7 @@ async function adminsCard(box) {
 const routes = [
   [/^#\/login$/, viewLogin],
   [/^#\/account$/, viewAccount],
+  [/^#\/notifications$/, viewNotifications],
   [/^#\/home$/, (el) => (state.user.role === 'talib' ? viewQuranStudent(el, state.user.id, '', 'home') : viewQuranHome(el))],
 ];
 

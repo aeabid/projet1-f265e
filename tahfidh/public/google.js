@@ -134,7 +134,7 @@ async function signupsTab(page, groups) {
       ${s.status === 'pending'
         ? `<span class="q-actions"><button type="button" class="btn small" data-accept="${s.id}">✓ قبول</button><button type="button" class="btn small ghost danger" data-reject="${s.id}">رفض</button></span>`
         : `<span class="badge ${s.status === 'accepted' ? 'good' : 'weak'}">${s.status === 'accepted' ? 'مقبول' : 'مرفوض'}</span>`}</li>`;
-  page.innerHTML = `<div class="card"><h3>📝 طلبات التسجيل بـ Google</h3>
+  page.innerHTML = `<div class="card" id="signups"><h3>📝 طلبات التسجيل${pending.length ? ` <b class="tab-badge">${pending.length}</b>` : ''}</h3>
       ${pending.length ? `<ul class="signups">${pending.map(card).join('')}</ul>` : '<p class="muted">لا توجد طلبات جديدة.</p>'}
       ${gConfig?.google_client_id === null ? '<p class="error small">الدخول بـ Google غير مفعّل بعد في إعدادات الموقع.</p>' : ''}</div>
     ${done.length ? `<details class="card"><summary>الطلبات السابقة (${done.length})</summary><ul class="signups">${done.map(card).join('')}</ul></details>` : ''}`;
