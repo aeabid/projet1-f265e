@@ -366,11 +366,12 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
   });
 
   // ---------- الدرس الجديد وعدّاد القراءات ----------
-  // تاريخ الإملاء = يوم اللقاء. الطالب لا يختار إلا يوم لقاء (افتراضيًا: لقاء هذا الأسبوع)
+  // تاريخ الإملاء: افتراضيًا يوم لقاء هذا الأسبوع، والطالب يختار أي يوم من أيام هذا الأسبوع
   const lessonDate = (user, st, value, fallback) => {
     const d = value ? date(value, 'تاريخ الإملاء') : fallback ?? weekStartOf(today(), st.week_start);
     if (d > today()) throw new HttpError(400, 'تاريخ الإملاء لم يأت بعد');
-    if (user.role === 'talib' && d !== fallback && weekStartOf(d, st.week_start) !== d) throw new HttpError(400, 'تاريخ الإملاء هو يوم اللقاء مع الشيخ');
+    // الطالب: أي يوم من أيام هذا الأسبوع (الافتراضي يوم اللقاء)
+    if (user.role === 'talib' && d !== fallback && d < weekStartOf(today(), st.week_start)) throw new HttpError(400, 'تاريخ الإملاء: اختر يومًا من أيام هذا الأسبوع');
     return d;
   };
 

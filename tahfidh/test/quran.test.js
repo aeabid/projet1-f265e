@@ -150,6 +150,11 @@ test('two admins with same rights, students, chosen review, counter, meetings', 
   // الطالب يضيف درسه ويحذفه، ولا يحذف درس الشيخ
   // تاريخ الإملاء: يوم اللقاء فقط (السبت عند هذا الطالب)
   assert.strictEqual((await talib('POST', `/api/quran/students/${sid}/lessons`, { content: 'الملك', athman: 1, assigned_on: '2026-11-04' })).status, 400);
+  // أي يوم من أيام هذا الأسبوع (مثلًا اليوم)
+  const todayTn = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Tunis' });
+  const anyDay = await talib('POST', `/api/quran/students/${sid}/lessons`, { content: 'القلم', athman: 1, assigned_on: todayTn });
+  assert.strictEqual(anyDay.status, 201);
+  await talib('DELETE', `/api/quran/lessons/${anyDay.body.lesson.id}`);
   const own = await talib('POST', `/api/quran/students/${sid}/lessons`, { content: 'الملك 15-30', athman: 1 });
   assert.strictEqual(new Date(own.body.lesson.assigned_on + 'T00:00:00Z').getUTCDay(), 6);
   assert.strictEqual(own.status, 201);
