@@ -52,3 +52,23 @@ test('benefits per group and private student notes', async () => {
   await s1('PUT', `/api/quran/my-notes/${n.id}`, { body: 'معدّلة' });
   assert.strictEqual((await s1('GET', '/api/quran/my-notes')).body.notes[0].body, 'معدّلة');
 });
+
+test('benefit images and youtube links', async () => {
+  const admin = await login('admin', 'admin123');
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  const r = await admin('POST', '/api/quran/benefits', { title: 'صور', youtube: ['https://youtu.be/dQw4w9WgXcQ', 'https://www.youtube.com/watch?v=abcdefghijk&t=3'], images: [png, png] });
+  assert.strictEqual(r.status, 201);
+  let list = (await admin('GET', '/api/quran/benefits')).body.benefits;
+  let b = list.find((x) => x.title === 'صور');
+  assert.deepStrictEqual(b.youtube, ['dQw4w9WgXcQ', 'abcdefghijk']);
+  assert.strictEqual(b.images.length, 2);
+  const img = await handle(new Request('http://localhost/api/quran/benefit-images/' + b.images[0], { headers: { cookie: (await call('POST', '/api/login', { username: 'admin', password: 'admin123' })).cookie } }));
+  assert.strictEqual(img.status, 200);
+  assert.strictEqual(img.headers.get('content-type'), 'image/png');
+  assert.strictEqual((await admin('PUT', `/api/quran/benefits/${b.id}`, { title: 'صور', keep_images: [b.images[1]], youtube: [] })).status, 200);
+  b = (await admin('GET', '/api/quran/benefits')).body.benefits.find((x) => x.id === b.id);
+  assert.strictEqual(b.images.length, 1);
+  assert.deepStrictEqual(b.youtube, []);
+  assert.strictEqual((await admin('POST', '/api/quran/benefits', { images: ['data:text/html;base64,AAAA'] })).status, 400);
+  assert.strictEqual((await admin('POST', '/api/quran/benefits', { youtube: ['nope'] })).status, 400);
+});

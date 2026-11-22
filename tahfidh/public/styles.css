@@ -623,3 +623,41 @@ select.pick-native { display: none !important; }
 .note-new textarea { resize: vertical; }
 .note-new .btn { margin-top: .2rem; }
 .center { text-align: center; }
+
+/* الفوائد: نص منسّق، صور، يوتيوب */
+.ben-title { margin: .3rem 0 .4rem; font-size: 1.15rem; color: var(--accent); }
+.rich { line-height: 1.85; }
+.rich p { margin: 0 0 .3rem; }
+.rich .rt-gap { height: .4rem; }
+.rich .rt-h1 { margin: .7rem 0 .35rem; font-size: 1.08rem; color: var(--accent); display: flex; align-items: center; gap: .45rem; }
+.rich .rt-h1::before { content: ''; width: 5px; height: 1.1em; border-radius: 4px; background: var(--gold); }
+.rich .rt-h2 { margin: .55rem 0 .25rem; font-size: .98rem; color: var(--text); }
+.rich ul { margin: .2rem 0 .5rem; padding-inline-start: 1.2rem; }
+.rich li { margin: .15rem 0; }
+.rich li::marker { color: var(--gold); }
+.rich blockquote { margin: .4rem 0; padding: .5rem .8rem; border-inline-start: 4px solid var(--accent); background: var(--soft); border-radius: 10px; font-family: 'Amiri', serif; font-size: 1.08rem; }
+.rich a { word-break: break-all; }
+.ben-imgs { display: grid; gap: .35rem; margin-top: .6rem; }
+.ben-imgs.n1 { grid-template-columns: 1fr; }
+.ben-imgs.n2 { grid-template-columns: 1fr 1fr; }
+.ben-imgs.n3 { grid-template-columns: 1fr 1fr 1fr; }
+.ben-imgs img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; cursor: zoom-in; background: var(--soft); }
+.ben-imgs.n1 img { aspect-ratio: auto; max-height: 420px; object-fit: contain; }
+.ben-yts { display: flex; flex-direction: column; gap: .5rem; margin-top: .6rem; }
+.yt { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; padding: 0; border-radius: 14px; overflow: hidden; background: #000; cursor: pointer; }
+.yt img { width: 100%; height: 100%; object-fit: cover; opacity: .9; }
+.yt iframe { width: 100%; height: 100%; border: 0; }
+.yt-play { position: absolute; inset: 0; margin: auto; width: 64px; height: 44px; border-radius: 12px; background: #e62117; color: #fff; display: grid; place-content: center; font-size: 1.2rem; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.img-view { position: fixed; inset: 0; z-index: 400; background: rgba(10, 5, 20, .92); display: grid; place-content: center; padding: 1rem; }
+.img-view img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
+.img-view button { position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 14px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .2); color: #fff; font-size: 1.1rem; cursor: pointer; }
+.rt-tools { display: flex; flex-wrap: wrap; gap: .3rem; margin: .2rem 0 .3rem; }
+.rt-tools button { font: inherit; font-size: .82rem; font-weight: 700; border: 1px solid var(--border); background: var(--soft); color: var(--accent); border-radius: 10px; padding: .3rem .6rem; cursor: pointer; }
+.ben-pics { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: .4rem; margin-bottom: .4rem; }
+.ben-pic { position: relative; }
+.ben-pic img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
+.ben-pic button { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, .6); color: #fff; font-size: .7rem; cursor: pointer; }
+.rt-help { font-size: .85rem; margin-top: .3rem; }
+.rt-help code { background: var(--soft); padding: 0 .3rem; border-radius: 5px; }
+#modal-form #ben-body + label, #modal-form .file-btn + label { margin-top: .8rem; display: block; }
+#modal-form .file-btn { display: inline-flex; margin-bottom: .4rem; }
