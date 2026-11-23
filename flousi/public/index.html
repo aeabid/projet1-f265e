@@ -411,22 +411,6 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .qsel{display:grid;grid-template-columns:1fr 90px;gap:8px}
 .qsel select{width:100%}
 .qcount{text-align:center;font-family:Tajawal;font-weight:800;font-size:18px;color:var(--purple);background:var(--soft);border-radius:14px;padding:10px;margin-top:4px}
-/* ---------- الصوت والذكاء الاصطناعي ---------- */
-.voicebtn{display:inline-flex;align-items:center;gap:8px;margin-top:10px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px;backdrop-filter:blur(6px)}
-.voicebtn span{font-size:12px;font-weight:500;opacity:.8}
-.mic{width:88px;height:88px;border-radius:50%;border:0;background:var(--grad);color:#fff;font-size:36px;box-shadow:0 12px 30px -8px rgba(97,3,141,.6);position:relative;transition:transform .15s}
-.mic:active{transform:scale(.95)}
-.mic.on{animation:pulse 1.2s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,32,122,.55)}70%{box-shadow:0 0 0 22px rgba(239,32,122,0)}100%{box-shadow:0 0 0 0 rgba(239,32,122,0)}}
-.v-status{font-size:13px;color:var(--muted);margin-top:10px;min-height:20px}
-.v-items{display:flex;flex-direction:column;gap:8px;margin-top:4px}
-.v-item{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;background:var(--soft);border-radius:16px;padding:10px}
-.v-item .ico{width:40px;height:40px;font-size:20px;border-radius:13px;background:var(--card)}
-.v-item b{display:block;font-size:14px}
-.v-item small{font-size:12px;color:var(--muted)}
-.v-item .b{display:flex;gap:4px}
-.v-item.undone{opacity:.45;text-decoration:line-through}
-.v-ok{font-size:13px;font-weight:700;color:var(--in);margin:4px 0 8px}
 .aseg{display:grid;grid-template-columns:repeat(3,1fr)}
 .daylist h4{margin:12px 2px 4px;font-size:13px;color:var(--muted)}
 .daylist .r{display:grid;grid-template-columns:86px 1fr;gap:8px;align-items:center;padding:7px 8px;border-radius:12px;cursor:pointer;font-size:13.5px}
@@ -472,7 +456,6 @@ dialog.sheet::backdrop{background:rgba(25,5,50,.5);backdrop-filter:blur(3px)}
 .dh-tag{font-size:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:3px 10px}
 .dh-back{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:99px;padding:6px 12px;font-weight:700;font-size:13px}
 .dh-sub{font-size:13px;opacity:.8;margin-top:2px}
-.mic-sm{font-size:17px;background:var(--soft)}
 .toast{gap:12px}
 .toast-undo{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:4px 12px;font-weight:800;font-size:13px}
 #g-undo{font-size:17px;padding:4px 12px}
@@ -528,8 +511,6 @@ main#main{margin-top:10px}
 .balance .k{font-size:12.5px;opacity:.85}
 .balance .v{font-size:34px}
 .flows{margin-top:12px}
-.voicebtn{background:var(--card);border:1px solid var(--line);color:var(--acc);backdrop-filter:none;box-shadow:0 1px 2px rgba(20,10,40,.05);margin-top:12px}
-.voicebtn span{color:var(--muted);opacity:1}
 /* «يومي» */
 .dh{padding-top:4px}
 .dh-tag{background:var(--acc-soft);border:0;color:var(--acc);font-weight:700}
@@ -669,21 +650,6 @@ button,a,.blk,.cell{touch-action:manipulation}
       <button type="button" class="btn danger" id="f-del" hidden>حذف</button>
       <button type="submit" class="btn" id="f-save">حفظ</button>
     </div>
-  </form>
-</dialog>
-
-<!-- الإضافة بالصوت والذكاء الاصطناعي -->
-<dialog class="sheet" id="sheet-voice">
-  <div class="grab"></div>
-  <form class="in" id="form-voice" novalidate>
-    <h3><span id="v-title">بصوتك</span><button type="button" class="x" data-close aria-label="إغلاق">✕</button></h3>
-    <p class="note" id="v-hint" style="margin:0 0 14px;line-height:1.6"></p>
-    <div style="text-align:center"><button type="button" class="mic" id="v-mic" aria-label="تكلّم">🎙️</button>
-      <div class="v-status" id="v-status"></div></div>
-    <div class="field" style="margin-top:12px"><textarea class="input" id="v-text" rows="3" maxlength="600" placeholder="أو اكتب طلبك هنا…" style="resize:vertical"></textarea></div>
-    <div id="v-result"></div>
-    <p class="err" id="v-err" hidden></p>
-    <div class="actions"><button type="submit" class="btn" id="v-send">✨ أضف بالذكاء الاصطناعي</button></div>
   </form>
 </dialog>
 
@@ -1056,7 +1022,7 @@ function renderHome() {
   const custom = P.mode === 'custom';
   const atNow = !custom && ymd(range(P.mode, moved(1))[0]) > ymd(today());
   $('#hero-body').innerHTML = `
-    <div class="ph"><h1 class="pt">فلوسي</h1><button class="voicebtn" id="v-money" style="margin:0">🎙️ بصوتك</button></div>
+    <div class="ph"><h1 class="pt">فلوسي</h1></div>
     <div class="seg" role="tablist" style="margin-top:10px">
       ${[['day', 'يوم'], ['week', 'أسبوع'], ['month', 'شهر'], ['year', 'سنة'], ['custom', 'مدة']]
         .map(([m, l]) => `<button data-m="${m}" class="${P.mode === m ? 'on' : ''}">${l}</button>`).join('')}
@@ -1072,7 +1038,6 @@ function renderHome() {
       <div class="flow in"><div class="ic">${icon('in')}</div><div><div class="t">المداخيل</div><div class="a num">${money(inc)}</div><div class="d">${delta(inc, total(prev, 'income'))}</div></div></div>
       <div class="flow out"><div class="ic">${icon('out')}</div><div><div class="t">المصاريف</div><div class="a num">${money(out)}</div><div class="d">${delta(out, total(prev, 'expense'))}</div></div></div>
     </div></div>`;
-  $('#v-money').onclick = () => openVoice('money');
   $$('.seg button').forEach((b) => (b.onclick = () => {
     P.mode = b.dataset.m;
     if (P.mode === 'custom' && !P.from) { const [f, t] = range('month'); P.from = ymd(f); P.to = ymd(t); }
@@ -2320,138 +2285,6 @@ $('#h-del').onclick = async () => {
   catch (err) { if (!onAuthError(err)) toast(err.message, true); }
 };
 
-/* ================= الإضافة بالصوت والذكاء الاصطناعي ================= */
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let REC = null, VM = null;
-const VOICE = {
-  money: ['💰 أضف فلوس بصوتك', 'قل مثلاً: «صرفت عشرين ألف في القهوة والفطور» أو «خذيت الشهرية ألف وثمنمية دينار» أو «البارح شريت دواء بخمسة آلاف». يُضاف وحده إلى فلوسي.'],
-  appt: ['📌 موعد بصوتك', 'قل مثلاً: «عندي طبيب الأسنان غدوة على العشرة» أو «اجتماع الأولياء الخميس الجاي على الخمسة ونص ساعة». يُضاف وحده إلى جدولك.'],
-};
-function openVoice(mode) {
-  VM = { mode, done: false, items: [] };
-  $('#v-title').textContent = VOICE[mode][0];
-  $('#v-hint').textContent = VOICE[mode][1];
-  $('#v-text').value = '';
-  $('#v-result').innerHTML = '';
-  $('#v-err').hidden = true;
-  $('#v-send').hidden = false;
-  $('#v-mic').hidden = !SR;
-  $('#v-status').textContent = SR ? 'اضغط الميكروفون وتكلّم' : 'متصفحك لا يدعم الإملاء الصوتي هنا: اكتب طلبك، أو استعمل ميكروفون لوحة المفاتيح.';
-  $('#sheet-voice').showModal();
-  if (SR) startRec(); else setTimeout(() => $('#v-text').focus(), 80);
-}
-function startRec(lang = 'ar-TN') {
-  if (REC) return REC.stop();
-  try { REC = new SR(); } catch (e) { return; }
-  REC.lang = lang; REC.interimResults = true; REC.continuous = false; REC.maxAlternatives = 1;
-  let final = $('#v-text').value ? $('#v-text').value.trim() + ' ' : '';
-  let heard = false;
-  REC.onresult = (e) => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const r = e.results[i];
-      if (r.isFinal) final += r[0].transcript + ' '; else interim += r[0].transcript;
-    }
-    heard = true;
-    $('#v-text').value = (final + interim).trim();
-  };
-  REC.onerror = (e) => {
-    if (e.error === 'language-not-supported' && lang !== 'ar-SA') { REC = null; return startRec('ar-SA'); }
-    $('#v-status').textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'اسمح للمتصفح باستعمال الميكروفون، أو اكتب طلبك'
-      : e.error === 'no-speech' ? 'لم أسمع شيئًا. اضغط الميكروفون وأعد المحاولة' : 'تعذّر الاستماع، اكتب طلبك أو أعد المحاولة';
-  };
-  REC.onend = () => {
-    $('#v-mic').classList.toggle('on', false);
-    REC = null;
-    const go = (heard || VM.sendAfter) && $('#v-text').value.trim() && $('#sheet-voice').open && !VM.busy && !VM.done;
-    VM.sendAfter = false;
-    if (go) sendVoice();
-    else if (!heard && $('#v-status').textContent.startsWith('أسمعك')) $('#v-status').textContent = 'اضغط الميكروفون وتكلّم';
-  };
-  try { REC.start(); } catch (e) { REC = null; return; }
-  $('#v-mic').classList.toggle('on', true);
-  $('#v-status').textContent = 'أسمعك… تكلّم الآن، ثم توقّف';
-}
-$('#v-mic').onclick = () => startRec();
-$('#sheet-voice').addEventListener('close', () => { if (REC) try { REC.abort(); } catch (e) {} });
-$('#form-voice').onsubmit = (e) => {
-  e.preventDefault();
-  if (REC) { VM.sendAfter = true; try { REC.stop(); } catch (er) { REC = null; sendVoice(); } } else sendVoice();
-};
-// الكتابة أثناء الاستماع: نوقف الميكروفون حتى لا يمسح ما كُتب
-$('#v-text').addEventListener('input', () => { if (REC && document.activeElement === $('#v-text')) try { REC.abort(); } catch (e) {} });
-async function sendVoice() {
-  const text = $('#v-text').value.trim();
-  const err = $('#v-err');
-  if (!text) { err.textContent = 'قل أو اكتب ما تريد إضافته'; err.hidden = false; return; }
-  if (VM.busy) return;
-  VM.busy = true; err.hidden = true;
-  $('#v-send').disabled = true;
-  $('#v-status').textContent = '✨ أفهم طلبك…';
-  try {
-    const t = new Date();
-    const res = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: TOKEN, mode: VM.mode, text, today: ymd(today()), weekday: DAYS[t.getDay()], now: fmtTime(nowMin()) }) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) { const e2 = new Error(data.error || 'تعذّر الاتصال بالذكاء الاصطناعي'); e2.auth = !!data.auth; throw e2; }
-    if (!data.items.length) throw new Error(data.message || 'لم أجد ما أضيفه. أعد الصياغة بوضوح أكثر.');
-    // الحفظ مباشرة
-    const saved = [];
-    for (const it of data.items) {
-      if (VM.mode === 'money') {
-        const tx = await rpc('tx_save', { p_id: null, p_type: it.type, p_amount: it.amount, p_category_id: it.category_id, p_date: it.date, p_note: it.note });
-        tx.amount = Number(tx.amount); S.tx.push(tx); saved.push({ kind: 'tx', o: tx });
-      } else {
-        const a = await rpc('appt_save', { p_id: null, p_date: it.date, p_start: it.start, p_end: it.end, p_title: it.title, p_note: it.note, p_icon: it.icon, p_color: '#ef207a', p_done: false });
-        S.appts.push(a); saved.push({ kind: 'appt', o: a });
-      }
-    }
-    VM.items = saved; VM.done = true;
-    $('#v-status').textContent = '';
-    $('#v-send').hidden = true;
-    paintVoiceResult(data.message);
-    render();
-    try { navigator.vibrate && navigator.vibrate([15, 40, 15]); } catch (e) {}
-  } catch (e2) {
-    if (onAuthError(e2)) return $('#sheet-voice').close();
-    err.textContent = e2.message; err.hidden = false;
-    $('#v-status').textContent = SR ? 'اضغط الميكروفون لإعادة المحاولة، أو عدّل النص' : '';
-  } finally { VM.busy = false; $('#v-send').disabled = false; }
-}
-function paintVoiceResult(message) {
-  const rows = VM.items.map((x, i) => {
-    if (x.kind === 'tx') {
-      const c = catById(x.o.category_id), inc = x.o.type === 'income';
-      return `<div class="v-item ${x.undone ? 'undone' : ''}"><span class="ico">${esc(c.icon)}</span>
-        <span><b class="num" style="color:${inc ? 'var(--in)' : 'var(--out)'};direction:rtl">${inc ? '+' : '−'}${money(x.o.amount)} ${esc(CUR)}</b><small>${esc(c.name)} · ${relDay(x.o.date)}${x.o.note ? ' · ' + esc(x.o.note) : ''}</small></span>
-        <span class="b">${x.undone ? '' : `<button type="button" class="btn sm light" data-vedit="${i}">تعديل</button><button type="button" class="btn sm danger" data-vundo="${i}">تراجع</button>`}</span></div>`;
-    }
-    const a = x.o, d = parse(a.date);
-    return `<div class="v-item ${x.undone ? 'undone' : ''}"><span class="ico">${esc(a.icon)}</span>
-      <span><b>${esc(a.title)}</b><small>${relDay(a.date)} · ${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${fmtT(a.start)}${a.end != null ? '–' + fmtT(a.end) : ''}${a.note ? ' · ' + esc(a.note) : ''}</small></span>
-      <span class="b">${x.undone ? '' : `<button type="button" class="btn sm light" data-vedit="${i}">تعديل</button><button type="button" class="btn sm danger" data-vundo="${i}">تراجع</button>`}</span></div>`;
-  }).join('');
-  $('#v-result').innerHTML = `<div class="v-ok">✓ تمّت الإضافة${VM.items.length > 1 ? ` (${VM.items.length})` : ''}</div><div class="v-items">${rows}</div>
-    ${message ? `<p class="note" style="margin-top:8px">💡 ${esc(message)}</p>` : ''}
-    <div class="actions"><button type="button" class="btn light" id="v-again">🎙️ إضافة أخرى</button><button type="button" class="btn" data-close-voice>تمّ</button></div>`;
-  $$('[data-vundo]').forEach((b) => (b.onclick = async () => {
-    const x = VM.items[Number(b.dataset.vundo)];
-    try {
-      if (x.kind === 'tx') { await rpc('tx_delete', { p_id: x.o.id }); S.tx = S.tx.filter((t) => t.id !== x.o.id); }
-      else { await rpc('appt_delete', { p_id: x.o.id }); S.appts = S.appts.filter((t) => t.id !== x.o.id); }
-      x.undone = true; paintVoiceResult(message); render(); toast('تمّ التراجع');
-    } catch (e) { onAuthError(e) || toast(e.message, true); }
-  }));
-  $$('[data-vedit]').forEach((b) => (b.onclick = () => {
-    const x = VM.items[Number(b.dataset.vedit)];
-    $('#sheet-voice').close();
-    if (x.kind === 'tx') openTx(null, S.tx.find((t) => t.id === x.o.id));
-    else openPlan({ appt: S.appts.find((t) => t.id === x.o.id) });
-  }));
-  $('#v-again').onclick = () => openVoice(VM.mode);
-  $('[data-close-voice]').onclick = () => $('#sheet-voice').close();
-}
-
 /* ================= الإدارة: ثلاثة أقسام ================= */
 UI.adminTab = 'money';
 function adminHabits() {
@@ -2531,15 +2364,13 @@ function renderTasks() {
   const late = todo.filter((a) => isLate(a)).length;
   $('#hero-body').innerHTML = `
     <div class="ph"><div><h1 class="pt">إنجازاتي</h1>
-      <div class="ps">${todo.length ? `${todo.length} متبقية${late ? ` · <span style="color:#e11d48">${late} متأخرة</span>` : ''}` : 'لا شيء متبقٍّ 🎉'}</div></div>
-      <button class="voicebtn" id="v-task" style="margin:0">🎙️ بصوتك</button></div>
+      <div class="ps">${todo.length ? `${todo.length} متبقية${late ? ` · <span style="color:#e11d48">${late} متأخرة</span>` : ''}` : 'لا شيء متبقٍّ 🎉'}</div></div></div>
     <div class="seg" style="margin-top:10px"><button data-tt="todo" class="${UI.taskTab === 'todo' ? 'on' : ''}">المتبقية (${todo.length})</button><button data-tt="done" class="${UI.taskTab === 'done' ? 'on' : ''}">المنجزة (${done.length})</button></div>`;
-  $('#v-task').onclick = () => openVoice('appt');
   $$('[data-tt]').forEach((b) => (b.onclick = () => { UI.taskTab = b.dataset.tt; renderTasks(); }));
   if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
   const list = UI.taskTab === 'todo' ? todo : done.slice(0, 80);
   if (!list.length) {
-    $('#main').innerHTML = `<section class="card"><div class="empty"><span class="big">${UI.taskTab === 'todo' ? '✅' : '📭'}</span>${UI.taskTab === 'todo' ? 'لا مهام متبقية. اضغط <b>+</b> أو «🎙️ بصوتك» لإضافة موعد أو مهمّة.' : 'لا شيء منجز بعد.'}</div></section>`;
+    $('#main').innerHTML = `<section class="card"><div class="empty"><span class="big">${UI.taskTab === 'todo' ? '✅' : '📭'}</span>${UI.taskTab === 'todo' ? 'لا مهام متبقية. اضغط <b>+</b> لإضافة موعد أو مهمّة.' : 'لا شيء منجز بعد.'}</div></section>`;
     return;
   }
   const groups = new Map();
