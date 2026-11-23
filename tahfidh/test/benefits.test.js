@@ -123,4 +123,11 @@ test('session attendance, two-absence alert, record table and challenges', async
   assert.strictEqual(att[0].id, b.id);
   assert.strictEqual(att[0].attendance, 100);
   assert.strictEqual(att[1].attendance, 0);
+  // تفاصيل الطالب: الطالب يرى تفاصيله فقط
+  const det = (await st('GET', `/api/quran/challenges/student/${a.id}?period=all`)).body;
+  assert.ok(det.weeks.length >= 3);
+  assert.strictEqual(det.student.absent, 1);
+  assert.strictEqual(det.student.excused, 1);
+  assert.strictEqual((await st('GET', `/api/quran/challenges/student/${b.id}?period=all`)).status, 404);
+  assert.ok('ward_points' in ch.rankings.ward[0]);
 });

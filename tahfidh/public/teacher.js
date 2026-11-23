@@ -335,24 +335,81 @@ async function viewChallenges(el, qs = '') {
   const r = await api('GET', `/api/quran/challenges?period=${period}${p.get('g') ? `&group_id=${p.get('g')}` : ''}`);
   const href = (per, g) => `#/challenges?period=${per}${g ? `&g=${g}` : ''}`;
   const gid = r.group?.id || '';
+  const staff = isStaff();
   const medal = (k) => (k === 1 ? '🥇' : k === 2 ? '🥈' : k === 3 ? '🥉' : k ?? '—');
-  const board = (title, icon, list, key, detail) => `<section class="card rk-card"><h3>${icon} ${title}</h3>
-    <ol class="rk-list">${list.map((x) => `<li class="${x.me ? 'me' : ''} ${x.rank && x.rank <= 3 ? `top top${x.rank}` : ''}">
+  const PER = { week: 'هذا الأسبوع', month: 'هذا الشهر', all: 'منذ بدايته' };
+  const HOW = {
+    attendance: 'عدد الحصص التي حضرها ÷ عدد الحصص المسجّلة. الغياب بعذر يُحسب حصة لم يحضرها، لكنه يظهر منفصلًا في التفاصيل.',
+    lesson: 'مجموع تكرارات المقرر ÷ (60 × عدد الأسابيع). من بلغ 60 في كل أسبوع نال 100%.',
+    ward: `<b>النقاط = الأحزاب التي قرأها × نسبة إنجازه</b> (والنسبة لا تتجاوز 100%).<br>
+      فمن أتمّ مراجعة محفوظه نال نقاطًا بعدد الأحزاب التي قرأها، ومن لم يتمّه نقصت نقاطه بقدر ما بقي.<br>
+      مثال: حافظ حزبين راجعهما كاملين = <b>2</b> نقطة · حافظ 40 راجعها كاملة = <b>40</b> نقطة · حافظ 40 راجع 10 فقط (25%) = 10 × 25% = <b>2,5</b> نقطة.`,
+  };
+  const board = (k, title, icon, list, val, bar, detail) => `<section class="card rk-card">
+    <div class="section-head"><h3>${icon} ${title}</h3></div>
+    <details class="rk-how"><summary>ℹ️ كيف يُحسب الترتيب؟</summary><p>${HOW[k]}</p></details>
+    <ol class="rk-list">${list.map((x) => {
+      const open = staff || x.me;
+      return `<li class="${x.me ? 'me' : ''} ${x.rank && x.rank <= 3 ? `top top${x.rank}` : ''} ${open ? 'tap' : ''}" ${open ? `data-st="${x.id}" data-k="${k}" role="button" tabindex="0"` : ''}>
         <span class="rk-pos">${medal(x.rank)}</span>${avatar(x, 'sm')}
         <span class="rk-name"><b>${esc(x.full_name)}${x.me ? ' <small>(أنت)</small>' : ''}</b><small>${detail(x)}</small>
-          <span class="q-bar ${x[key] >= 100 ? 'ok' : ''}"><i style="width:${Math.min(100, x[key] || 0)}%"></i></span></span>
-        <b class="rk-val">${x[key] === null ? '—' : `${x[key]}%`}</b></li>`).join('')}</ol></section>`;
+          <span class="q-bar ${bar(x) >= 100 ? 'ok' : ''}"><i style="width:${Math.min(100, bar(x) || 0)}%"></i></span></span>
+        <b class="rk-val">${val(x)}</b>${open ? '<span class="rk-go">‹</span>' : ''}</li>`;
+    }).join('')}</ol></section>`;
+  const maxPts = Math.max(1, ...(r.rankings?.ward || []).map((x) => x.ward_points || 0));
   el.innerHTML = `<div class="page-head"><h2>🏆 التحديات</h2>${r.group ? `<span class="pill">🕌 ${esc(r.group.name)}</span>` : ''}</div>
     ${r.groups.length > 1 ? `<label class="rk-group">المجموعة<select id="rk-g">${r.groups.map((g) => `<option value="${g.id}" ${g.id === gid ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select></label>` : ''}
     <div class="q-seg rec-seg rk-seg">${[['week', 'هذا الأسبوع'], ['month', 'هذا الشهر'], ['all', 'الإجمالي']]
       .map(([k, l]) => `<a href="${href(k, p.get('g'))}" class="${k === period ? 'on' : ''}">${l}</a>`).join('')}</div>
     ${!r.rankings ? '<div class="card empty-state"><span>🏆</span><p>التحديات تكون بين طلبة المجموعة الواحدة. لست في مجموعة بعد.</p></div>'
       : !r.rankings.attendance.length ? '<div class="card empty-state"><span>👥</span><p>لا يوجد طلبة في هذه المجموعة.</p></div>'
-      : board('الحضور', '🕌', r.rankings.attendance, 'attendance', (x) => (x.marked ? `حضر ${x.present} من ${x.marked} ${x.marked > 2 ? 'حصص' : 'حصة'}` : 'لم يُسجَّل حضور بعد')) +
-        board('تكرار المقرر', '🔁', r.rankings.lesson, 'lesson', (x) => `${x.reps} من ${x.reps_target} تكرارًا`) +
-        board('الورد', '📖', r.rankings.ward, 'ward', (x) => (x.ward_target ? `قرأ ${num(x.read)} من ${num(x.ward_target)} حزبًا` : 'لم يحدّد محفوظه بعد'))}
-    <p class="muted small">الورد: ما قرأه الطالب مقارنة بمحفوظه (من راجع محفوظه أكثر من مرة يتجاوز 100%). تكرار المقرر: الهدف 60 مرة في الأسبوع.</p>`;
+      : board('attendance', 'الحضور', '🕌', r.rankings.attendance, (x) => (x.attendance === null ? '—' : `${x.attendance}%`), (x) => x.attendance,
+          (x) => (x.marked ? `حضر ${x.present} من ${x.marked} ${x.marked > 2 ? 'حصص' : 'حصة'}` : 'لم يُسجَّل حضور بعد')) +
+        board('lesson', 'تكرار المقرر', '🔁', r.rankings.lesson, (x) => `${x.lesson}%`, (x) => x.lesson, (x) => `${x.reps} من ${x.reps_target} تكرارًا`) +
+        board('ward', 'الورد', '📖', r.rankings.ward, (x) => (x.ward_points === null ? '—' : `${num(x.ward_points)}<small> نقطة</small>`),
+          (x) => ((x.ward_points || 0) / maxPts) * 100,
+          (x) => (x.ward_target ? `قرأ ${num(x.read)} من ${num(x.ward_target)} حزبًا (${x.ward}%)` : 'لم يحدّد محفوظه بعد'))}
+    ${staff || r.rankings?.attendance.some((x) => x.me) ? '<p class="muted small rk-tip">اضغط على الطالب لرؤية التفاصيل التي أدّت إلى نتيجته.</p>' : ''}`;
   $('#rk-g')?.addEventListener('change', (e) => (location.hash = href(period, e.target.value)));
+  const openDetail = async (li) => {
+    try {
+      const d = await api('GET', `/api/quran/challenges/student/${li.dataset.st}?period=${period}`);
+      challengeSheet(d, li.dataset.k, PER[period]);
+    } catch (e) {
+      toast(e.message, true);
+    }
+  };
+  el.querySelectorAll('.rk-list li[data-st]').forEach((li) => {
+    li.addEventListener('click', () => openDetail(li));
+    li.addEventListener('keydown', (e) => e.key === 'Enter' && openDetail(li));
+  });
+}
+
+// تفاصيل نتيجة الطالب: المعادلة بأرقامه، ثم أسبوعًا بأسبوع
+function challengeSheet(d, focus, perLabel) {
+  const s = d.student;
+  const blocks = {
+    attendance: `<div class="sh-stat ${focus === 'attendance' ? 'focus' : ''}"><div><span>🕌 الحضور</span><b>${s.attendance ?? '—'}${s.attendance !== null ? '%' : ''}</b></div>
+      <div class="sh-chips"><span class="att-chip present">✓ ${s.present}</span><span class="att-chip absent">✗ ${s.absent}</span><span class="att-chip excused">! ${s.excused}</span></div>
+      <code class="sh-eq">${s.marked ? `${s.present} حضور ÷ ${s.marked} حصص = ${s.attendance}%` : 'لا حصص مسجّلة في هذه الفترة'}</code></div>`,
+    lesson: `<div class="sh-stat ${focus === 'lesson' ? 'focus' : ''}"><div><span>🔁 تكرار المقرر</span><b>${s.lesson}%</b></div>
+      <code class="sh-eq">${s.reps} تكرارًا ÷ (60 × ${s.weeks} ${s.weeks > 2 ? 'أسابيع' : 'أسبوع'}) = ${s.lesson}%</code></div>`,
+    ward: `<div class="sh-stat ${focus === 'ward' ? 'focus' : ''}"><div><span>📖 الورد</span><b>${s.ward_points === null ? '—' : `${num(s.ward_points)} نقطة`}</b></div>
+      ${s.memorized ? `<code class="sh-eq">المطلوب: ${num(s.memorized)} حزب محفوظ × ${s.weeks} ${s.weeks > 2 ? 'أسابيع' : 'أسبوع'} = ${num(s.ward_target)} حزب</code>
+        <code class="sh-eq">الإنجاز: قرأ ${num(s.read)} ÷ ${num(s.ward_target)} = ${s.ward}%</code>
+        <code class="sh-eq">النقاط: ${num(s.read)} × ${Math.min(100, s.ward)}% = ${num(s.ward_points)}</code>` : '<small>لم يحدّد الطالب محفوظه بعد.</small>'}</div>`,
+  };
+  const order = [focus, ...['attendance', 'lesson', 'ward'].filter((k) => k !== focus)];
+  recSheet(`<div class="sh-head">${avatar(s, 'md')}<div><b>${esc(s.full_name)}</b><small>🏆 ${esc(d.group.name)} · ${perLabel}${s.memorized ? ` · المحفوظ ${hizbTxt(s.memorized)}` : ''}</small></div></div>
+    <div class="sh-scroll">
+      ${order.map((k) => blocks[k]).join('')}
+      <h4 class="sh-sub">أسبوعًا بأسبوع</h4>
+      <div class="sh-weeks">${d.weeks.map((w) => `<div class="sh-wk">
+          <span class="sh-wd">${qShort(w.start)}</span>${attChip(w.att)}
+          <span class="${heat(w.ward)} sh-pill">📖 ${num(w.read)} ح${w.ward !== null ? ` · ${w.ward}%` : ''}</span>
+          <span class="${heat(Math.round((w.reps / d.target) * 100))} sh-pill">🔁 ${w.reps}/${d.target}</span></div>`).join('')}</div>
+    </div>
+    ${isStaff() ? `<div class="sh-actions"><a class="btn small ghost" href="#/quran/student/${s.id}">صفحة الطالب</a><a class="btn small ghost" href="#/quran/history/${s.id}">سجلّه</a></div>` : ''}`);
 }
 
 // ---------- تقييم الحصة ----------

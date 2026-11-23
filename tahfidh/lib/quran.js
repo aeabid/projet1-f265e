@@ -605,20 +605,18 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
   });
 
   // التحديات: ترتيب طلبة المجموعة في الحضور، وتكرار المقرر، والورد (أسبوعيًا، شهريًا، إجماليًا)
-  q('GET', '/api/quran/challenges', ['admin', 'talib'], async ({ user, query }) => {
+  // نقاط الورد (عادلة): الأحزاب المقروءة × نسبة الإنجاز (بحدّ أقصى 100%)
+  // من أتمّ محفوظه نال نقاطًا بعدد ما قرأ، ومن لم يتمّه نقصت نقاطه بقدر ما بقي
+  const wardPoints = (read, need) => (need > 0 ? r1(read * Math.min(1, read / need)) : null);
+
+  async function challengeData(user, gid, period) {
     const day = today();
-    let gid = Number(query.get('group_id')) || 0;
-    if (user.role === 'talib') gid = (await one('SELECT group_id FROM quran_students WHERE user_id = $1', [user.id]))?.group_id || 0;
-    const groups = user.role === 'admin' ? await all('SELECT id, name, meet_day FROM quran_groups ORDER BY name') : [];
-    if (!gid && groups.length) gid = groups[0].id;
     const g = gid ? await one('SELECT id, name, meet_day FROM quran_groups WHERE id = $1', [gid]) : null;
-    if (!g) return { group: null, groups, rankings: null };
-    const period = ['week', 'month', 'all'].includes(query.get('period')) ? query.get('period') : 'week';
+    if (!g) return null;
     const sts = await groupStudents(g.id);
-    const ids = sts.map((x) => x.id);
     const thisWeek = weekStartOf(day, g.meet_day);
-    let from = period === 'week' ? thisWeek : period === 'month' ? `${day.slice(0, 7)}-01` : '2000-01-01';
-    const act = await activity(ids, from, day);
+    const from = period === 'week' ? thisWeek : period === 'month' ? `${day.slice(0, 7)}-01` : '2000-01-01';
+    const act = await activity(sts.map((x) => x.id), from, day);
     const weeksBetween = (a) => Math.floor((parse(thisWeek) - parse(weekStartOf(a, g.meet_day))) / (7 * 864e5)) + 1;
     const rows = sts.map((st) => {
       let start = from;
@@ -628,24 +626,59 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
       }
       const w = period === 'week' ? 1 : weeksBetween(start);
       const b = bucket(act, st.id, start, day);
-      const mem = Q.sizeOf(Object.keys(st.memorized || {}).map(Number));
+      const mem = r1(Q.sizeOf(Object.keys(st.memorized || {}).map(Number)));
       const marked = b.present + b.absent + b.excused;
+      const need = r1(mem * w);
       return {
         id: st.id, full_name: st.full_name, has_photo: st.has_photo, photo_v: st.photo_v, me: st.id === user.id,
-        attendance: marked ? Math.round((b.present / marked) * 100) : null, present: b.present, marked,
+        start, weeks: w, memorized: mem,
+        attendance: marked ? Math.round((b.present / marked) * 100) : null, present: b.present, absent: b.absent, excused: b.excused, marked,
         lesson: Math.round((b.reps / (LESSON_TARGET * w)) * 100), reps: b.reps, reps_target: LESSON_TARGET * w,
-        ward: mem ? Math.round((b.read / (mem * w)) * 100) : null, read: b.read, ward_target: r1(mem * w),
+        ward: mem ? Math.round((b.read / need) * 100) : null, read: b.read, ward_target: need,
+        ward_points: wardPoints(b.read, need),
       };
     });
+    return { g, rows, act, thisWeek };
+  }
+
+  q('GET', '/api/quran/challenges', ['admin', 'talib'], async ({ user, query }) => {
+    let gid = Number(query.get('group_id')) || 0;
+    if (user.role === 'talib') gid = (await one('SELECT group_id FROM quran_students WHERE user_id = $1', [user.id]))?.group_id || 0;
+    const groups = user.role === 'admin' ? await all('SELECT id, name, meet_day FROM quran_groups ORDER BY name') : [];
+    if (!gid && groups.length) gid = groups[0].id;
+    const period = ['week', 'month', 'all'].includes(query.get('period')) ? query.get('period') : 'week';
+    const data = await challengeData(user, gid, period);
+    if (!data) return { group: null, groups, rankings: null };
+    const { g, rows } = data;
     const rank = (k) => {
       const list = [...rows].sort((a, b) => (b[k] ?? -1) - (a[k] ?? -1));
-      let prev = null, pos = 0;
+      let prev, pos = 0;
       return list.map((r, i) => {
         if (r[k] !== prev) pos = i + 1;
         prev = r[k];
         return { ...r, rank: r[k] === null ? null : pos };
       });
     };
-    return { group: g, groups, period, from: period === 'all' ? null : from, rankings: { attendance: rank('attendance'), lesson: rank('lesson'), ward: rank('ward') } };
+    return {
+      group: g, groups, period, from: period === 'all' ? null : weekStartOf(today(), g.meet_day),
+      rankings: { attendance: rank('attendance'), lesson: rank('lesson'), ward: rank('ward_points') },
+    };
+  });
+
+  // تفاصيل نسبة طالب في التحديات: أسبوعًا بأسبوع
+  q('GET', '/api/quran/challenges/student/:id', ['admin', 'talib'], async ({ user, params, query }) => {
+    const st = await loadStudent(user, params.id);
+    if (!st.group_id) throw new HttpError(404, 'الطالب ليس في مجموعة');
+    const period = ['week', 'month', 'all'].includes(query.get('period')) ? query.get('period') : 'week';
+    const data = await challengeData(user, st.group_id, period);
+    const row = data.rows.find((x) => x.id === st.id);
+    if (!row) throw new HttpError(404, 'الطالب غير موجود');
+    const weeks = [];
+    for (let w = weekStartOf(row.start, data.g.meet_day); w <= data.thisWeek; w = addDays(w, 7)) {
+      const from = w < row.start ? row.start : w;
+      const b = bucket(data.act, st.id, from, addDays(w, 6));
+      weeks.push({ start: w, att: b.att, read: b.read, days: b.days, reps: b.reps, ward: row.memorized ? Math.round((b.read / row.memorized) * 100) : null });
+    }
+    return { student: row, group: data.g, period, target: LESSON_TARGET, weeks: weeks.reverse() };
   });
 }

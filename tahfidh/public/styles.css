@@ -915,3 +915,23 @@ thead .rc-name { background: var(--soft); }
 .avatar.xs { display: inline-grid; place-items: center; padding: 0; line-height: 1; text-align: center; }
 .hm-grid { padding-inline-start: 2px; }
 .sh-stat .q-bar { flex: none; height: 8px; }
+/* التحديات: التفاصيل */
+.rk-list li.tap { cursor: pointer; transition: transform .12s, box-shadow .2s; }
+.rk-list li.tap:hover { box-shadow: 0 4px 14px rgba(60, 20, 110, .12); }
+.rk-list li.tap:active { transform: scale(.98); }
+.rk-go { color: var(--muted); font-size: 1.2rem; flex: none; }
+.rk-val small { font-size: .65rem; font-weight: 700; color: var(--muted); }
+.rk-how { margin: -.2rem 0 .6rem; font-size: .82rem; }
+.rk-how summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+.rk-how p { margin: .4rem 0 0; background: var(--soft); border-radius: 12px; padding: .6rem .75rem; line-height: 1.75; color: var(--text); }
+.rk-tip { text-align: center; }
+.sheet { max-height: 88vh; }
+.sh-scroll { overflow-y: auto; display: flex; flex-direction: column; gap: .6rem; margin: 0 -.2rem; padding: 0 .2rem; }
+.sh-stat.focus { outline: 2px solid var(--accent); background: linear-gradient(var(--soft), var(--soft)); }
+.sh-chips { display: flex; gap: .35rem; }
+.sh-eq { display: block; font-family: inherit; font-size: .84rem; background: var(--card); border-radius: 10px; padding: .35rem .6rem; color: var(--text); direction: rtl; }
+.sh-sub { margin: .3rem 0 0; font-size: .95rem; }
+.sh-weeks { display: flex; flex-direction: column; gap: .3rem; }
+.sh-wk { display: grid; grid-template-columns: 2.6rem auto 1fr auto; align-items: center; gap: .35rem; font-size: .8rem; }
+.sh-wd { font-weight: 800; color: var(--muted); }
+.sh-pill { border-radius: 8px; padding: .2rem .45rem; font-weight: 700; text-align: center; white-space: nowrap; }
