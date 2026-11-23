@@ -66,8 +66,9 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
 
   const rating = (v, name) => {
     if (v === undefined || v === null || v === '') return null;
-    if (!RATINGS.includes(v)) throw new HttpError(400, `${name}: قيمة غير صالحة`);
-    return v;
+    const t = String(v);
+    if (!RATINGS.includes(t) && !/^[1-5]$/.test(t)) throw new HttpError(400, `${name}: قيمة غير صالحة`);
+    return t;
   };
   const int = (v, { min, max, def, name }) => {
     if (v === undefined || v === null || v === '') return def;
@@ -176,26 +177,64 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     await pool.query('DELETE FROM quran_groups WHERE id = $1', [g.id]);
     return { ok: true };
   });
-  // الحضور الجماعي لكل الطلبة في قائمة واحدة
+  // تسجيل حضور طالب في حصة أسبوعه (لقاء واحد في الأسبوع)، وإشعار الطالب إذا غاب مرتين متتاليتين
+  async function markAttendance(st, session, attendance, userId, extra = null) {
+    const end = addDays(session, 6);
+    const old = await one('SELECT id, date::text, attendance, note FROM quran_meetings WHERE student_id = $1 AND date BETWEEN $2 AND $3 ORDER BY date LIMIT 1', [st.id, session, end]);
+    let row;
+    if (extra) {
+      const cols = ['attendance', 'review_eval', 'hifz_eval', 'ada_eval', 'tajweed_eval', 'lesson_id', 'note'];
+      const vals = [attendance, extra.review_eval, extra.hifz_eval, extra.ada_eval, extra.tajweed_eval, extra.lesson_id, extra.note];
+      row = old
+        ? await one(`UPDATE quran_meetings SET ${cols.map((c, i) => `${c} = $${i + 2}`).join(', ')} WHERE id = $1 RETURNING id, date::text, attendance`, [old.id, ...vals])
+        : await one(
+            `INSERT INTO quran_meetings (student_id, date, created_by, ${cols.join(', ')}) VALUES ($1, $2, $3, ${cols.map((_, i) => `$${i + 4}`).join(', ')})
+             RETURNING id, date::text, attendance`,
+            [st.id, session, userId, ...vals]
+          );
+    } else {
+      row = old
+        ? await one('UPDATE quran_meetings SET attendance = $2 WHERE id = $1 RETURNING id, date::text, attendance', [old.id, attendance])
+        : await one('INSERT INTO quran_meetings (student_id, date, attendance, created_by) VALUES ($1, $2, $3, $4) RETURNING id, date::text, attendance', [st.id, session, attendance, userId]);
+    }
+    if (attendance === 'absent' && old?.attendance !== 'absent') {
+      const prev = await one('SELECT attendance FROM quran_meetings WHERE student_id = $1 AND date < $2 ORDER BY date DESC LIMIT 1', [st.id, session]);
+      if (prev?.attendance === 'absent') {
+        await notify([st.id], {
+          kind: 'absence', title: '⚠️ غبت عن حصّتين متتاليتين',
+          body: 'نفتقدك في الحلقة! حافظ على حضورك، وإن كان لك عذر فأخبر الشيخ.', link: '#/my-progress',
+        });
+      }
+    }
+    return { row, old };
+  }
+  const sessionOf = (st, ref) => weekStartOf(ref, st.week_start);
+
+  // حضور كل الطلبة لحصة الأسبوع الذي فيه اليوم ref
   q('GET', '/api/quran/attendance', STAFF, async ({ query }) => {
-    const day = date(query.get('date') || today());
-    const rows = await all('SELECT student_id, attendance FROM quran_meetings WHERE date = $1', [day]);
-    return { date: day, marks: Object.fromEntries(rows.map((r) => [r.student_id, r.attendance])) };
+    const ref = date(query.get('week') || query.get('date') || today());
+    const sts = await all('SELECT user_id AS id, week_start FROM quran_students');
+    const rows = await all('SELECT student_id, date::text, attendance FROM quran_meetings WHERE date BETWEEN $1 AND $2', [addDays(ref, -6), addDays(ref, 6)]);
+    const marks = {};
+    const sessions = {};
+    for (const st of sts) {
+      const ses = sessionOf(st, ref);
+      sessions[st.id] = ses;
+      const m = rows.find((r) => r.student_id === st.id && r.date >= ses && r.date <= addDays(ses, 6));
+      if (m) marks[st.id] = m.attendance;
+    }
+    return { week: ref, marks, sessions };
   });
   q('POST', '/api/quran/attendance', STAFF, async ({ user, body }) => {
-    const day = date(body.date);
-    if (day > today()) throw new HttpError(400, 'لا يمكن تسجيل حضور يوم لم يأت بعد');
+    const ref = date(body.week || body.date);
+    if (ref > today()) throw new HttpError(400, 'لا يمكن تسجيل حضور حصة لم تأت بعد');
     const marks = body.marks && typeof body.marks === 'object' ? body.marks : {};
-    const ids = (await all('SELECT user_id FROM quran_students')).map((r) => r.user_id);
+    const sts = await all('SELECT user_id AS id, week_start FROM quran_students');
     let n = 0;
-    for (const id of ids) {
-      const a = marks[id];
+    for (const st of sts) {
+      const a = marks[st.id];
       if (!ATTENDANCE.includes(a)) continue;
-      await pool.query(
-        `INSERT INTO quran_meetings (student_id, date, attendance, created_by) VALUES ($1, $2, $3, $4)
-         ON CONFLICT (student_id, date) DO UPDATE SET attendance = EXCLUDED.attendance`,
-        [id, day, a, user.id]
-      );
+      await markAttendance(st, sessionOf(st, ref), a, user.id);
       n++;
     }
     return { saved: n };
@@ -211,11 +250,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     for (const { user_id } of members) {
       const a = marks[user_id];
       if (!ATTENDANCE.includes(a)) continue;
-      await pool.query(
-        `INSERT INTO quran_meetings (student_id, date, attendance, created_by) VALUES ($1, $2, $3, $4)
-         ON CONFLICT (student_id, date) DO UPDATE SET attendance = EXCLUDED.attendance`,
-        [user_id, day, a, user.id]
-      );
+      await markAttendance({ id: user_id, week_start: g.meet_day }, weekStartOf(day, g.meet_day), a, user.id);
       n++;
     }
     return { saved: n };
@@ -490,22 +525,19 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const st = await loadStudent(user, params.id, { write: true });
     const attendance = body.attendance || 'present';
     if (!ATTENDANCE.includes(attendance)) throw new HttpError(400, 'الحضور غير صالح');
+    const ref = body.date ? date(body.date) : today();
+    if (ref > today()) throw new HttpError(400, 'لا يمكن تقييم حصة لم تأت بعد');
+    const session = sessionOf(st, ref);
+    // المقرر المسمَّع: مقرر ذلك الأسبوع كما كتبه الطالب (أو آخر مقرر قبله)
     let lessonId = null;
     if (body.lesson_id) lessonId = (await loadLesson(user, body.lesson_id, { write: true })).id;
-    const day = body.date ? date(body.date) : today();
-    const prevNote = (await one('SELECT note FROM quran_meetings WHERE student_id = $1 AND date = $2', [st.id, day]))?.note || '';
-    const meeting = await one(
-      `INSERT INTO quran_meetings (student_id, date, attendance, review_eval, hifz_eval, ada_eval, tajweed_eval, lesson_id, note, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       ON CONFLICT (student_id, date) DO UPDATE SET attendance = EXCLUDED.attendance, review_eval = EXCLUDED.review_eval,
-         hifz_eval = EXCLUDED.hifz_eval, ada_eval = EXCLUDED.ada_eval, tajweed_eval = EXCLUDED.tajweed_eval,
-         lesson_id = EXCLUDED.lesson_id, note = EXCLUDED.note
-       RETURNING id, date::text, attendance`,
-      [st.id, day, attendance, rating(body.review_eval, 'تقييم المراجعة'), rating(body.hifz_eval, 'تقييم الحفظ'),
-        rating(body.ada_eval, 'تقييم الأداء'), rating(body.tajweed_eval, 'تقييم التجويد'), lessonId, text(body.note, { max: 1000, name: 'الملاحظة' }), user.id]
-    );
-    const note = text(body.note, { max: 1000, name: 'الملاحظة' }) || '';
-    if (note && note !== prevNote) {
+    else lessonId = (await one('SELECT id FROM quran_lessons WHERE student_id = $1 AND assigned_on <= $2 ORDER BY assigned_on DESC, id DESC LIMIT 1', [st.id, addDays(session, 6)]))?.id ?? null;
+    const note = text(body.note, { max: 1000, name: 'الملاحظة' }) || null;
+    const { row: meeting, old } = await markAttendance(st, session, attendance, user.id, {
+      review_eval: rating(body.review_eval, 'تقييم المراجعة'), hifz_eval: rating(body.hifz_eval, 'تقييم الحفظ'),
+      ada_eval: rating(body.ada_eval, 'تقييم الأداء'), tajweed_eval: rating(body.tajweed_eval, 'تقييم التجويد'), lesson_id: lessonId, note,
+    });
+    if (note && note !== (old?.note || '')) {
       await notify([st.id], { kind: 'note', title: `📝 ملاحظة جديدة من ${user.full_name}`, body: note, link: '#/home' });
     }
     return [201, { meeting }];
@@ -516,5 +548,104 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     await loadStudent(user, m.student_id, { write: true });
     await pool.query('DELETE FROM quran_meetings WHERE id = $1', [m.id]);
     return { ok: true };
+  });
+
+  // ---------- إحصاءات فترة: الحضور، الورد (أحزاب)، تكرار المقرر ----------
+  async function activity(ids, from, to) {
+    if (!ids.length) return { items: [], reps: [], meets: [] };
+    const [items, reps, meets] = await Promise.all([
+      all('SELECT student_id, date::text, seg_id, count FROM quran_review_items WHERE student_id = ANY($1::int[]) AND date BETWEEN $2 AND $3', [ids, from, to]),
+      all(`SELECT l.student_id, r.date::text, SUM(r.count)::int AS count FROM quran_lesson_reps r JOIN quran_lessons l ON l.id = r.lesson_id
+           WHERE l.student_id = ANY($1::int[]) AND r.date BETWEEN $2 AND $3 GROUP BY l.student_id, r.date`, [ids, from, to]),
+      all('SELECT student_id, date::text, attendance, hifz_eval, ada_eval FROM quran_meetings WHERE student_id = ANY($1::int[]) AND date BETWEEN $2 AND $3', [ids, from, to]),
+    ]);
+    return { items, reps, meets };
+  }
+  const r1 = (n) => Math.round(n * 10) / 10;
+  function bucket(act, id, from, to) {
+    const inR = (x) => x.student_id === id && x.date >= from && x.date <= to;
+    const its = act.items.filter(inR);
+    const ms = act.meets.filter(inR);
+    return {
+      read: r1(its.reduce((t, i) => t + (Q.segments[i.seg_id]?.size || 0) * (i.count || 1), 0)),
+      days: new Set(its.map((i) => i.date)).size,
+      reps: act.reps.filter(inR).reduce((t, r) => t + r.count, 0),
+      present: ms.filter((m) => m.attendance === 'present').length,
+      absent: ms.filter((m) => m.attendance === 'absent').length,
+      excused: ms.filter((m) => m.attendance === 'excused').length,
+      att: ms.sort((a, b) => a.date.localeCompare(b.date))[0]?.attendance || null,
+      hifz_eval: ms[0]?.hifz_eval || null,
+      ada_eval: ms[0]?.ada_eval || null,
+    };
+  }
+  const groupStudents = (gid) => all(`${STUDENT_SELECT} WHERE qs.active AND qs.group_id = $1 ORDER BY u.full_name`, [gid]);
+
+  // السجل: جدول شامل لطلبة مجموعة على مرّ الأسابيع
+  q('GET', '/api/quran/groups/:id/record', STAFF, async ({ user, params, query }) => {
+    const g = await loadGroup(user, params.id);
+    const day = today();
+    const n = Math.min(12, Math.max(1, Number(query.get('weeks')) || 4));
+    const ref = DATE_RE.test(query.get('to') || '') && query.get('to') <= day ? query.get('to') : day;
+    const last = weekStartOf(ref, g.meet_day);
+    const weeks = [];
+    for (let i = n - 1; i >= 0; i--) weeks.push(addDays(last, -7 * i));
+    const sts = await groupStudents(g.id);
+    const act = await activity(sts.map((x) => x.id), weeks[0], addDays(last, 6));
+    const students = sts.map((st) => {
+      const mem = r1(Q.sizeOf(Object.keys(st.memorized || {}).map(Number)));
+      return {
+        id: st.id, full_name: st.full_name, has_photo: st.has_photo, photo_v: st.photo_v, memorized: mem,
+        weeks: weeks.map((w) => {
+          const b = bucket(act, st.id, w, addDays(w, 6));
+          return { ...b, ward: mem ? Math.round((b.read / mem) * 100) : null };
+        }),
+      };
+    });
+    return { group: g, weeks, target: LESSON_TARGET, students, today: day, has_next: addDays(last, 7) <= day };
+  });
+
+  // التحديات: ترتيب طلبة المجموعة في الحضور، وتكرار المقرر، والورد (أسبوعيًا، شهريًا، إجماليًا)
+  q('GET', '/api/quran/challenges', ['admin', 'talib'], async ({ user, query }) => {
+    const day = today();
+    let gid = Number(query.get('group_id')) || 0;
+    if (user.role === 'talib') gid = (await one('SELECT group_id FROM quran_students WHERE user_id = $1', [user.id]))?.group_id || 0;
+    const groups = user.role === 'admin' ? await all('SELECT id, name, meet_day FROM quran_groups ORDER BY name') : [];
+    if (!gid && groups.length) gid = groups[0].id;
+    const g = gid ? await one('SELECT id, name, meet_day FROM quran_groups WHERE id = $1', [gid]) : null;
+    if (!g) return { group: null, groups, rankings: null };
+    const period = ['week', 'month', 'all'].includes(query.get('period')) ? query.get('period') : 'week';
+    const sts = await groupStudents(g.id);
+    const ids = sts.map((x) => x.id);
+    const thisWeek = weekStartOf(day, g.meet_day);
+    let from = period === 'week' ? thisWeek : period === 'month' ? `${day.slice(0, 7)}-01` : '2000-01-01';
+    const act = await activity(ids, from, day);
+    const weeksBetween = (a) => Math.floor((parse(thisWeek) - parse(weekStartOf(a, g.meet_day))) / (7 * 864e5)) + 1;
+    const rows = sts.map((st) => {
+      let start = from;
+      if (period === 'all') {
+        const dates = [...act.items, ...act.reps, ...act.meets].filter((x) => x.student_id === st.id).map((x) => x.date).sort();
+        start = dates[0] || thisWeek;
+      }
+      const w = period === 'week' ? 1 : weeksBetween(start);
+      const b = bucket(act, st.id, start, day);
+      const mem = Q.sizeOf(Object.keys(st.memorized || {}).map(Number));
+      const marked = b.present + b.absent + b.excused;
+      return {
+        id: st.id, full_name: st.full_name, has_photo: st.has_photo, photo_v: st.photo_v, me: st.id === user.id,
+        attendance: marked ? Math.round((b.present / marked) * 100) : null, present: b.present, marked,
+        lesson: Math.round((b.reps / (LESSON_TARGET * w)) * 100), reps: b.reps, reps_target: LESSON_TARGET * w,
+        ward: mem ? Math.round((b.read / (mem * w)) * 100) : null, read: b.read, ward_target: r1(mem * w),
+      };
+    });
+    const rank = (k) => {
+      const list = [...rows].sort((a, b) => (b[k] ?? -1) - (a[k] ?? -1));
+      let prev = null, pos = 0;
+      return list.map((r, i) => {
+        if (r[k] !== prev) pos = i + 1;
+        prev = r[k];
+        return { ...r, rank: r[k] === null ? null : pos };
+      });
+    };
+    return { group: g, groups, period, from: period === 'all' ? null : from, rankings: { attendance: rank('attendance'), lesson: rank('lesson'), ward: rank('ward') } };
   });
 }

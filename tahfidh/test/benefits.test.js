@@ -89,3 +89,38 @@ test('notifications: new benefit and sheikh note reach students', async () => {
   assert.strictEqual((await st('GET', '/api/notifications/count')).body.unread, 0);
   assert.strictEqual((await admin('DELETE', `/api/quran/students/${s.id}`)).status, 200);
 });
+
+test('session attendance, two-absence alert, record table and challenges', async () => {
+  const admin = await login('admin', 'admin123');
+  const g = (await admin('POST', '/api/quran/groups', { name: 'د', meet_day: 6 })).body.group;
+  const a = (await admin('POST', '/api/quran/students', { username: 'c1', password: 'secret1', first_name: 'أ', group_id: g.id, week_start: 6, memorized: { 150: 's', 151: 's' } })).body.student;
+  const b = (await admin('POST', '/api/quran/students', { username: 'c2', password: 'secret1', first_name: 'ب', group_id: g.id, week_start: 6 })).body.student;
+  const t = new Date().toISOString().slice(0, 10);
+  const add = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  const lastWeek = add(t, -7), twoAgo = add(t, -14);
+  // حصة الأسبوع: نفس الحصة طوال الأسبوع
+  const r1 = await admin('GET', `/api/quran/attendance?week=${t}`);
+  const ses = r1.body.sessions[a.id];
+  assert.strictEqual(new Date(ses + 'T00:00:00Z').getUTCDay(), 6);
+  await admin('POST', '/api/quran/attendance', { week: twoAgo, marks: { [a.id]: 'absent', [b.id]: 'present' } });
+  await admin('POST', '/api/quran/attendance', { week: lastWeek, marks: { [a.id]: 'absent', [b.id]: 'present' } });
+  await admin('POST', '/api/quran/attendance', { week: lastWeek, marks: { [a.id]: 'absent' } });
+  const st = await login('c1', 'secret1');
+  const ns = (await st('GET', '/api/notifications')).body.notifications.filter((n) => n.kind === 'absence');
+  assert.strictEqual(ns.length, 1);
+  // تقييم بالنقاط 1-5 يحدّث نفس حصة الأسبوع
+  assert.strictEqual((await admin('POST', `/api/quran/students/${a.id}/meetings`, { date: lastWeek, attendance: 'excused', hifz_eval: '4', ada_eval: 5 })).status, 201);
+  assert.strictEqual((await admin('POST', `/api/quran/students/${a.id}/meetings`, { date: lastWeek, hifz_eval: '9' })).status, 400);
+  const rec = (await admin('GET', `/api/quran/groups/${g.id}/record?weeks=4`)).body;
+  assert.strictEqual(rec.weeks.length, 4);
+  const ra = rec.students.find((s) => s.id === a.id);
+  assert.strictEqual(ra.weeks[2].att, 'excused');
+  assert.strictEqual(ra.weeks[2].hifz_eval, '4');
+  assert.strictEqual(ra.weeks[1].att, 'absent');
+  const ch = (await st('GET', '/api/quran/challenges?period=all')).body;
+  assert.strictEqual(ch.group.id, g.id);
+  const att = ch.rankings.attendance;
+  assert.strictEqual(att[0].id, b.id);
+  assert.strictEqual(att[0].attendance, 100);
+  assert.strictEqual(att[1].attendance, 0);
+});

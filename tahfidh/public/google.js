@@ -125,7 +125,6 @@ async function signupsTab(page, groups) {
   gConfig ??= await api('GET', '/api/auth/config').catch(() => null);
   const { signups } = await api('GET', '/api/signups');
   const pending = signups.filter((s) => s.status === 'pending');
-  const done = signups.filter((s) => s.status !== 'pending');
   const card = (s) => `<li class="signup">
       <div><b>${esc([s.first_name, s.last_name].filter(Boolean).join(' '))}</b>${s.age ? ` <span class="muted small">· ${s.age} سنة</span>` : ''}
         <small class="q-what" dir="ltr">${esc(s.google_email)}</small>
@@ -136,8 +135,7 @@ async function signupsTab(page, groups) {
         : `<span class="badge ${s.status === 'accepted' ? 'good' : 'weak'}">${s.status === 'accepted' ? 'مقبول' : 'مرفوض'}</span>`}</li>`;
   page.innerHTML = `<div class="card" id="signups"><h3>📝 طلبات التسجيل${pending.length ? ` <b class="tab-badge">${pending.length}</b>` : ''}</h3>
       ${pending.length ? `<ul class="signups">${pending.map(card).join('')}</ul>` : '<p class="muted">لا توجد طلبات جديدة.</p>'}
-      ${gConfig?.google_client_id === null ? '<p class="error small">الدخول بـ Google غير مفعّل بعد في إعدادات الموقع.</p>' : ''}</div>
-    ${done.length ? `<details class="card"><summary>الطلبات السابقة (${done.length})</summary><ul class="signups">${done.map(card).join('')}</ul></details>` : ''}`;
+      ${gConfig?.google_client_id === null ? '<p class="error small">الدخول بـ Google غير مفعّل بعد في إعدادات الموقع.</p>' : ''}</div>`;
   const reload = () => signupsTab(page, groups);
   page.querySelectorAll('[data-accept]').forEach((b) =>
     b.addEventListener('click', () => {

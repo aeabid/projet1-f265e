@@ -200,6 +200,7 @@ const ICON_PATHS = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
   calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/>',
   bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>',
   star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
 };
@@ -207,7 +208,7 @@ const icon = (name) =>
   `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ICON_PATHS.grid}</svg>`;
 
 const NAV = {
-  admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'المجموعات', 'grid'], ['#/benefits', 'الفوائد', 'bulb'], ['#/account', 'حسابي', 'user']],
+  admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'السجل', 'table'], ['#/benefits', 'الفوائد', 'bulb'], ['#/account', 'حسابي', 'user']],
   // الطالب: الرئيسية (المقرر، الورد، الجدول، ملاحظات الشيخ) · الورد (تسجيل ورد اليوم) · سجلّي (بالأسبوع/بالشهر/بالسنة) · حسابي (البيانات والمحفوظ)
   talib: [['#/home', 'الرئيسية', 'home'], ['#/my-review', 'الورد', 'star'], ['#/my-progress', 'سجلّي', 'calendar'], ['#/benefits', 'الفوائد', 'bulb'], ['#/account', 'حسابي', 'user']],
 };
@@ -238,6 +239,7 @@ async function refreshBell() {
   const el = $('#bell');
   if (!el) return;
   el.hidden = !state.user;
+  if ($('#cup')) $('#cup').hidden = !state.user;
   if (!state.user) return;
   try {
     const { unread } = await api('GET', '/api/notifications/count');
@@ -261,13 +263,13 @@ const fmtAgo = (t) => {
 };
 async function viewNotifications(el) {
   const { notifications: list } = await api('GET', '/api/notifications');
-  const ico = { benefit: '💡', note: '📝', signup: '🙋' };
+  const ico = { benefit: '💡', note: '📝', signup: '🙋', absence: '⚠️' };
   el.innerHTML = `<div class="page-head"><h2>🔔 الإشعارات</h2>
       ${list.length ? '<button type="button" class="btn small ghost" id="nt-clear">مسح الكل</button>' : ''}</div>
     ${list.length
       ? `<ul class="notifs">${list.map((n) => `<li class="${n.read ? '' : 'unread'}"><a href="${esc(n.link || '#/home')}">
           <span class="nt-ico">${ico[n.kind] || '🔔'}</span>
-          <span class="nt-txt"><b>${esc(n.title.replace(/^\p{Extended_Pictographic}\s*/u, ''))}</b>${n.body ? `<small>${esc(n.body)}</small>` : ''}
+          <span class="nt-txt"><b>${esc(n.title.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ''))}</b>${n.body ? `<small>${esc(n.body)}</small>` : ''}
           <small class="muted">${fmtAgo(n.created_at)}</small></span></a></li>`).join('')}</ul>`
       : '<div class="card empty-state"><span>🔔</span><p>لا توجد إشعارات. ستصلك هنا الفوائد والملاحظات الجديدة.</p></div>'}`;
   $('#nt-clear')?.addEventListener('click', async () => {
