@@ -166,42 +166,166 @@ async function quranStudentsTab(page, d, root) {
   await load();
 }
 
-// ---------- السجل الشامل لمجموعة ----------
+// ---------- السجل الشامل لمجموعة: خريطة حرارية متحركة ----------
+const REC_METRICS = [
+  ['all', 'نظرة عامة'],
+  ['att', 'الحضور'],
+  ['ward', 'الورد'],
+  ['reps', 'التكرار'],
+];
+const heat = (p) => (p === null || p === undefined ? 'h0' : p <= 0 ? 'h0' : p < 25 ? 'h1' : p < 50 ? 'h2' : p < 75 ? 'h3' : p < 100 ? 'h4' : 'h5');
+
 async function viewQuranRecord(el, gid, n = 4, to = '') {
   const r = await api('GET', `/api/quran/groups/${gid}/record?weeks=${n}${to ? `&to=${to}` : ''}`);
   const href = (nn, tt) => `#/quran/record/${gid}?w=${nn}${tt ? `&to=${tt}` : ''}`;
-  const older = qAddDays(r.weeks[0], -1);
-  const newer = qAddDays(r.weeks[r.weeks.length - 1], 7 * n);
-  const order = r.weeks.map((w, i) => i).reverse();
-  const cell = (w) => `<td class="rc ${w.att ? `att-${w.att}` : ''}">
-      ${attChip(w.att)}
-      <span class="rc-l" title="الورد: ما قرأه من محفوظه">📖 <b>${w.ward ?? 0}%</b> <small>${num(w.read)} ح</small></span>
-      <span class="rc-l" title="تكرار المقرر">🔁 <b class="${w.reps >= r.target ? 'in' : ''}">${w.reps}</b><small>/${r.target}</small></span>
-      ${w.hifz_eval || w.ada_eval ? `<span class="rc-l rc-ev">${starsTxt(w.hifz_eval)}${w.ada_eval ? ` ${starsTxt(w.ada_eval)}` : ''}</span>` : ''}</td>`;
-  const total = (s) => {
-    const p = s.weeks.filter((w) => w.att === 'present').length;
-    const m = s.weeks.filter((w) => w.att).length;
+  const olderTo = qAddDays(r.weeks[0], -1);
+  const newerRef = qAddDays(r.weeks[r.weeks.length - 1], 7 * n);
+  const newerTo = newerRef > r.today ? '' : newerRef;
+  const curWeek = sessionOf(r.today, r.group.meet_day);
+  const T = r.target;
+  let metric = localStorage.getItem('recMetric') || 'all';
+  let sort = 'name';
+  const order = r.weeks.map((_, i) => i).reverse(); // الأحدث أولًا
+  const repsPct = (w) => Math.round((w.reps / T) * 100);
+
+  // ملخّص الفترة لكل طالب
+  const tot = (s) => {
+    const marked = s.weeks.filter((w) => w.att).length;
+    const present = s.weeks.filter((w) => w.att === 'present').length;
     const read = s.weeks.reduce((t, w) => t + w.read, 0);
     const reps = s.weeks.reduce((t, w) => t + w.reps, 0);
-    return `<td class="rc rc-tot"><span class="rc-l">🕌 <b>${p}</b><small>/${m || n}</small></span>
-      <span class="rc-l">📖 <b>${s.memorized ? Math.round((read / (s.memorized * n)) * 100) : 0}%</b></span>
-      <span class="rc-l">🔁 <b>${Math.round((reps / (r.target * n)) * 100)}%</b></span></td>`;
+    return {
+      marked, present,
+      att: marked ? Math.round((present / marked) * 100) : null,
+      ward: s.memorized ? Math.round((read / (s.memorized * n)) * 100) : null,
+      reps: Math.round((reps / (T * n)) * 100),
+    };
   };
+  const totals = new Map(r.students.map((s) => [s.id, tot(s)]));
+  const avg = (k) => {
+    const v = r.students.map((s) => totals.get(s.id)[k]).filter((x) => x !== null);
+    return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+  };
+
+  const cell = (s, w, k) => {
+    const d = `data-s="${s.id}" data-w="${k}"`;
+    if (metric === 'att') return `<button type="button" class="hm att-${w.att || 'none'}" ${d}>${w.att ? Q_ATT_ICON[w.att] : '·'}</button>`;
+    if (metric === 'ward') return `<button type="button" class="hm ${heat(w.ward)}" ${d}><b>${w.ward ?? 0}<small>%</small></b><small>${num(w.read)} ح</small></button>`;
+    if (metric === 'reps') return `<button type="button" class="hm ${heat(repsPct(w))}" ${d}><b>${w.reps}</b><small>/${T}</small></button>`;
+    return `<button type="button" class="hm hm-all att-${w.att || 'none'}" ${d}>
+        <i class="hm-dot"></i>
+        <span class="mb ward"><i style="--v:${Math.min(100, w.ward || 0)}%"></i></span>
+        <span class="mb reps"><i style="--v:${Math.min(100, repsPct(w))}%"></i></span></button>`;
+  };
+  const totCell = (s) => {
+    const t = totals.get(s.id);
+    if (metric === 'att') return `<b>${t.present}<small>/${t.marked || n}</small></b>`;
+    if (metric === 'ward') return `<b>${t.ward ?? '—'}${t.ward !== null ? '<small>%</small>' : ''}</b>`;
+    if (metric === 'reps') return `<b>${t.reps}<small>%</small></b>`;
+    return `<span class="ring" style="--p:${t.att ?? 0}"><b>${t.att ?? '—'}</b></span>`;
+  };
+  const sorted = () => {
+    const list = [...r.students];
+    if (sort === 'name') return list;
+    const k = metric === 'all' ? 'att' : metric;
+    return list.sort((a, b) => (totals.get(b.id)[k] ?? -1) - (totals.get(a.id)[k] ?? -1));
+  };
+  const legend = () =>
+    metric === 'att' ? '<span class="lg att-present">✓ حاضر</span><span class="lg att-absent">✗ غائب</span><span class="lg att-excused">! بعذر</span><span class="lg att-none">· لم يُسجَّل</span>'
+    : metric === 'all' ? '<span class="lg-i"><i class="dot p"></i>الحضور</span><span class="lg-i"><i class="bar w"></i>الورد</span><span class="lg-i"><i class="bar r"></i>التكرار</span><span class="lg-i">⭕ نسبة الحضور</span>'
+    : `<span class="lg-scale">${['h0', 'h1', 'h2', 'h3', 'h4', 'h5'].map((h) => `<i class="${h}"></i>`).join('')}</span><span>0%</span><span>←</span><span>100%+</span>`;
+
+  const draw = () => {
+    const grid = $('#hm-grid');
+    grid.style.setProperty('--cols', r.weeks.length);
+    grid.innerHTML = `<div class="hm-row hm-head"><span class="hm-name">الطالب</span>
+        ${order.map((i) => `<span class="hm-wk ${r.weeks[i] === curWeek ? 'cur' : ''}">${qShort(r.weeks[i])}${r.weeks[i] === curWeek ? '<small>الآن</small>' : ''}</span>`).join('')}
+        <span class="hm-wk hm-totl">المجموع</span></div>
+      ${sorted().map((s, row) => `<div class="hm-row" style="--i:${row}">
+        <a class="hm-name" href="#/quran/student/${s.id}" title="${esc(s.full_name)}">${avatar(s, 'xs')}<span>${esc(s.full_name)}</span></a>
+        ${order.map((i) => cell(s, s.weeks[i], i)).join('')}
+        <span class="hm-tot">${totCell(s)}</span></div>`).join('')}`;
+    $('#hm-legend').innerHTML = legend();
+    el.querySelectorAll('.rec-metric button').forEach((b) => b.classList.toggle('on', b.dataset.m === metric));
+    $('#hm-sort').textContent = sort === 'name' ? '↕ بالاسم' : '↓ الأعلى أولًا';
+  };
+
   el.innerHTML = `<p><a href="#/quran/groups">→ السجل</a></p>
-    <div class="page-head"><h2>📊 ${esc(r.group.name)}</h2><span class="muted small">حصة يوم ${Q_DAYS[r.group.meet_day]}</span></div>
-    <div class="card rec-ctl">
-      <span class="q-seg rec-seg rec-n">${[4, 6, 8].map((k) => `<a href="${href(k, to)}" class="${k === n ? 'on' : ''}">${k} أسابيع</a>`).join('')}</span>
-      <span class="q-weeknav"><a href="${href(n, older)}" title="أسابيع أقدم">→</a>
-        <b class="rec-range">من ${qShort(r.weeks[0])} إلى ${qShort(qAddDays(r.weeks[r.weeks.length - 1], 6))}</b>
-        ${r.has_next ? `<a href="${href(n, newer > r.today ? '' : newer)}" title="أسابيع أحدث">←</a>` : '<span></span>'}</span>
-      <p class="rec-legend"><span class="att-chip present">✓ حاضر</span><span class="att-chip absent">✗ غائب</span><span class="att-chip excused">! بعذر</span>
-        <span>📖 الورد (من المحفوظ)</span><span>🔁 تكرار المقرر</span><span class="stars">★</span> الحفظ والأداء</p>
+    <div class="rec-hero">
+      <div><h2>${esc(r.group.name)}</h2><small>حصة يوم ${Q_DAYS[r.group.meet_day]} · ${r.students.length} طالب</small></div>
+      <div class="rec-kpis">
+        <span><b>${avg('att') ?? '—'}%</b><small>الحضور</small></span>
+        <span><b>${avg('ward') ?? '—'}%</b><small>الورد</small></span>
+        <span><b>${avg('reps') ?? '—'}%</b><small>التكرار</small></span></div>
     </div>
-    ${r.students.length ? `<div class="card rec-wrap"><table class="rec-table"><thead><tr><th class="rc-name">الطالب</th>
-        ${order.map((i) => r.weeks[i]).map((w) => `<th>${qShort(w)}${w === sessionOf(r.today, r.group.meet_day) ? '<small>هذا الأسبوع</small>' : ''}</th>`).join('')}<th>المجموع</th></tr></thead>
-      <tbody>${r.students.map((s) => `<tr><th class="rc-name"><a href="#/quran/student/${s.id}">${avatar(s, 'sm')}<span>${esc(s.full_name)}<small>${hizbTxt(s.memorized)}</small></span></a></th>
-        ${order.map((i) => cell(s.weeks[i])).join('')}${total(s)}</tr>`).join('')}</tbody></table></div>`
+    <div class="rec-metric" role="tablist">${REC_METRICS.map(([k, l]) => `<button type="button" data-m="${k}">${l}</button>`).join('')}</div>
+    <div class="rec-bar">
+      <a class="ses-btn" href="${href(n, olderTo)}" aria-label="أسابيع أقدم">→</a>
+      <span class="rec-mid"><b class="rec-range">${qShort(r.weeks[0])} – ${qShort(qAddDays(r.weeks[r.weeks.length - 1], 6))}</b>
+        <span class="rec-n2">${[4, 6, 8, 12].map((k) => `<a href="${href(k, to)}" class="${k === n ? 'on' : ''}">${k}</a>`).join('')}<small>أسابيع</small></span></span>
+      ${r.has_next ? `<a class="ses-btn" href="${href(n, newerTo)}" aria-label="أسابيع أحدث">←</a>` : '<span class="ses-btn" aria-disabled="true">←</span>'}
+    </div>
+    ${r.students.length ? `<div class="card hm-card">
+        <div class="hm-tools"><div class="hm-legend" id="hm-legend"></div><button type="button" class="chip-btn" id="hm-sort"></button></div>
+        <div class="hm-scroll" id="hm-scroll"><div class="hm-grid" id="hm-grid"></div></div>
+        <p class="muted small hm-hint">اضغط على أي خانة لرؤية التفاصيل · اسحب يمينًا أو يسارًا للتنقّل بين الأسابيع</p></div>`
       : '<div class="card empty-state"><span>👥</span><p>لا يوجد طلبة في هذه المجموعة.</p></div>'}`;
+  if (!r.students.length) return;
+  draw();
+
+  el.querySelectorAll('.rec-metric button').forEach((b) =>
+    b.addEventListener('click', () => {
+      metric = b.dataset.m;
+      try { localStorage.setItem('recMetric', metric); } catch {}
+      draw();
+    })
+  );
+  $('#hm-sort').addEventListener('click', () => ((sort = sort === 'name' ? 'top' : 'name'), draw()));
+  // تفاصيل الخانة في لوحة سفلية
+  $('#hm-grid').addEventListener('click', (e) => {
+    const b = e.target.closest('.hm[data-s]');
+    if (!b) return;
+    const s = r.students.find((x) => x.id === Number(b.dataset.s));
+    const w = s.weeks[Number(b.dataset.w)];
+    const wk = r.weeks[Number(b.dataset.w)];
+    recSheet(`<div class="sh-head">${avatar(s, 'md')}<div><b>${esc(s.full_name)}</b><small>حصة ${qDay(wk)} ${fmtDate(wk)}${wk === curWeek ? ' · هذا الأسبوع' : ''}</small></div></div>
+      <div class="sh-att">${attChip(w.att)}${w.hifz_eval ? `<span>الحفظ ${starsTxt(w.hifz_eval)}</span>` : ''}${w.ada_eval ? `<span>الأداء ${starsTxt(w.ada_eval)}</span>` : ''}</div>
+      <div class="sh-stat"><div><span>📖 الورد</span><b>${w.ward ?? 0}%</b></div>
+        <div class="q-bar ${w.ward >= 100 ? 'ok' : ''}"><i style="width:${Math.min(100, w.ward || 0)}%"></i></div>
+        <small>قرأ ${num(w.read)} حزب من محفوظه (${hizbTxt(s.memorized)}) · ${w.days} ${w.days === 1 ? 'يوم' : 'أيام'}</small></div>
+      <div class="sh-stat"><div><span>🔁 تكرار المقرر</span><b>${w.reps}/${T}</b></div>
+        <div class="q-bar ${w.reps >= T ? 'ok' : ''}"><i style="width:${Math.min(100, repsPct(w))}%"></i></div></div>
+      <div class="sh-actions"><a class="btn small ghost" href="#/quran/student/${s.id}">صفحة الطالب</a>
+        <a class="btn small ghost" href="#/quran/student/${s.id}?week=${wk}">أسبوعه بالتفصيل</a></div>`);
+  });
+  // السحب للتنقّل بين الأسابيع (عند عدم وجود تمرير أفقي)
+  const sc = $('#hm-scroll');
+  let x0 = null;
+  let y0 = null;
+  sc.addEventListener('touchstart', (e) => ((x0 = e.touches[0].clientX), (y0 = e.touches[0].clientY)), { passive: true });
+  sc.addEventListener('touchend', (e) => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    const dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx)) return;
+    if (sc.scrollWidth > sc.clientWidth + 4) return; // الجدول يتمرّر: نترك التمرير الطبيعي
+    if (dx > 0) location.hash = href(n, olderTo);
+    else if (r.has_next) location.hash = href(n, newerTo);
+  });
+}
+function recSheet(html) {
+  document.querySelector('.sheet-wrap')?.remove();
+  const w = document.createElement('div');
+  w.className = 'sheet-wrap';
+  w.innerHTML = `<div class="sheet" role="dialog"><span class="sheet-grip"></span>${html}</div>`;
+  const close = () => {
+    w.classList.add('out');
+    setTimeout(() => w.remove(), 220);
+  };
+  w.addEventListener('click', (e) => (e.target === w || e.target.closest('a')) && close());
+  window.addEventListener('hashchange', close, { once: true });
+  document.body.append(w);
 }
 
 // ---------- التحديات: ترتيب طلبة المجموعة ----------
