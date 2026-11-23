@@ -1,0 +1,160 @@
+@font-face{font-family:"Readex";src:url(fonts/readex-arabic.woff2) format("woff2");font-weight:300 700;unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+200C-200E,U+FB50-FDFF,U+FE70-FEFC}
+@font-face{font-family:"Readex";src:url(fonts/readex-latin.woff2) format("woff2");font-weight:300 700;unicode-range:U+0000-00FF,U+2000-206F,U+2190-21FF,U+2605,U+2713,U+2717,U+270E}
+
+:root{
+  --p:#6b46b0;      /* بنفسجي */
+  --pd:#4b2e83;     /* بنفسجي غامق */
+  --pl:#ece6f7;     /* بنفسجي فاتح */
+  --pll:#f6f3fb;
+  --pink:#e0197d;
+  --blue:#2d55a5;
+  --gold:#f2a516;
+  --cream:#fff6e5;
+  --green:#1f9d6b;
+  --ink:#2b2340;
+  --muted:#6f6886;
+}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#d9d4e3;font-family:"Readex","Noto Naskh Arabic",sans-serif;color:var(--ink);font-size:11pt;line-height:1.85}
+b,strong{font-weight:700}
+
+@page{size:A4;margin:10mm 11mm 19mm 11mm;
+  @bottom-left-corner{content:"";background:#4b2e83;margin-top:8mm}
+  @bottom-right-corner{content:"";background:#4b2e83;margin-top:8mm}
+  @bottom-center{content:counter(page);font-family:"Readex";font-size:8.5pt;color:#fff;font-weight:700;vertical-align:top;
+    background:#4b2e83 url(footer.png) no-repeat left center/auto 11mm;margin-top:8mm;padding-top:3mm;width:188mm;text-align:right;padding-right:8mm;font-size:10pt}
+}
+@page cover{margin:0;@bottom-center{content:none}}
+@page bookcover{margin:0;@bottom-center{content:none}}
+
+/* شريط أسفل كلّ صفحة */
+
+
+/* ===== صفحات الغلاف ===== */
+.bookcover,.cover{page:cover;break-before:page;break-after:page;width:210mm;height:296mm;position:relative;overflow:hidden;
+  background:var(--p);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.bookcover{page:bookcover}
+.cover::before,.bookcover::before{content:"";position:absolute;inset:0;opacity:.09;
+  background-image:radial-gradient(circle at 25% 25%,#fff 2px,transparent 3px),radial-gradient(circle at 75% 75%,#fff 2px,transparent 3px);background-size:28px 28px}
+.cover .deco,.bookcover .deco{position:absolute;width:120mm;height:120mm;border-radius:50%;border:16mm solid rgba(255,255,255,.12)}
+.deco.a{top:-55mm;right:-55mm}.deco.b{bottom:-55mm;left:-55mm}
+.logo-card{background:#fff;border-radius:14px;padding:10px 26px;box-shadow:0 4px 14px rgba(0,0,0,.18);position:relative}
+.logo-card img{height:44px;display:block}
+.pill{display:inline-block;background:var(--cream);color:var(--pink);font-weight:700;border-radius:12px;padding:2px 36px;font-size:15pt;margin-top:22mm;position:relative}
+.cover h1{font-size:34pt;margin:6mm 0 0;line-height:1.4;position:relative}
+.cover .sub{opacity:.9;font-size:11.5pt;margin-top:10mm;position:relative;max-width:150mm}
+.bookcover h1{font-size:40pt;margin:16mm 0 0;line-height:1.35;position:relative}
+.bookcover .tag{font-size:16pt;background:rgba(255,255,255,.14);border-radius:30px;padding:4px 30px;margin-top:8mm;position:relative}
+.bookcover .meta{position:relative;margin-top:24mm;font-size:12pt;line-height:2.1}
+.bookcover .meta b{color:var(--cream)}
+
+/* ===== رأس الصّفحة (يتكرّر في كلّ صفحة من الدّرس) ===== */
+.lesson{width:100%;border-collapse:collapse}
+.lesson>thead>tr>td,.lesson>tfoot>tr>td,.lesson>tbody>tr>td{padding:0}
+.hdr{display:grid;grid-template-columns:1.35fr 1.35fr .75fr .5fr;border:1px solid #cfc8dc;border-bottom:3px solid #b9c3dc;margin-bottom:3mm;font-size:8.6pt;line-height:1.6}
+.hdr>div{padding:5px 9px;border-left:1px solid #cfc8dc;display:flex;flex-direction:column;justify-content:center}
+.hdr>div:last-child{border-left:0;align-items:center}
+.hdr .c{text-align:center}
+.hdr img{height:24px}
+.hdr b{font-weight:700}
+
+/* ===== العناوين ===== */
+.ttl{display:block;width:fit-content;margin:2mm auto 1mm;background:var(--pl);color:var(--p);font-size:17pt;font-weight:700;border-radius:14px;padding:3px 34px;text-align:center;line-height:1.6}
+.ttl-sub{text-align:center;color:var(--muted);font-size:9.5pt;margin-bottom:3mm}
+h3.st{break-after:avoid;color:var(--p);font-size:12.5pt;margin:4mm 0 1.5mm;display:flex;align-items:center;gap:6px}
+h3.st::before{content:"";width:7px;height:18px;border-radius:4px;background:var(--pink);display:inline-block}
+.chip{display:block;width:fit-content;margin:3mm auto 2mm;background:var(--p);color:#fff;font-weight:700;border-radius:8px;padding:2px 40px;font-size:11.5pt}
+
+/* ===== أشجار ومخطّطات ===== */
+.tree{display:grid;gap:4mm;margin:2mm 0 3mm;text-align:center;break-inside:avoid}
+.tree.c2{grid-template-columns:1fr 1fr}.tree.c3{grid-template-columns:1fr 1fr 1fr}.tree.c4{grid-template-columns:repeat(4,1fr)}.tree.c5{grid-template-columns:repeat(5,1fr)}
+.node{border-radius:8px;color:#fff;font-weight:700;padding:3px 6px;font-size:10.5pt}
+.node.blue{background:var(--blue)}.node.pink{background:var(--pink)}.node.pur{background:var(--p)}.node.green{background:var(--green)}.node.gold{background:var(--gold)}
+.tree .d{font-size:9.6pt;line-height:1.7;margin-top:1.5mm}
+.tree .d .k{color:var(--pink);font-weight:700;display:block}
+
+/* ===== صناديق ===== */
+.box{background:var(--pll);border-radius:12px;padding:3mm 4.5mm;margin:2.5mm 0;break-inside:avoid}
+.box>h4{margin:0 0 1mm;color:var(--p);font-size:11pt}
+.note{background:var(--cream);border-right:5px solid var(--gold);border-radius:10px;padding:2.5mm 4mm;margin:2.5mm 0;break-inside:avoid}
+.note::before{content:"انتبه : ";color:var(--pink);font-weight:700}
+.note.tip::before{content:"نصيحة : "}
+.note.rem::before{content:"للتّذكّر : "}
+.note.meth::before{content:"المنهجيّة : "}
+.k{color:var(--pink);font-weight:700}
+.kb{color:var(--blue);font-weight:700}
+.kp{color:var(--p);font-weight:700}
+.kg{color:var(--green);font-weight:700}
+.u{text-decoration:underline;text-decoration-color:var(--pink);text-underline-offset:5px;text-decoration-thickness:2px}
+.big{font-size:12.5pt}
+ul.l{margin:1mm 0;padding-inline-start:6mm}
+ul.l li{margin:.5mm 0}
+ul.l li::marker{color:var(--pink)}
+.ex-line{display:flex;gap:2mm;align-items:baseline}
+.arrow{color:var(--pink);font-weight:700;padding:0 2px}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:3mm}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3mm}
+
+/* ===== جداول ===== */
+table.t{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #b7a9d6;border-radius:12px;overflow:hidden;margin:2mm 0 3mm;font-size:10pt;break-inside:avoid}
+table.t th{background:var(--pl);color:var(--p);font-weight:700;padding:3px 6px;border-bottom:1px solid #b7a9d6;border-left:1px solid #b7a9d6}
+table.t td{padding:3px 7px;border-left:1px solid #d6cde8;border-bottom:1px solid #e6e0f1;text-align:center;line-height:1.75}
+table.t tr>*:last-child{border-left:0}
+table.t tr:last-child>td{border-bottom:0}
+table.t td.h{background:var(--pll);color:var(--p);font-weight:700}
+table.t.left td{text-align:right}
+table.t.blank td{height:22mm}
+table.t.blank.s td{height:10mm}
+table.t.blank.xs td{height:8mm}
+
+/* ===== التّمارين ===== */
+.ex{margin:3.5mm 0 3mm;break-inside:avoid}
+.exh{display:flex;justify-content:space-between;align-items:center;background:var(--pd);color:#fff;border-radius:8px;padding:2px 10px 2px 8px;font-weight:700;font-size:10.8pt;border-right:6px solid var(--p)}
+.exh .n{color:var(--gold)}
+.lvl{font-size:9pt;border-radius:10px;padding:0 12px;white-space:nowrap}
+.lvl.l1{background:#dff3e8;color:var(--green)}
+.lvl.l2{background:#fdeccc;color:#b9770a}
+.lvl.l3{background:#fde0ec;color:var(--pink)}
+.exb{background:var(--pll);border-radius:12px;padding:2.5mm 4.5mm;margin-top:2mm}
+.exb.dash{background:#fff;border:1.5px dashed #b7a9d6}
+.words{text-align:center;font-size:12pt;line-height:2.1}
+.bank{text-align:center;color:var(--pink);font-weight:700;font-size:11.5pt}
+.dots{display:inline-block;min-width:32mm;border-bottom:1.6px dotted #8a80a3;height:1em}
+.dots.s{min-width:18mm}.dots.l{min-width:60mm}
+.wline{border-bottom:1.6px dotted #8a80a3;height:8mm}
+ol.q{margin:0;padding-inline-start:5mm;list-style:none;counter-reset:q}
+ol.q>li{counter-increment:q;margin:.6mm 0;position:relative;padding-inline-start:5mm}
+ol.q>li::before{content:"-";color:var(--pink);font-weight:700;position:absolute;inset-inline-start:0}
+.hint{color:#9a91b3;font-size:8.6pt}
+.choice{color:var(--muted)}
+
+/* ===== الإصلاح ===== */
+.corr-ttl{break-before:page}
+.c{margin:1.5mm 0 2mm}
+.c>.cn{color:var(--p);font-weight:700;font-size:11pt;display:block}
+.c .a{color:var(--pink);font-weight:700}
+.c p{margin:0}
+
+/* ===== الفهرس ===== */
+.toc{display:grid;grid-template-columns:1fr;gap:2.4mm}
+.toc .it{display:grid;grid-template-columns:11mm 1fr auto;align-items:center;gap:4mm;background:var(--pll);border-radius:12px;border-left:5px solid var(--p);padding:2mm 4mm;break-inside:avoid}
+.toc .num{background:var(--p);color:#fff;border-radius:8px;text-align:center;font-weight:700;padding:2px 0}
+.toc .tt{font-weight:700;font-size:11.5pt;line-height:1.5}
+.toc .ds{font-size:8.6pt;color:var(--muted);line-height:1.5}
+.toc .pg{color:var(--p);font-weight:700}
+.toc .part{background:var(--pd);color:#fff;border-radius:10px;text-align:center;font-weight:700;padding:2px;margin-top:1mm}
+.flow{display:flex;justify-content:center;gap:5mm;align-items:center;margin:4mm 0}
+.flow>div{border:1.5px solid var(--p);border-radius:12px;padding:2mm 6mm;text-align:center;line-height:1.5}
+.flow>div b{color:var(--p);display:block;font-size:12pt}
+.flow>span{color:var(--pink);font-size:16pt}
+.levels{display:flex;justify-content:center;gap:4mm;margin:2mm 0 5mm}
+.levels span{border-radius:8px;padding:1px 18px;font-weight:700}
+
+@media screen{
+  body{padding:10mm 0}
+  .page-wrap{width:210mm;margin:0 auto;background:#fff;padding:10mm 11mm 20mm;box-shadow:0 4px 18px rgba(0,0,0,.15)}
+  .cover,.bookcover{margin:0 0 10mm -11mm;width:210mm}
+  .footbar{display:none}
+}
+@media print{body{background:#fff}.page-wrap{padding:0}}
