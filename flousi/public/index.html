@@ -594,6 +594,58 @@ main#main{margin-top:10px}
 .hl-tip{text-align:center;font-size:11.5px;color:var(--muted);margin:10px 0 0;display:flex;align-items:center;justify-content:center;gap:4px}
 .hl-tip svg{width:14px;height:14px}
 @media (max-width:360px){.cell span{width:30px;height:30px}}
+
+/* ===== v3: جدول العادات المسطّر، إنجازاتي، استجابة أسرع ===== */
+button,a,.blk,.cell{touch-action:manipulation}
+.wgrid.editing .blk{touch-action:none}
+/* رؤوس الأيام: الخلفية تحيط بالرقم كاملًا */
+.wgrid .hd.today b{width:auto;min-width:30px;padding:1px 8px;display:inline-block;border-radius:999px;margin:0}
+/* عاداتي: جدول حقيقي */
+.htc{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 10px 2px;box-shadow:0 1px 2px rgba(20,10,40,.04)}
+.ht{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:stretch}
+.ht-row{display:contents}
+.ht-row>div{border-bottom:1px solid var(--line);min-height:46px;display:flex;align-items:center;justify-content:center;padding-bottom:6px}
+.ht-row>.ht-name{grid-column:1/-1;border-bottom:0;min-height:0;padding:10px 2px 6px}
+.ht-row:last-child>div{border-bottom:0}
+.ht-hd>div{min-height:0;padding:8px 0;position:sticky;top:0;background:var(--card);z-index:2;border-bottom:1.5px solid var(--line)}
+.ht-name{justify-content:flex-start!important;gap:6px;min-width:0;padding-inline-end:6px}
+.ht-hint{font-size:11.5px;color:var(--muted);font-weight:600}
+.ht-day{flex-direction:column;line-height:1.25;color:var(--muted)}
+.ht-day small{font-size:10.5px}
+.ht-day b{font-family:Tajawal;font-size:14px;color:var(--ink);min-width:26px;text-align:center;padding:1px 6px;border-radius:999px}
+.ht-day.t small{color:var(--acc);font-weight:700}
+.ht-day.t b{background:var(--acc);color:#fff}
+@media (prefers-color-scheme:dark){.ht-day.t b{color:#1a1326}}
+.ht-c.t,.ht-day.t{background:color-mix(in srgb,var(--acc) 7%,var(--card))!important}
+.ht-nb{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:0;background:none;padding:6px 0;text-align:start;color:inherit}
+.ht-ic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-size:15px;background:color-mix(in srgb,var(--c) 13%,var(--card));flex:none}
+.ht-tx{min-width:0;display:flex;flex-direction:column}
+.ht-tx{flex-direction:row!important;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ht-tx b{font-size:14.5px;font-weight:700;line-height:1.3}
+.ht-tx small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ht-tx .fire{color:#e08a00;font-weight:700}
+.ht-tx .up{color:#0e9f6e}.ht-tx .down{color:#e11d48}
+.ht .qb{padding:3px 9px;font-size:12px}
+.ht .cell{height:auto}
+.ht .cell span{width:32px;height:32px;font-size:11px}
+@media (min-width:560px){.ht .cell span{width:34px;height:34px;font-size:12px}}
+/* إنجازاتي */
+.tl{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:4px 12px;box-shadow:0 1px 2px rgba(20,10,40,.04)}
+.tl-h{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:800;color:var(--muted);padding:12px 2px 6px}
+.tl-h small{font-weight:700;background:var(--soft);border-radius:99px;padding:0 8px}
+.tl-h.late{color:#e11d48}
+.tk{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.tk:last-child{border-bottom:0}
+.tk-c{width:28px;height:28px;border-radius:50%;border:2px solid color-mix(in srgb,var(--c) 60%,var(--line));background:none;display:grid;place-items:center;color:#fff;flex:none;transition:all .15s}
+.tk-c:active{transform:scale(.88)}
+.tk.done .tk-c{background:var(--c);border-color:var(--c)}
+.tk-b{flex:1;min-width:0;border:0;background:none;text-align:start;padding:0;color:inherit}
+.tk-b b{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-b small{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk.done .tk-b b{text-decoration:line-through;color:var(--muted)}
+.tk.late .tk-b small{color:#e11d48}
+.tk-g{width:36px;height:36px;border-radius:12px;background:var(--soft);display:grid;place-items:center;text-decoration:none;font-size:16px;flex:none}
+.dock .tab{font-size:10.5px}
 </style>
 </head>
 <body>
@@ -755,6 +807,7 @@ const ICONS = {
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
   download: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/>',
   more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  list: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/>',
   wallet: '<path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   check: '<rect x="3" y="3" width="18" height="18" rx="5"/><path d="m8 12 3 3 5-6"/>',
@@ -950,6 +1003,7 @@ function shell() {
   <nav class="dock">
     <button class="tab" data-view="habits">${icon('check')}عاداتي</button>
     <button class="tab" data-view="day">${icon('clock')}يومي</button>
+    <button class="tab" data-view="tasks">${icon('list')}إنجازاتي</button>
     <button class="tab" data-view="home">${icon('wallet')}فلوسي</button>
     <button class="tab" data-view="cats">${icon('tag')}${u.is_admin ? 'الإدارة' : 'الإعدادات'}</button>
   </nav>`;
@@ -957,6 +1011,7 @@ function shell() {
   $('#dock-add').onclick = () => {
     if (UI.view === 'day' && S.lifeReady) return openPlan({});
     if (UI.view === 'habits' && S.lifeReady) return openHabit(null);
+    if (UI.view === 'tasks' && S.lifeReady) return openPlan({ kind: 'appt' });
     openTx('expense');
   };
   $('#me').onclick = (e) => {
@@ -980,16 +1035,17 @@ function go(view) {
   UI.view = view;
   try { history.replaceState(null, '', view === 'home' ? '#money' : view === 'habits' ? '#' : '#' + view); } catch (e) {}
   render();
-  scrollTo({ top: 0, behavior: 'smooth' });
+  scrollTo(0, 0);
 }
 
 function render() {
   if (!S.user) return;
   $$('.dock .tab').forEach((b) => b.classList.toggle('on', b.dataset.view === UI.view));
-  $('#dock-add').setAttribute('aria-label', UI.view === 'day' ? 'إضافة نشاط' : UI.view === 'habits' ? 'إضافة عادة' : 'إضافة عملية');
+  $('#dock-add').setAttribute('aria-label', UI.view === 'day' ? 'إضافة نشاط' : UI.view === 'habits' ? 'إضافة عادة' : UI.view === 'tasks' ? 'إضافة موعد أو مهمّة' : 'إضافة عملية');
   if (UI.view === 'cats') renderCats();
   else if (UI.view === 'day') renderDay();
   else if (UI.view === 'habits') renderHabits();
+  else if (UI.view === 'tasks') renderTasks();
   else renderHome();
 }
 
@@ -1513,7 +1569,8 @@ function renderDay() {
   const t = today(), wkD = UI.dayWeek, wk = ymd(wkD), base = UI.dayMode === 'base';
   const ready = S.lifeReady;
   const slots = ready ? weekSlots(base ? null : wk) : [];
-  const appts = ready && !base ? apptsInWeek(wkD) : [];
+  const appts = []; // المواعيد صارت في «إنجازاتي»
+  const prevSx = $('#gwrap') ? $('#gwrap').scrollLeft : null;
   const mat = !base && isMat(wk);
   const thisWk = ymd(startOfWeek(t)), wkRel = wk === thisWk ? 'هذا الأسبوع' : wk === ymd(addDays(startOfWeek(t), 7)) ? 'الأسبوع القادم' : wk === ymd(addDays(startOfWeek(t), -7)) ? 'الأسبوع الماضي' : 'الأسبوع';
   $('#hero-body').innerHTML = base
@@ -1559,7 +1616,6 @@ function renderDay() {
     g += '</div>';
   }
   g += '</div></div>';
-  const up = upcomingAppts().slice(0, 12);
   $('#main').innerHTML = `<div class="grid">
     <section class="card span"><div class="card-h"><h2>${base ? 'الأساسي' : 'الجدول'}</h2>
         <span style="display:flex;gap:6px">${UNDO.length ? `<button class="edit-toggle" id="g-undo" title="تراجع: ${esc(UNDO[UNDO.length - 1].label)}" aria-label="تراجع عن آخر تغيير">↶</button>` : ''}${base ? '' : '<button class="edit-toggle" id="g-base" title="اجعل جدول هذا الأسبوع هو الجدول الأساسي">⭐ الأساسي</button>'}
@@ -1568,25 +1624,23 @@ function renderDay() {
       ${g}
       ${UI.editGrid ? '' : '<div class="grid-hint"><span>🔒 اضغط أيّ خانة لتعديل وقتها وتفاصيلها · للسحب والتكبير اضغط «✏️ تعديل»</span></div>'}
     </section>
-    <section class="card span"><div class="card-h"><h2>📌 مواعيدي القادمة</h2>
-      <span style="display:flex;gap:6px"><button class="ibtn mic-sm" id="v-appt" aria-label="موعد بصوتك" title="موعد بصوتك">🎙️</button><button class="btn sm" id="add-appt">+ موعد</button></span></div>
-      ${up.length ? `<div class="appts">${up.map(apptRow).join('')}</div>` : '<div class="empty"><span class="big">📌</span>لا مواعيد قادمة. أضف موعدك حتى لا تنساه.</div>'}
-    </section></div>`;
-  $('#add-appt').onclick = () => openPlan({ kind: 'appt' });
-  $('#v-appt').onclick = () => openVoice('appt');
-  $$('.ap').forEach((el) => (el.onclick = (e) => { if (!e.target.closest('.gcal')) openPlan({ appt: S.appts.find((a) => a.id === Number(el.dataset.id)) }); }));
+</div>`;
   $('#g-undo') && ($('#g-undo').onclick = undoLast);
   $('#g-base') && ($('#g-base').onclick = () => {
     if (!isMat(wk)) return toast('هذا الأسبوع مطابق للجدول الأساسي أصلًا ✓');
     weekToBase();
   });
-  $('#g-edit').onclick = () => { UI.editGrid = !UI.editGrid; const sx = $('#gwrap')?.scrollLeft; renderDay(); if ($('#gwrap') && sx != null) $('#gwrap').scrollLeft = sx; };
+  $('#g-edit').onclick = () => { UI.editGrid = !UI.editGrid; renderDay(); };
   bindGrid();
-  // أوّل مرة: الجدول يبدأ قرب الساعة الحالية في الهاتف
-  const wrap = $('#gwrap');
-  if (wrap && !base && wk === thisWk) {
-    const col = $(`.dcol[data-day="${t.getDay()}"]`);
-    if (col && col.offsetLeft) wrap.scrollLeft = col.offsetLeft - wrap.clientWidth / 2;
+  // التمرير الأفقي: نبقى حيث كنّا؛ أوّل فتح لأسبوع: اليوم في الوسط (الحساب يصلح مع اتجاه RTL)
+  const wrap = $('#gwrap'), gkey = `${UI.dayMode}|${wk}`;
+  if (wrap) {
+    if (UI.gridKey === gkey && prevSx != null) wrap.scrollLeft = prevSx;
+    else if (!base && wk === thisWk) {
+      const col = $(`.dcol[data-day="${t.getDay()}"]`);
+      if (col) { const wr = wrap.getBoundingClientRect(), cr = col.getBoundingClientRect(); wrap.scrollLeft += (cr.left - wr.left) - (wr.width - cr.width) / 2; }
+    }
+    UI.gridKey = gkey;
   }
 }
 function apptRow(a) {
@@ -1886,8 +1940,8 @@ function openPlan(o = {}) {
 }
 function paintPlan() {
   const appt = PE.kind === 'appt', wk = curWeekKey();
-  $('#plan-title').textContent = PE.edit ? (appt ? 'تعديل الموعد' : 'تعديل النشاط') : 'إضافة';
-  $('#p-kind').hidden = PE.edit || UI.dayMode === 'base';
+  $('#plan-title').textContent = PE.edit ? (appt ? 'تعديل الإنجاز' : 'تعديل النشاط') : appt ? 'موعد أو مهمّة' : 'نشاط في الجدول';
+  $('#p-kind').hidden = true;
   $$('#p-kind button').forEach((b) => b.classList.toggle('on', b.dataset.k === PE.kind));
   $('#p-datebox').hidden = !appt;
   $('#p-notebox').hidden = !appt;
@@ -1966,14 +2020,13 @@ $('#form-plan').onsubmit = async (e) => {
     if (PE.kind === 'appt') {
       if (!PE.date) return fail('اختر التاريخ');
       const r = await saveAppt({ id: PE.id, date: PE.date, start: PE.start, end: PE.end, title: PE.title, note: PE.note, icon: PE.icon, color: PE.color, done: PE.done });
-      if (UI.dayMode === 'week') UI.dayWeek = startOfWeek(parse(r.date));
     } else {
       const alsoBase = $('#p-base').checked, x = { title: PE.title, icon: PE.icon, color: PE.color, start: PE.start, end: PE.end };
       if (PE.edit) await saveSlot(PE.key, { ...x, day: WEEK_ORDER.find((i) => PE.mask & (1 << i)) }, alsoBase);
       else await undoBatch(`إضافة «${x.title}»`, curWeekKey(), async () => { for (const d of WEEK_ORDER.filter((i) => PE.mask & (1 << i))) await saveSlot(null, { ...x, day: d }, alsoBase); });
     }
     $('#sheet-plan').close();
-    if (UI.view !== 'cats') UI.view = 'day';
+    if (UI.view !== 'cats') UI.view = PE.kind === 'appt' ? 'tasks' : 'day';
     render();
   } catch (err) { fail(err.message); } finally { btn.disabled = false; }
 };
@@ -1990,7 +2043,10 @@ $('#p-del').onclick = async () => {
   $('#sheet-plan').close();
   removeSlot(PE.key, alsoBase);
 };
-setInterval(() => { if (S.user && UI.view === 'day' && !DRAG && !$('dialog[open]')) renderDay(); }, 60000);
+setInterval(() => {
+  const nl = $('.nowline');
+  if (S.user && UI.view === 'day' && nl) nl.style.top = `${((nowMin() - UI.gridH * 60) / 60) * HP}px`;
+}, 60000);
 
 /* ================= عاداتي ================= */
 const SURAS = ['الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف', 'الأنفال', 'التوبة', 'يونس', 'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر', 'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه', 'الأنبياء', 'الحج', 'المؤمنون', 'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم', 'لقمان', 'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر', 'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح', 'الحجرات', 'ق', 'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة', 'الحديد', 'المجادلة', 'الحشر', 'الممتحنة', 'الصف', 'الجمعة', 'المنافقون', 'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج', 'نوح', 'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ', 'النازعات', 'عبس', 'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج', 'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد', 'الشمس', 'الليل', 'الضحى', 'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات', 'القارعة', 'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون', 'النصر', 'المسد', 'الإخلاص', 'الفلق', 'الناس'];
@@ -2059,16 +2115,20 @@ function renderHabits() {
   if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
   if (!hs.length) return ($('#main').innerHTML = '<section class="card"><div class="empty"><span class="big">🌱</span>لا عادات بعد. اضغط <b>+</b> لإضافة عادتك الأولى</div></section>');
   const days = [6, 5, 4, 3, 2, 1, 0].map((k) => addDays(end, -k));
-  $('#main').innerHTML = `<section class="hl">
+  const tk = ymd(t);
+  $('#main').innerHTML = `<section class="htc">
     <div class="hl-head">
       <button class="nb" id="hw-prev" aria-label="الأسبوع السابق">${icon('prev')}</button>
       <span>${fmtShort(days[0])} — ${fmtShort(end)}</span>
       <button class="nb" id="hw-next" aria-label="الأسبوع الموالي" ${isNow ? 'disabled' : ''}>${icon('next')}</button>
     </div>
-    <div class="hl-days">${days.map((d) => `<div class="${ymd(d) === ymd(t) ? 't' : ''}"><small>${DAYS_SHORT[d.getDay()]}</small><b>${d.getDate()}</b></div>`).join('')}</div>
-    ${hs.map((h) => habitRow(h, days)).join('')}
+    <div class="ht" role="table">
+      <div class="ht-row ht-hd" role="row">
+        ${days.map((d) => `<div class="ht-day ${ymd(d) === tk ? 't' : ''}" role="columnheader"><small>${DAYS_SHORT[d.getDay()]}</small><b>${d.getDate()}</b></div>`).join('')}</div>
+      ${hs.map((h) => habitRow(h, days, tk)).join('')}
+    </div>
   </section>
-  <p class="hl-tip">اضغط الدائرة لتسجيل اليوم · ${icon('more')} للتعديل</p>`;
+  <p class="hl-tip">اضغط الدائرة للتسجيل · اضغط اسم العادة لتعديلها</p>`;
   $('#hw-prev').onclick = () => { UI.habitDate = addDays(end, -7); renderHabits(); };
   $('#hw-next').onclick = () => { const n = addDays(end, 7); UI.habitDate = n > t ? t : n; renderHabits(); };
   bindHabits();
@@ -2080,20 +2140,17 @@ function monthPct(h) {
   for (let d = new Date(t.getFullYear(), t.getMonth(), 1); d <= t; d = addDays(d, 1)) if (expected(h, d)) { exp++; if (okDay(h, d)) ok++; }
   return exp ? Math.round((ok / exp) * 100) : 0;
 }
-const CHECK_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
-function habitRow(h, days) {
+const CHECK_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+function habitRow(h, days, tk) {
   const st = streak(h), t = today();
   const meta = [];
-  if (st) meta.push(`<span class="fire">🔥 ${st}</span>`);
-  if (h.kind === 'more') meta.push(`🎯 ${h.target} ${esc(h.unit || '')}`);
+  if (st) meta.push(`<span class="fire">🔥${st}</span>`);
   if (h.kind === 'less') {
     const wk = startOfWeek(t), a = sumRange(h, wk, t), b = sumRange(h, addDays(wk, -7), addDays(t, -7));
     meta.push(`${a} هذا الأسبوع${a < b ? ' <b class="up">▼</b>' : a > b ? ' <b class="down">▲</b>' : ''}`);
-  } else meta.push(`<bdi dir="ltr">${monthPct(h)}%</bdi> هذا الشهر`);
-  if (h.kind === 'quran') {
-    const q = lastQuran(h);
-    if (q) meta.push(`📍 الحزب ${hizbOf(q.ts, q.ta)}`);
-  }
+  } else meta.push(`<bdi dir="ltr">${monthPct(h)}%</bdi>`);
+  if (h.kind === 'quran') { const q = lastQuran(h); if (q) meta.push(`الحزب ${hizbOf(q.ts, q.ta)}`); }
+  if (h.kind === 'more') meta.push(`🎯${h.target}`);
   const cells = days.map((d) => {
     const ds = ymd(d), v = valOf(h, d), on = ds >= h.created && d <= t, ex = expected(h, d);
     let cls = '', inner = '', style = '';
@@ -2109,14 +2166,14 @@ function habitRow(h, days) {
       else if (ex) { cls = 'soft'; inner = v ? String(v) : ''; }
     }
     if (on && !ex && !cls) cls = 'na';
-    return `<button class="cell ${cls} ${ds === ymd(t) ? 'today' : ''}" data-h="${h.id}" data-d="${ds}" ${on ? '' : 'disabled'} style="${style}" aria-label="${esc(h.name)} · ${fmtDay(d)}"><span>${inner}</span></button>`;
+    return `<div class="ht-c ${ds === tk ? 't' : ''}" role="cell"><button class="cell ${cls}" data-h="${h.id}" data-d="${ds}" ${on ? '' : 'disabled'} style="${style}" aria-label="${esc(h.name)} · ${fmtDay(d)}"><span>${inner}</span></button></div>`;
   }).join('');
-  const quick = h.kind === 'less' ? `<button class="qb" data-plus="${h.id}" aria-label="+1 اليوم">+1</button>` : '';
-  return `<div class="hr" style="--c:${h.color}">
-    <div class="hr-top"><span class="hr-ic">${esc(h.icon)}</span>
-      <div class="hr-n"><b>${esc(h.name)}</b><small>${meta.join('<i>·</i>')}</small></div>
-      ${quick}<button class="hr-more" data-edit="${h.id}" aria-label="تعديل العادة">${icon('more')}</button></div>
-    <div class="hr-days">${cells}</div></div>`;
+  return `<div class="ht-row" role="row" style="--c:${h.color}">
+    <div class="ht-name" role="rowheader">
+      <button class="ht-nb" data-edit="${h.id}" aria-label="تعديل ${esc(h.name)}"><span class="ht-ic">${esc(h.icon)}</span>
+        <span class="ht-tx"><b>${esc(h.name)}</b><small>${meta.join(' · ')}</small></span></button>
+      ${h.kind === 'less' ? `<button class="qb" data-plus="${h.id}" aria-label="+1 اليوم">+1</button>` : ''}
+    </div>${cells}</div>`;
 }
 function bindHabits() {
   const H = (id) => S.habits.find((h) => h.id === Number(id));
@@ -2440,14 +2497,10 @@ function adminDay() {
         <button class="btn sm light" data-wview="${w}">عرض</button><button class="btn sm light" data-wbase="${w}">اجعله الأساسي</button><button class="btn sm danger" data-wreset="${w}">إرجاع</button></div>`; }).join('')
         : '<div class="empty" style="padding:14px">كل الأسابيع نسخة من الجدول الأساسي</div>'}
     </section>
-    <section class="card span"><div class="card-h"><h2>📌 المواعيد</h2><button class="btn sm" id="ad-appt">+ موعد</button></div>
-      <p class="note" style="margin:0 2px 8px">${upcoming.length} موعد قادم · ${past.length ? 'السابقة:' : 'لا مواعيد سابقة'}</p>
-      ${past.length ? `<div class="appts">${past.map((a) => apptRow(a).replace('class="ap"', 'class="ap past"')).join('')}</div>` : ''}
-    </section></div>`;
+</div>`;
   const asBase = (fn) => { UI.restoreMode = UI.dayMode; UI.dayMode = 'base'; fn(); };
   $('#ad-open').onclick = () => { UI.dayMode = 'base'; go('day'); };
   $('#ad-add').onclick = () => asBase(() => openPlan({ kind: 'slot' }));
-  $('#ad-appt').onclick = () => openPlan({ kind: 'appt' });
   $$('[data-bslot]').forEach((r) => (r.onclick = () => asBase(() => { const s = S.slots.find((x) => x.id === Number(r.dataset.bslot)); openPlan({ slot: s, key: String(s.id) }); })));
   $$('[data-wview]').forEach((b) => (b.onclick = () => { UI.dayMode = 'week'; UI.dayWeek = parse(b.dataset.wview); go('day'); }));
   $$('[data-wbase]').forEach((b) => (b.onclick = async () => {
@@ -2465,9 +2518,73 @@ function adminDay() {
     catch (err) { onAuthError(err) || toast(err.message, true); }
     adminDay();
   }));
-  $$('.ap').forEach((el) => (el.onclick = (e) => { if (!e.target.closest('.gcal')) openPlan({ appt: S.appts.find((a) => a.id === Number(el.dataset.id)) }); }));
 }
 $('#sheet-plan').addEventListener('close', () => { if (UI.restoreMode) { UI.dayMode = UI.restoreMode; UI.restoreMode = null; } });
+
+/* ================= إنجازاتي: المهام والمواعيد (✓ + تذكير Google) ================= */
+UI.taskTab = 'todo';
+function renderTasks() {
+  const t = ymd(today()), tm = ymd(addDays(today(), 1));
+  const all = S.lifeReady ? S.appts : [];
+  const todo = all.filter((a) => !a.done).sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+  const done = all.filter((a) => a.done).sort((a, b) => b.date.localeCompare(a.date) || b.start - a.start);
+  const late = todo.filter((a) => isLate(a)).length;
+  $('#hero-body').innerHTML = `
+    <div class="ph"><div><h1 class="pt">إنجازاتي</h1>
+      <div class="ps">${todo.length ? `${todo.length} متبقية${late ? ` · <span style="color:#e11d48">${late} متأخرة</span>` : ''}` : 'لا شيء متبقٍّ 🎉'}</div></div>
+      <button class="voicebtn" id="v-task" style="margin:0">🎙️ بصوتك</button></div>
+    <div class="seg" style="margin-top:10px"><button data-tt="todo" class="${UI.taskTab === 'todo' ? 'on' : ''}">المتبقية (${todo.length})</button><button data-tt="done" class="${UI.taskTab === 'done' ? 'on' : ''}">المنجزة (${done.length})</button></div>`;
+  $('#v-task').onclick = () => openVoice('appt');
+  $$('[data-tt]').forEach((b) => (b.onclick = () => { UI.taskTab = b.dataset.tt; renderTasks(); }));
+  if (!S.lifeReady) return ($('#main').innerHTML = lifeMissing());
+  const list = UI.taskTab === 'todo' ? todo : done.slice(0, 80);
+  if (!list.length) {
+    $('#main').innerHTML = `<section class="card"><div class="empty"><span class="big">${UI.taskTab === 'todo' ? '✅' : '📭'}</span>${UI.taskTab === 'todo' ? 'لا مهام متبقية. اضغط <b>+</b> أو «🎙️ بصوتك» لإضافة موعد أو مهمّة.' : 'لا شيء منجز بعد.'}</div></section>`;
+    return;
+  }
+  const groups = new Map();
+  for (const a of list) {
+    const k = UI.taskTab === 'todo' && a.date < t ? 'late' : a.date;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(a);
+  }
+  const label = (k) => {
+    if (k === 'late') return '⚠️ متأخرة';
+    const d = parse(k);
+    return `${k === t ? 'اليوم · ' : k === tm ? 'غدًا · ' : ''}${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  };
+  $('#main').innerHTML = `<section class="tl">${[...groups].map(([k, items]) => `
+      <div class="tl-h ${k === 'late' ? 'late' : ''}"><span>${label(k)}</span><small>${items.length}</small></div>
+      ${items.map(taskRow).join('')}`).join('')}</section>
+    <p class="hl-tip">اضغط الدائرة عند الإنجاز · 🔔 يضيفه إلى تقويم Google للتذكير</p>`;
+  $$('[data-tick]').forEach((b) => (b.onclick = () => tickTask(Number(b.dataset.tick))));
+  $$('[data-open]').forEach((b) => (b.onclick = () => openPlan({ appt: S.appts.find((a) => a.id === Number(b.dataset.open)) })));
+}
+function isLate(a) {
+  const t = ymd(today());
+  return !a.done && (a.date < t || (a.date === t && (a.end ?? a.start) < nowMin()));
+}
+function taskRow(a) {
+  const late = isLate(a);
+  return `<div class="tk ${a.done ? 'done' : ''} ${late ? 'late' : ''}" style="--c:${a.color}">
+    <button class="tk-c" data-tick="${a.id}" aria-label="${a.done ? 'إلغاء الإنجاز' : 'تمّ'}: ${esc(a.title)}">${a.done ? CHECK_SVG : ''}</button>
+    <button class="tk-b" data-open="${a.id}"><b>${esc(a.icon)} ${esc(a.title)}</b>
+      <small><bdi dir="ltr">${fmtT(a.start)}${a.end != null ? '–' + fmtT(a.end) : ''}</bdi>${a.note ? ' · ' + esc(a.note) : ''}</small></button>
+    ${a.done ? '' : `<a class="tk-g" href="${esc(gcalUrl(a))}" target="_blank" rel="noopener" title="تذكير في تقويم Google" aria-label="أضف «${esc(a.title)}» إلى تقويم Google">🔔</a>`}
+  </div>`;
+}
+async function tickTask(id) {
+  const a = S.appts.find((x) => x.id === id); if (!a) return;
+  const snap = snapSchedule(null);
+  a.done = !a.done;
+  renderTasks();
+  if (a.done) try { navigator.vibrate && navigator.vibrate(15); } catch (e) {}
+  try {
+    const r = await rpc('appt_save', { p_id: a.id, p_date: a.date, p_start: a.start, p_end: a.end, p_title: a.title, p_note: a.note, p_icon: a.icon, p_color: a.color, p_done: a.done });
+    Object.assign(a, r);
+    pushUndo(a.done ? `أنجزت «${a.title}»` : `أُعيد «${a.title}» إلى المتبقية`, snap);
+  } catch (err) { a.done = !a.done; renderTasks(); if (!onAuthError(err)) toast(err.message, true); }
+}
 
 /* ================= boot ================= */
 async function load() {
@@ -2498,7 +2615,7 @@ async function boot() {
     if (err.auth) { setToken(null); return renderLogin(); }
     return (app.innerHTML = `<div class="empty" style="padding:80px 20px"><span class="big">⚠️</span>${esc(err.message)}<br><br><button class="btn" onclick="boot()">إعادة المحاولة</button></div>`);
   }
-  UI.view = { '#cats': 'cats', '#day': 'day', '#money': 'home' }[location.hash] || 'habits';
+  UI.view = { '#cats': 'cats', '#day': 'day', '#money': 'home', '#tasks': 'tasks' }[location.hash] || 'habits';
   shell(); render();
 }
 boot();
