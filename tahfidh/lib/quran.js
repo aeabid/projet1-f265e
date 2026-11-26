@@ -328,12 +328,13 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
        FROM quran_lessons l LEFT JOIN users u ON u.id = l.created_by WHERE l.student_id = $1 ORDER BY l.assigned_on DESC, l.id DESC LIMIT 30`,
       [st.id]
     );
-    const lesson = lessons.find((l) => l.assigned_on <= day) || null;
+    // المقرر: مقرر الأسبوع المعروض (أسبوع سابق: مقرره وتكراراته في ذلك الأسبوع)
+    const lastDay = end < day ? end : day;
+    const lesson = lessons.find((l) => l.assigned_on <= lastDay) || null;
     if (lesson) {
       lesson.reps = await all('SELECT date::text, count FROM quran_lesson_reps WHERE lesson_id = $1 ORDER BY date', [lesson.id]);
-      const cur = weekStartOf(day, st.week_start);
-      lesson.week_start = cur;
-      lesson.week_total = lesson.reps.filter((r) => r.date >= cur).reduce((t, r) => t + r.count, 0);
+      lesson.week_start = start;
+      lesson.week_total = lesson.reps.filter((r) => r.date >= start && r.date <= end).reduce((t, r) => t + r.count, 0);
     }
     const meetings = await all(
       `SELECT m.id, m.date::text, m.attendance, m.review_eval, m.hifz_eval, m.ada_eval, m.tajweed_eval, m.note, m.lesson_id,

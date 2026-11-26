@@ -935,3 +935,39 @@ thead .rc-name { background: var(--soft); }
 .sh-wk { display: grid; grid-template-columns: 2.6rem auto 1fr auto; align-items: center; gap: .35rem; font-size: .8rem; }
 .sh-wd { font-weight: 800; color: var(--muted); }
 .sh-pill { border-radius: 8px; padding: .2rem .45rem; font-weight: 700; text-align: center; white-space: nowrap; }
+
+/* التفاعل مع الفوائد */
+.ben-react { margin-top: .7rem; padding-top: .6rem; border-top: 1px dashed var(--border); display: flex; flex-direction: column; gap: .45rem; }
+.rx-row { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+.rx-chip { display: inline-flex; align-items: center; gap: .25rem; border: 1.5px solid var(--border); background: var(--soft); border-radius: 999px; padding: .2rem .6rem; font: inherit; font-size: .95rem; cursor: pointer; transition: transform .15s; }
+.rx-chip b { font-size: .8rem; color: var(--muted); }
+.rx-chip.mine { border-color: var(--accent); background: #f1e6fb; }
+.rx-chip.mine b { color: var(--accent); }
+.rx-chip.pop { animation: rxPop .45s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes rxPop { 0% { transform: scale(.6); } 60% { transform: scale(1.25); } 100% { transform: none; } }
+.rx-add { margin-inline-start: auto; display: inline-flex; align-items: center; gap: .3rem; border: 0; background: none; font: inherit; color: var(--muted); font-weight: 700; cursor: pointer; padding: .25rem .4rem; border-radius: 10px; }
+.rx-add span { font-size: 1.15rem; }
+.rx-add.has { color: var(--accent); }
+.rx-add:hover { background: var(--soft); }
+.rx-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: .25rem; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: .35rem; box-shadow: 0 8px 24px rgba(60, 20, 110, .14); animation: rxIn .25s cubic-bezier(.2, .9, .3, 1.2); }
+.rx-pick[hidden] { display: none; }
+@keyframes rxIn { from { opacity: 0; transform: translateY(6px) scale(.95); } }
+.rx-pick button { border: 0; background: none; border-radius: 12px; padding: .3rem 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; font: inherit; }
+.rx-pick button span { font-size: 1.6rem; transition: transform .15s; }
+.rx-pick button:hover span, .rx-pick button:active span { transform: scale(1.3) translateY(-3px); }
+.rx-pick button small { font-size: .66rem; color: var(--muted); font-weight: 700; }
+.rx-pick button.on { background: #f1e6fb; }
+.rx-who { align-self: flex-start; border: 0; background: none; font: inherit; font-size: .8rem; color: var(--muted); cursor: pointer; padding: 0; }
+.rx-who:hover { color: var(--accent); }
+.rx-title { margin: 0; }
+.rx-list { display: flex; flex-direction: column; gap: .6rem; overflow-y: auto; }
+.rx-list > div { background: var(--soft); border-radius: 14px; padding: .6rem .8rem; }
+.rx-big { font-size: 1.4rem; margin-inline-end: .35rem; }
+.rx-list p { margin: .35rem 0 0; display: flex; flex-wrap: wrap; gap: .3rem; }
+
+.recital { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; background: linear-gradient(90deg, #fff5d6, #fdf0ff); border: 1px solid #f5d98a; border-radius: 16px; padding: .7rem .9rem; margin-bottom: 1rem; font-size: .9rem; }
+.recital span { flex: 1; min-width: 200px; }
+.recital a { font-weight: 800; white-space: nowrap; }
+.mf-wk { font-size: .85rem; color: var(--accent); }
+.mf-reps.in { color: var(--good); }
+@media (prefers-color-scheme: dark) { .recital { background: #3a3014; border-color: #6b5520; } }

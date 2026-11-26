@@ -180,13 +180,12 @@ function openPicker(sel) {
 }
 
 function heroBanner({ sub = '', art = '📖', actions = '' } = {}) {
-  const h = new Date().getHours();
-  const hello = h < 12 ? 'صباح الخير' : 'مساء الخير';
+  const hello = 'السلام عليكم';
   const first = esc(String(state.user?.full_name || '').split(' ')[0]);
   const day = new Date().toLocaleDateString('ar-TN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   return `<section class="hero"><div>
       <small>${esc(day)}</small>
-      <h2>${hello}${first ? `، ${first}` : ''} 👋</h2>
+      <h2>${hello}${first ? `، ${first}` : ''}</h2>
       ${sub ? `<p>${sub}</p>` : ''}
       ${actions ? `<div class="hero-actions">${actions}</div>` : ''}
     </div><div class="hero-art" aria-hidden="true">${art}</div></section>`;

@@ -60,9 +60,57 @@ const benefitCard = (b, admin = false) => `<article class="ben-card">
     ${b.body ? `<div class="rich">${richText(b.body)}</div>` : ''}
     ${b.images?.length ? `<div class="ben-imgs n${Math.min(b.images.length, 3)}">${b.images.map((i) => `<img src="/api/quran/benefit-images/${i}" alt="" loading="lazy" data-full="/api/quran/benefit-images/${i}">`).join('')}</div>` : ''}
     ${b.youtube?.length ? `<div class="ben-yts">${b.youtube.map(ytBox).join('')}</div>` : ''}
+    <div class="ben-react" data-rx="${b.id}">${rxBar(b)}</div>
     ${admin ? `<div class="q-actions"><button type="button" class="btn small ghost" data-ben-edit="${b.id}">تعديل</button>
       <button type="button" class="btn small ghost danger" data-ben-del="${b.id}">حذف</button></div>` : ''}
   </article>`;
+// ---------- التفاعل مع الفوائد ----------
+const RX = [['👍', 'أعجبني'], ['❤️', 'أحببته'], ['🤲', 'آمين'], ['👀', 'قرأته'], ['✅', 'سأعمل به']];
+const rxNames = (b) => (b.reactions || []).flatMap((r) => r.names);
+function rxBar(b) {
+  const total = (b.reactions || []).reduce((t, r) => t + r.count, 0);
+  const names = rxNames(b);
+  const who = !total ? '' : names.length <= 2 ? names.map(esc).join(' و') : `${esc(names[0])} و${esc(names[1])} و${total - 2} ${total - 2 > 2 ? 'آخرين' : 'آخر'}`;
+  return `<div class="rx-row">
+      ${(b.reactions || []).map((r) => `<button type="button" class="rx-chip ${b.my_reaction === r.emoji ? 'mine' : ''}" data-e="${r.emoji}" title="${esc(r.names.join('، '))}">${r.emoji}<b>${r.count}</b></button>`).join('')}
+      <button type="button" class="rx-add ${b.my_reaction ? 'has' : ''}" data-open aria-label="تفاعل">${b.my_reaction ? b.my_reaction : '<span>☺</span>'}<small>${b.my_reaction ? 'تفاعلك' : 'تفاعل'}</small></button>
+    </div>
+    <div class="rx-pick" hidden>${RX.map(([e, l]) => `<button type="button" data-e="${e}" class="${b.my_reaction === e ? 'on' : ''}"><span>${e}</span><small>${l}</small></button>`).join('')}</div>
+    ${total ? `<button type="button" class="rx-who" data-who>${who} ${total === 1 ? 'تفاعل' : 'تفاعلوا'} ‹</button>` : ''}`;
+}
+function bindReactions(root, list) {
+  root.querySelectorAll('[data-rx]').forEach((box) => {
+    const b = list.find((x) => x.id === Number(box.dataset.rx));
+    if (!b) return;
+    const draw = () => (box.innerHTML = rxBar(b));
+    box.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-open]')) {
+        const p = box.querySelector('.rx-pick');
+        p.hidden = !p.hidden;
+        return;
+      }
+      if (e.target.closest('[data-who]')) {
+        recSheet(`<h3 class="rx-title">التفاعلات (${rxNames(b).length})</h3>
+          <div class="rx-list">${b.reactions.map((r) => `<div><span class="rx-big">${r.emoji}</span><b>${RX.find((x) => x[0] === r.emoji)?.[1] || ''} · ${r.count}</b>
+            <p>${r.names.map((n) => `<span class="pill">${esc(n)}</span>`).join(' ')}</p></div>`).join('')}</div>`);
+        return;
+      }
+      const btn = e.target.closest('[data-e]');
+      if (!btn) return;
+      const emoji = btn.dataset.e === b.my_reaction ? null : btn.dataset.e;
+      try {
+        const r = await api('PUT', `/api/quran/benefits/${b.id}/react`, { emoji });
+        b.reactions = r.reactions;
+        b.my_reaction = r.my_reaction;
+        draw();
+        if (emoji) box.querySelector(`.rx-chip[data-e="${emoji}"]`)?.classList.add('pop');
+      } catch (err) {
+        toast(err.message, true);
+      }
+    });
+  });
+}
+
 // تشغيل يوتيوب داخل البطاقة، وفتح الصورة بالحجم الكامل
 function bindBenefitMedia(root) {
   root.querySelectorAll('[data-yt]').forEach((b) =>
@@ -105,6 +153,7 @@ async function viewBenefits(el, tab = '') {
       ? `<div class="ben-list">${benefits.map((b) => benefitCard(b)).join('')}</div>`
       : '<div class="card empty-state"><span>💡</span><p>لا توجد فوائد بعد. ما يكتبه الشيخ لمجموعتك يظهر هنا.</p></div>';
     bindBenefitMedia(page);
+    bindReactions(page, benefits);
     return;
   }
   const load = async () => {
@@ -224,6 +273,7 @@ async function benefitsTab(page, groups) {
   };
   $('#ben-add').addEventListener('click', () => form(null));
   bindBenefitMedia(page);
+  bindReactions(page, benefits);
   page.querySelectorAll('[data-ben-edit]').forEach((x) => x.addEventListener('click', () => form(benefits.find((b) => b.id === Number(x.dataset.benEdit)))));
   page.querySelectorAll('[data-ben-del]').forEach((x) =>
     x.addEventListener('click', async () => {

@@ -131,3 +131,27 @@ test('session attendance, two-absence alert, record table and challenges', async
   assert.strictEqual((await st('GET', `/api/quran/challenges/student/${b.id}?period=all`)).status, 404);
   assert.ok('ward_points' in ch.rankings.ward[0]);
 });
+
+test('reactions on benefits are visible to everyone', async () => {
+  const admin = await login('admin', 'admin123');
+  const g = (await admin('POST', '/api/quran/groups', { name: 'ر', meet_day: 3 })).body.group;
+  const g2 = (await admin('POST', '/api/quran/groups', { name: 'ز', meet_day: 3 })).body.group;
+  await admin('POST', '/api/quran/students', { username: 'x1', password: 'secret1', first_name: 'زيد', group_id: g.id });
+  await admin('POST', '/api/quran/students', { username: 'x2', password: 'secret1', first_name: 'عمرو', group_id: g.id });
+  await admin('POST', '/api/quran/students', { username: 'x3', password: 'secret1', first_name: 'بكر', group_id: g2.id });
+  const id = (await admin('POST', '/api/quran/benefits', { group_id: g.id, body: 'فائدة' })).body.id;
+  const s1 = await login('x1', 'secret1');
+  const s2 = await login('x2', 'secret1');
+  const s3 = await login('x3', 'secret1');
+  assert.strictEqual((await s1('PUT', `/api/quran/benefits/${id}/react`, { emoji: '👍' })).status, 200);
+  assert.strictEqual((await s2('PUT', `/api/quran/benefits/${id}/react`, { emoji: '👍' })).status, 200);
+  assert.strictEqual((await s2('PUT', `/api/quran/benefits/${id}/react`, { emoji: '🤲' })).status, 200);
+  assert.strictEqual((await s1('PUT', `/api/quran/benefits/${id}/react`, { emoji: '💩' })).status, 400);
+  assert.strictEqual((await s3('PUT', `/api/quran/benefits/${id}/react`, { emoji: '👍' })).status, 404);
+  const b = (await s2('GET', '/api/quran/benefits')).body.benefits.find((x) => x.id === id);
+  assert.deepStrictEqual(b.reactions.map((r) => [r.emoji, r.count, r.names]), [['👍', 1, ['زيد']], ['🤲', 1, ['عمرو']]]);
+  assert.strictEqual(b.my_reaction, '🤲');
+  await s2('PUT', `/api/quran/benefits/${id}/react`, { emoji: null });
+  const a = (await admin('GET', '/api/quran/benefits')).body.benefits.find((x) => x.id === id);
+  assert.strictEqual(a.reactions.length, 1);
+});

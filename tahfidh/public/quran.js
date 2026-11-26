@@ -390,10 +390,12 @@ function weekView(full, day, canEdit) {
 
 // ---------- صفحة الطالب ----------
 // صفحة الطالب. part: home (الرئيسية: المقرر، الورد، جدول الأسبوع، ملاحظات الشيخ)، records (سجلّي: خلاصة الشهر وقائمة المقرر)، all (المشرف: كل شيء)
-async function viewQuranStudent(el, id, week = '', part = 'all') {
+async function viewQuranStudent(el, id, week = '', part = 'all', recital = false) {
   const full = await api('GET', `/api/quran/students/${id}${week ? `?week=${week}` : ''}`);
   const { student: st, lesson, today: day, progress } = full;
   const staff = isStaff();
+  // يوم التسميع: يرى الشيخ أسبوع الطالب الماضي (الذي يُسمِّعه اليوم)
+  if (staff && part === 'all' && !week && full.week_start === day) return viewQuranStudent(el, id, qAddDays(day, -7), part, true);
   const me = state.user.role === 'talib';
   const pace = lesson ? lessonPace(lesson, day, st.week_start) : null;
   const todayReps = lesson?.reps?.find((r) => r.date === day)?.count || 0;
@@ -412,19 +414,22 @@ async function viewQuranStudent(el, id, week = '', part = 'all') {
       : `<p><a href="#/quran/students">→ الطلبة</a></p>
       <div class="card q-head">${avatar(st, 'md')}<div><h2>${esc(st.full_name)}</h2>
         <span class="muted small">${[st.group_name && `🕌 ${esc(st.group_name)}`, st.age && `${st.age} سنة`, `الأسبوع يبدأ ${Q_DAYS[st.week_start]}`].filter(Boolean).join(' · ')}</span></div>
-        <div class="q-actions"><button type="button" class="btn small" id="q-meet">✍️ تقييم الحصة</button><button type="button" class="btn small ghost" id="q-lesson">📝 مقرر جديد</button><a class="btn small ghost" href="#/quran/history/${st.id}">📜 السجلّ</a><button type="button" class="btn small ghost" id="q-edit">تعديل</button></div></div>`}
+        <div class="q-actions"><button type="button" class="btn small" id="q-meet">✍️ تقييم الحصة</button><button type="button" class="btn small ghost" id="q-lesson">📝 مقرر جديد</button><a class="btn small ghost" href="#/quran/history/${st.id}">📜 السجلّ</a><button type="button" class="btn small ghost" id="q-edit">تعديل</button></div></div>
+      ${recital ? `<div class="recital">📋 <span><b>اليوم يوم التسميع</b> · يظهر أسبوعه الماضي (${qShort(full.week_start)} – ${qShort(qAddDays(full.week_start, 6))}) لتقيّمه.</span>
+        <a href="${base}?week=${day}">الأسبوع الجديد ←</a></div>` : ''}`}
 
     ${show('lesson') ? `<section class="card q-lesson">
       <div class="section-head"><h3>📝 المقرر الأسبوعي</h3><span class="q-actions">${lesson ? `<span class="pill">${athmanTxt(lesson.athman)}</span>` : ''}
         ${me ? '<button type="button" class="btn small ghost" id="q-lesson-me">＋ مقرر جديد</button>' : ''}</span></div>
       ${lesson ? `<p class="q-lesson-txt">${esc(lesson.content)} ${me || staff ? `<button type="button" class="link small" data-edit-lesson="${lesson.id}" title="تعديل المقرر">✏️ تعديل</button>` : ''}</p>
-        <button type="button" class="q-tap ${lesson.week_total >= lesson.target ? 'ok' : ''}" id="q-open-counter" ${me || staff ? '' : 'disabled'}>
+        <button type="button" class="q-tap ${lesson.week_total >= lesson.target ? 'ok' : ''}" id="q-open-counter" ${(me || staff) && thisWeek ? '' : 'disabled'}>
           <span class="q-ring" style="--p:${pct(lesson.week_total, lesson.target)}"><b>${lesson.week_total}</b><small>من ${lesson.target}</small></span>
-          <span class="q-tap-txt">${lesson.week_total >= lesson.target ? `🎉 وصلت للهدف هذا الأسبوع! كرّرت المقرر <b>${lesson.week_total}</b> مرة.`
+          <span class="q-tap-txt">${!thisWeek ? `${me ? 'كرّرت' : 'كرّر'} المقرر <b>${lesson.week_total}</b> مرة في أسبوع ${qShort(full.week_start)}${lesson.week_total >= lesson.target ? ' 🎉' : ''}.`
+            : lesson.week_total >= lesson.target ? `🎉 وصلت للهدف هذا الأسبوع! كرّرت المقرر <b>${lesson.week_total}</b> مرة.`
             : `<b>اضغط هنا لفتح العدّاد</b><small>اليوم: ${todayReps} تكرار · المطلوب اليوم حوالي ${Math.max(0, pace.perDay - todayReps)} أخرى</small>
                <small>الباقي ${pace.remaining} في ${pace.daysLeft} ${pace.daysLeft > 1 ? 'أيام' : 'يوم'}</small>`}</span></button>
-        <p class="muted small">العدّاد يبدأ من الصفر كل أسبوع (يوم ${Q_DAYS[st.week_start]}).</p>
-        ${me || staff ? '<button type="button" class="link small" id="q-set">✏️ كتابة العدد مباشرة</button>' : ''}`
+        ${thisWeek ? `<p class="muted small">العدّاد يبدأ من الصفر كل أسبوع (يوم ${Q_DAYS[st.week_start]}).</p>
+        ${me || staff ? '<button type="button" class="link small" id="q-set">✏️ كتابة العدد مباشرة</button>' : ''}` : ''}`
         : `<p class="muted">لا يوجد مقرر حاليًا. ${staff ? 'اضغط «مقرر جديد» أو «اللقاء والتقييم».' : 'أضف المقرر الذي أملاه عليك الشيخ بزر «＋ مقرر جديد».'}</p>`}
     </section>` : ''}
 

@@ -44,12 +44,60 @@ export function registerBenefitRoutes({ route, pool, all, one, HttpError, text, 
     FROM quran_benefits b LEFT JOIN quran_groups g ON g.id = b.group_id LEFT JOIN users u ON u.id = b.created_by`;
 
   // المشرف يرى كل الفوائد، والطالب يرى فوائد مجموعته وفوائد كل الطلبة
+  // التفاعلات: لكل فائدة قائمة { emoji، العدد، الأسماء } وتفاعل المستخدم نفسه
+  const REACTIONS = ['👍', '❤️', '🤲', '👀', '✅'];
+  async function withReactions(list, user) {
+    if (!list.length) return list;
+    const rows = await all(
+      `SELECT r.benefit_id, r.emoji, r.user_id, u.full_name FROM quran_benefit_reactions r JOIN users u ON u.id = r.user_id
+       WHERE r.benefit_id = ANY($1::int[]) ORDER BY r.created_at`,
+      [list.map((b) => b.id)]
+    );
+    return list.map((b) => {
+      const mine = rows.filter((r) => r.benefit_id === b.id);
+      const groups = [];
+      for (const r of mine) {
+        let g = groups.find((x) => x.emoji === r.emoji);
+        if (!g) groups.push((g = { emoji: r.emoji, count: 0, names: [] }));
+        g.count++;
+        g.names.push(r.full_name);
+      }
+      return { ...b, reactions: groups, my_reaction: mine.find((r) => r.user_id === user.id)?.emoji || null };
+    });
+  }
+  async function canSee(user, benefitId) {
+    const b = await one('SELECT id, group_id FROM quran_benefits WHERE id = $1', [Number(benefitId) || 0]);
+    if (!b) throw new HttpError(404, 'الفائدة غير موجودة');
+    if (user.role === 'talib' && b.group_id) {
+      const s = await one('SELECT group_id FROM quran_students WHERE user_id = $1', [user.id]);
+      if (s?.group_id !== b.group_id) throw new HttpError(404, 'الفائدة غير موجودة');
+    }
+    return b;
+  }
   route('GET', '/api/quran/benefits', ['admin', 'talib'], async ({ user }) => {
-    if (user.role === 'admin') return { benefits: await all(`${SELECT} ORDER BY b.created_at DESC LIMIT 300`) };
+    if (user.role === 'admin') return { reactions: REACTIONS, benefits: await withReactions(await all(`${SELECT} ORDER BY b.created_at DESC LIMIT 300`), user) };
     const g = await one('SELECT group_id FROM quran_students WHERE user_id = $1', [user.id]);
     return {
-      benefits: await all(`${SELECT} WHERE b.group_id IS NULL OR b.group_id = $1 ORDER BY b.created_at DESC LIMIT 300`, [g?.group_id ?? 0]),
+      reactions: REACTIONS,
+      benefits: await withReactions(await all(`${SELECT} WHERE b.group_id IS NULL OR b.group_id = $1 ORDER BY b.created_at DESC LIMIT 300`, [g?.group_id ?? 0]), user),
     };
+  });
+  // تفاعل واحد لكل مستخدم: إرسال نفس التفاعل أو null يزيله
+  route('PUT', '/api/quran/benefits/:id/react', ['admin', 'talib'], async ({ user, params, body }) => {
+    const b = await canSee(user, params.id);
+    const emoji = body.emoji || null;
+    if (emoji !== null && !REACTIONS.includes(emoji)) throw new HttpError(400, 'تفاعل غير صالح');
+    if (emoji) {
+      await pool.query(
+        `INSERT INTO quran_benefit_reactions (benefit_id, user_id, emoji) VALUES ($1, $2, $3)
+         ON CONFLICT (benefit_id, user_id) DO UPDATE SET emoji = EXCLUDED.emoji, created_at = now()`,
+        [b.id, user.id, emoji]
+      );
+    } else {
+      await pool.query('DELETE FROM quran_benefit_reactions WHERE benefit_id = $1 AND user_id = $2', [b.id, user.id]);
+    }
+    const [one_] = await withReactions([{ id: b.id }], user);
+    return { reactions: one_.reactions, my_reaction: one_.my_reaction };
   });
   route('POST', '/api/quran/benefits', ['admin'], async ({ user, body: b }) => {
     const yt = youtube(b.youtube);

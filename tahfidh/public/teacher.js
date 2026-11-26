@@ -422,13 +422,26 @@ function quranMeetingForm(full, preset = {}, onDone) {
   if (!list.includes(start)) list.push(start);
   const mOf = (s) => full.meetings.find((x) => x.date >= s && x.date <= qAddDays(s, 6)) || {};
   const lessonOf = (s) => full.lessons.find((l) => l.assigned_on <= qAddDays(s, 6));
-  const info = (s) => {
-    const l = lessonOf(s);
-    const wk = s === cur && full.lesson && l && full.lesson.id === l.id ? full.lesson.week_total : null;
-    return `<div class="mf-info"><span class="mf-k">📝 المقرر (كما كتبه الطالب)</span>
+  // ما يُسمَّع في الحصة: أسبوع الطالب الذي سبقها (من الحصة السابقة إلى اليوم الذي قبلها)
+  const info = (w, prev) => {
+    const l = w.lesson;
+    const read = w.week.reduce((t, d) => t + d.solid + d.weak + d.other, 0);
+    return `<div class="mf-info"><span class="mf-wk">📅 الأسبوع الذي يُسمَّع: <b>${qShort(prev)} – ${qShort(qAddDays(prev, 6))}</b></span>
+      <span class="mf-k">📝 المقرر (كما كتبه الطالب)</span>
       ${l ? `<b>${esc(l.content)}</b> <small class="muted">${athmanTxt(l.athman)} · أُملي ${fmtDate(l.assigned_on)}</small>
-        ${wk !== null ? `<span class="mf-reps">🔁 ${wk}/${l.target} هذا الأسبوع</span>` : ''}` : '<span class="muted">لم يكتب الطالب مقررًا بعد.</span>'}
-      ${s === cur ? `<span class="mf-k">📖 الورد هذا الأسبوع</span><b>${full.progress.percent ?? 0}%</b>` : ''}</div>`;
+        <span class="mf-reps ${l.week_total >= l.target ? 'in' : ''}">🔁 كرّره ${l.week_total} من ${l.target}</span>` : '<span class="muted">لم يكتب الطالب مقررًا لذلك الأسبوع.</span>'}
+      <span class="mf-k">📖 الورد</span><b>${w.progress.percent ?? 0}% <small class="muted">(${hizbTxt(read)} في ${w.week.filter((d) => d.ids.length).length} أيام)</small></b></div>`;
+  };
+  const loadInfo = async (s) => {
+    const box = $('#mf-info');
+    const prev = qAddDays(s, -7);
+    box.innerHTML = '<div class="mf-info"><span class="muted small">جاري التحميل…</span></div>';
+    try {
+      const w = await api('GET', `/api/quran/students/${st.id}?week=${prev}`);
+      if ($('#mf-date')?.value === s) box.innerHTML = info(w, prev);
+    } catch {
+      box.innerHTML = '';
+    }
   };
   const m = mOf(start);
   openModal(
@@ -440,7 +453,7 @@ function quranMeetingForm(full, preset = {}, onDone) {
        <div class="mf-rate"><span>الحفظ</span>${starInput('hifz_eval', m.hifz_eval)}</div>
        <div class="mf-rate"><span>الأداء</span>${starInput('ada_eval', m.ada_eval)}</div></div>
      <label>ملاحظة للطالب<textarea name="note" rows="3" placeholder="تصل الطالب في الإشعارات">${esc(m.note || '')}</textarea></label>
-     <div id="mf-info">${info(start)}</div>`,
+     <div id="mf-info"></div>`,
     async (data) => {
       const absent = data.attendance !== 'present';
       await api('POST', `/api/quran/students/${st.id}/meetings`, {
@@ -455,6 +468,7 @@ function quranMeetingForm(full, preset = {}, onDone) {
   const toggle = () => ($('#mf-rates').hidden = f.querySelector('input[name=attendance]:checked')?.value !== 'present');
   f.querySelectorAll('input[name=attendance]').forEach((x) => x.addEventListener('change', toggle));
   toggle();
+  loadInfo(start);
   $('#mf-date').addEventListener('change', (e) => {
     const s = e.target.value;
     const mm = mOf(s);
@@ -462,7 +476,7 @@ function quranMeetingForm(full, preset = {}, onDone) {
     f.querySelector('.star-in[data-name=hifz_eval]')._set(mm.hifz_eval);
     f.querySelector('.star-in[data-name=ada_eval]')._set(mm.ada_eval);
     f.querySelector('textarea[name=note]').value = mm.note || '';
-    $('#mf-info').innerHTML = info(s);
+    loadInfo(s);
     toggle();
   });
 }
