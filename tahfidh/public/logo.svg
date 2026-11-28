@@ -1,1 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#20149a"/><stop offset="1" stop-color="#7a2bc4"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#g)"/><path d="M32 46c-5-3.6-11-4.6-18-4V20c7-.6 13 .4 18 4 5-3.6 11-4.6 18-4v22c-7-.6-13 .4-18 4z" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M32 24v22" stroke="#fff" stroke-width="3"/><path d="M40 11a6 6 0 1 0 6 8 4.6 4.6 0 1 1-6-8z" fill="#f5c34b"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11634d"/>
+      <stop offset="1" stop-color="#073528"/>
+    </linearGradient>
+    <radialGradient id="shine" cx=".3" cy=".12" r=".75">
+      <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow" cx=".5" cy=".42" r=".32">
+      <stop offset="0" stop-color="#e9b860" stop-opacity=".30"/>
+      <stop offset="1" stop-color="#e9b860" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0c36b"/>
+      <stop offset="1" stop-color="#c88a2f"/>
+    </linearGradient>
+    <linearGradient id="leafR" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#d79a3c"/>
+      <stop offset="1" stop-color="#f3cc7a"/>
+    </linearGradient>
+    <linearGradient id="leafL" x1="1" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#cf9035"/>
+      <stop offset="1" stop-color="#ecbf68"/>
+    </linearGradient>
+    <linearGradient id="pageL" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#e9dcc3"/>
+      <stop offset=".25" stop-color="#f8f1e3"/>
+      <stop offset="1" stop-color="#fffaf0"/>
+    </linearGradient>
+    <linearGradient id="pageR" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e9dcc3"/>
+      <stop offset=".25" stop-color="#f8f1e3"/>
+      <stop offset="1" stop-color="#fffaf0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#shine)"/>
+  <circle cx="256" cy="215" r="190" fill="url(#glow)"/>
+  <g transform="translate(256 256) scale(1.1) translate(-256 -272)">
+  <ellipse cx="256" cy="418" rx="150" ry="16" fill="#021f17" opacity=".35"/>
+
+  <!-- سُمك الصفحات -->
+  <path d="M256 318 C 214 290, 158 282, 104 288 L 104 394 C 160 388, 214 396, 256 420 C 298 396, 352 388, 408 394 L 408 288 C 354 282, 298 290, 256 318 Z" fill="#cdbd9c"/>
+  <path d="M256 310 C 214 282, 160 274, 110 280 L 110 386 C 162 380, 214 388, 256 412 C 298 388, 350 380, 402 386 L 402 280 C 352 274, 298 282, 256 310 Z" fill="#e2d4b7"/>
+  <!-- الصفحتان -->
+  <path d="M256 300 C 214 270, 162 262, 116 268 L 116 376 C 164 370, 214 378, 256 402 Z" fill="url(#pageL)"/>
+  <path d="M256 300 C 298 270, 350 262, 396 268 L 396 376 C 348 370, 298 378, 256 402 Z" fill="url(#pageR)"/>
+  <!-- سطور -->
+  <g fill="none" stroke="#c9b58f" stroke-width="5" stroke-linecap="round" opacity=".55">
+    <path d="M144 300 C 176 297, 206 302, 232 315"/>
+    <path d="M144 324 C 176 321, 206 326, 232 339"/>
+    <path d="M144 348 C 176 345, 206 350, 232 363"/>
+    <path d="M368 300 C 336 297, 306 302, 280 315"/>
+    <path d="M368 324 C 336 321, 306 326, 280 339"/>
+    <path d="M368 348 C 336 345, 306 350, 280 363"/>
+  </g>
+  <path d="M256 300 L 256 402" stroke="#d6c4a0" stroke-width="3"/>
+
+  <!-- النبتة -->
+  <path d="M256 304 C 256 262, 253 222, 257 172" fill="none" stroke="url(#gold)" stroke-width="15" stroke-linecap="round"/>
+  <path d="M259 196 C 268 154, 300 128, 350 128 C 346 172, 312 202, 259 196 Z" fill="url(#leafR)"/>
+  <path d="M262 192 C 286 168, 310 150, 340 136" fill="none" stroke="#b97a26" stroke-width="3.5" stroke-linecap="round" opacity=".55"/>
+  <path d="M253 226 C 242 192, 216 172, 176 172 C 182 206, 210 230, 253 226 Z" fill="url(#leafL)"/>
+  <path d="M250 222 C 232 204, 212 190, 186 180" fill="none" stroke="#b07224" stroke-width="3.5" stroke-linecap="round" opacity=".55"/>
+  </g>
+</svg>
