@@ -202,7 +202,9 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
   const curWeek = sessionOf(r.today, r.group.meet_day);
   const T = r.target;
   let metric = localStorage.getItem('recMetric') || 'all';
-  let sort = 'name';
+  // الترتيب: الأعلى أولًا افتراضيًا، ويُحفظ اختيار الأستاذ
+  let sort = 'top';
+  try { sort = localStorage.getItem('recSort') === 'name' ? 'name' : 'top'; } catch {}
   const order = r.weeks.map((_, i) => i).reverse(); // الأحدث أولًا
   const repsPct = (w) => Math.round((w.reps / T) * 100);
 
@@ -301,7 +303,11 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
       draw();
     })
   );
-  $('#hm-sort').addEventListener('click', () => ((sort = sort === 'name' ? 'top' : 'name'), draw()));
+  $('#hm-sort').addEventListener('click', () => {
+    sort = sort === 'name' ? 'top' : 'name';
+    try { localStorage.setItem('recSort', sort); } catch {}
+    draw();
+  });
   // تفاصيل الخانة في لوحة سفلية
   $('#hm-grid').addEventListener('click', (e) => {
     const b = e.target.closest('.hm[data-s]');
