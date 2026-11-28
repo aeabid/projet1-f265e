@@ -1035,3 +1035,5 @@ thead .rc-name { background: var(--soft); }
 /* أربع طرق عرض: بالأرباع، بالأجزاء، بالأحزاب، بالسور */
 .q-seg { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
 .q-seg button { font-size: .88rem; padding-inline: .15rem; }
+.home-sec { margin: 1.2rem .2rem .6rem; }
+.home-sec h3 { margin: 0; }

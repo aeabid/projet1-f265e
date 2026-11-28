@@ -207,7 +207,7 @@ const icon = (name) =>
   `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name] || ICON_PATHS.grid}</svg>`;
 
 const NAV = {
-  admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/quran/groups', 'السجل', 'table'], ['#/benefits', 'الفوائد', 'bulb'], ['#/account', 'حسابي', 'user']],
+  admin: [['#/home', 'الرئيسية', 'home'], ['#/quran/students', 'الطلبة', 'users'], ['#/benefits', 'الفوائد', 'bulb'], ['#/account', 'حسابي', 'user']],
   // الطالب: الرئيسية (المقرر، الورد، الجدول، ملاحظات الشيخ) · الورد (تسجيل ورد اليوم) · سجلّي (بالأسبوع/بالشهر/بالسنة) · حسابي (البيانات والمحفوظ)
   talib: [['#/home', 'الرئيسية', 'home'], ['#/my-review', 'الورد', 'star'], ['#/my-progress', 'سجلّي', 'calendar'], ['#/benefits', 'الفوائد', 'bulb'], ['#/account', 'حسابي', 'user']],
 };

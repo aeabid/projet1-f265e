@@ -273,7 +273,7 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
     $('#hm-sort').textContent = sort === 'name' ? '↕ بالاسم' : '↓ الأعلى أولًا';
   };
 
-  el.innerHTML = `<p><a href="#/quran/groups">→ السجل</a></p>
+  el.innerHTML = `<p><a href="#/home">→ الرئيسية</a></p>
     <div class="rec-hero">
       <div><h2>${esc(r.group.name)}</h2><small>حصة يوم ${Q_DAYS[r.group.meet_day]} · ${r.students.length} طالب</small></div>
       <div class="rec-kpis">
