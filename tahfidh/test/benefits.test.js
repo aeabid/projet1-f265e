@@ -117,6 +117,7 @@ test('session attendance, two-absence alert, record table and challenges', async
   assert.strictEqual(ra.weeks[2].att, 'excused');
   assert.strictEqual(ra.weeks[2].hifz_eval, '4');
   assert.strictEqual(ra.weeks[1].att, 'absent');
+  assert.ok('cover' in ra.weeks[0]);
   const ch = (await st('GET', '/api/quran/challenges?period=all')).body;
   assert.strictEqual(ch.group.id, g.id);
   const att = ch.rankings.attendance;
@@ -154,4 +155,18 @@ test('reactions on benefits are visible to everyone', async () => {
   await s2('PUT', `/api/quran/benefits/${id}/react`, { emoji: null });
   const a = (await admin('GET', '/api/quran/benefits')).body.benefits.find((x) => x.id === id);
   assert.strictEqual(a.reactions.length, 1);
+});
+
+test('record coverage counts each memorized part once, ignoring repetition', async () => {
+  const admin = await login('admin', 'admin123');
+  const g = (await admin('POST', '/api/quran/groups', { name: 'ت', meet_day: 0 })).body.group;
+  const s = (await admin('POST', '/api/quran/students', { username: 'cv1', password: 'secret1', first_name: 'ت', group_id: g.id, week_start: 0, memorized: { 150: 's', 151: 's' } })).body.student;
+  const t = new Date().toISOString().slice(0, 10);
+  await admin('PUT', `/api/quran/students/${s.id}/review`, { date: t, ids: [150], counts: { 150: 5 } });
+  const r = (await admin('GET', `/api/quran/groups/${g.id}/record?weeks=1`)).body;
+  const w = r.students[0].weeks[0];
+  assert.ok(w.cover > 0 && w.cover < 100, `cover ${w.cover}`);
+  assert.ok(w.ward > w.cover, 'repetition raises reading but not coverage');
+  await admin('PUT', `/api/quran/students/${s.id}/review`, { date: t, ids: [150, 151] });
+  assert.strictEqual((await admin('GET', `/api/quran/groups/${g.id}/record?weeks=1`)).body.students[0].weeks[0].cover, 100);
 });

@@ -568,6 +568,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     const its = act.items.filter(inR);
     const ms = act.meets.filter(inR);
     return {
+      readRaw: its.reduce((t, i) => t + (Q.segments[i.seg_id]?.size || 0) * (i.count || 1), 0),
       read: r1(its.reduce((t, i) => t + (Q.segments[i.seg_id]?.size || 0) * (i.count || 1), 0)),
       days: new Set(its.map((i) => i.date)).size,
       reps: act.reps.filter(inR).reduce((t, r) => t + r.count, 0),
@@ -592,13 +593,24 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     for (let i = n - 1; i >= 0; i--) weeks.push(addDays(last, -7 * i));
     const sts = await groupStudents(g.id);
     const act = await activity(sts.map((x) => x.id), weeks[0], addDays(last, 6));
+    const rawSize = (ids) => ids.reduce((t, i) => t + (Q.segments[i]?.size || 0), 0);
     const students = sts.map((st) => {
-      const mem = r1(Q.sizeOf(Object.keys(st.memorized || {}).map(Number)));
+      const memRaw = rawSize(Object.keys(st.memorized || {}).map(Number));
+      const mem = r1(memRaw);
       return {
         id: st.id, full_name: st.full_name, has_photo: st.has_photo, photo_v: st.photo_v, memorized: mem,
         weeks: weeks.map((w) => {
-          const b = bucket(act, st.id, w, addDays(w, 6));
-          return { ...b, ward: mem ? Math.round((b.read / mem) * 100) : null };
+          const e = addDays(w, 6);
+          const b = bucket(act, st.id, w, e);
+          // التغطية: ما مرّ عليه من محفوظه مرة واحدة على الأقل (دون احتساب التكرار)
+          const seen = new Set(act.items.filter((i) => i.student_id === st.id && i.date >= w && i.date <= e && st.memorized?.[i.seg_id]).map((i) => i.seg_id));
+          const covRaw = rawSize([...seen]);
+          const { readRaw, ...rest } = b;
+          return {
+            ...rest, covered: r1(covRaw),
+            ward: memRaw ? Math.round((readRaw / memRaw) * 100) : null,
+            cover: memRaw ? Math.min(100, Math.round((covRaw / memRaw) * 100)) : null,
+          };
         }),
       };
     });
@@ -627,16 +639,18 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
       }
       const w = period === 'week' ? 1 : weeksBetween(start);
       const b = bucket(act, st.id, start, day);
-      const mem = r1(Q.sizeOf(Object.keys(st.memorized || {}).map(Number)));
+      const memRaw = Object.keys(st.memorized || {}).reduce((t, i) => t + (Q.segments[i]?.size || 0), 0);
+      const mem = r1(memRaw);
       const marked = b.present + b.absent + b.excused;
       const need = r1(mem * w);
+      const needRaw = memRaw * w;
       return {
         id: st.id, full_name: st.full_name, has_photo: st.has_photo, photo_v: st.photo_v, me: st.id === user.id,
-        start, weeks: w, memorized: mem,
+        start, weeks: w, memorized: mem, mem_raw: memRaw,
         attendance: marked ? Math.round((b.present / marked) * 100) : null, present: b.present, absent: b.absent, excused: b.excused, marked,
         lesson: Math.round((b.reps / (LESSON_TARGET * w)) * 100), reps: b.reps, reps_target: LESSON_TARGET * w,
-        ward: mem ? Math.round((b.read / need) * 100) : null, read: b.read, ward_target: need,
-        ward_points: wardPoints(b.read, need),
+        ward: memRaw ? Math.round((b.readRaw / needRaw) * 100) : null, read: b.read, ward_target: need,
+        ward_points: needRaw ? r1(b.readRaw * Math.min(1, b.readRaw / needRaw)) : null,
       };
     });
     return { g, rows, act, thisWeek };
@@ -678,7 +692,7 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
     for (let w = weekStartOf(row.start, data.g.meet_day); w <= data.thisWeek; w = addDays(w, 7)) {
       const from = w < row.start ? row.start : w;
       const b = bucket(data.act, st.id, from, addDays(w, 6));
-      weeks.push({ start: w, att: b.att, read: b.read, days: b.days, reps: b.reps, ward: row.memorized ? Math.round((b.read / row.memorized) * 100) : null });
+      weeks.push({ start: w, att: b.att, read: b.read, days: b.days, reps: b.reps, ward: row.mem_raw ? Math.round((b.readRaw / row.mem_raw) * 100) : null });
     }
     return { student: row, group: data.g, period, target: LESSON_TARGET, weeks: weeks.reverse() };
   });

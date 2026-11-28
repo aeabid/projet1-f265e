@@ -971,3 +971,17 @@ thead .rc-name { background: var(--soft); }
 .mf-wk { font-size: .85rem; color: var(--accent); }
 .mf-reps.in { color: var(--good); }
 @media (prefers-color-scheme: dark) { .recital { background: #3a3014; border-color: #6b5520; } }
+
+/* السجل: ألوان تغطية المحفوظ (نص واضح على كل لون) */
+.hm.cv-good, .lg.cv-good { background: #15803d; color: #fff; }
+.hm.cv-mid, .lg.cv-mid { background: #f59e0b; color: #3a2200; }
+.hm.cv-low, .lg.cv-low { background: #dc2626; color: #fff; }
+.hm.cv-none { background: #f1edf6; color: #9a8fae; }
+.hm.cv-good > small, .hm.cv-low > small { opacity: .92; }
+.hm.cv-mid > small { opacity: .85; }
+.hm-all .mb.ward.cv-good i { background: #15803d; }
+.hm-all .mb.ward.cv-mid i { background: #f59e0b; }
+.hm-all .mb.ward.cv-low i { background: #dc2626; }
+.cv-txt.cv-good { color: #15803d; } .cv-txt.cv-mid { color: #b45309; } .cv-txt.cv-low { color: #dc2626; }
+.hm-tot .cv-txt { background: none; }
+.q-bar.cvbar.cv-good i { background: #15803d; } .q-bar.cvbar.cv-mid i { background: #f59e0b; } .q-bar.cvbar.cv-low i { background: #dc2626; }
