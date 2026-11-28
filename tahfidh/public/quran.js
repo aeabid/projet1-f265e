@@ -112,6 +112,7 @@ async function viewQuranHome(el, tab = '') {
   el.innerHTML = `
     ${heroBanner({ sub: 'تابع مراجعة الطلبة وحفظهم أسبوعًا بأسبوع.', art: '📖',
       actions: '<button type="button" class="btn" id="q-add-st">＋ طالب جديد</button><button type="button" class="btn ghost" id="q-add-g">＋ مجموعة</button>' })}
+    <a class="all-rec" href="#/quran/record/all"><span class="all-rec-ico">📊</span><span><b>سجل كل الطلبة</b><small>كل المجموعات في جدول واحد، مرتّبين من الأعلى</small></span><span class="all-rec-go">‹</span></a>
     <div class="section-head home-sec"><h3>🕌 المجموعات وسجلّاتها</h3></div>
     <div id="q-groups"></div>
     <div id="q-page"></div>`;

@@ -583,23 +583,17 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
   const groupStudents = (gid) => all(`${STUDENT_SELECT} WHERE qs.active AND qs.group_id = $1 ORDER BY u.full_name`, [gid]);
 
   // السجل: جدول شامل لطلبة مجموعة على مرّ الأسابيع
-  q('GET', '/api/quran/groups/:id/record', STAFF, async ({ user, params, query }) => {
-    const g = await loadGroup(user, params.id);
-    const day = today();
-    const n = Math.min(12, Math.max(1, Number(query.get('weeks')) || 4));
-    const ref = DATE_RE.test(query.get('to') || '') && query.get('to') <= day ? query.get('to') : day;
-    const last = weekStartOf(ref, g.meet_day);
-    const weeks = [];
-    for (let i = n - 1; i >= 0; i--) weeks.push(addDays(last, -7 * i));
-    const sts = await groupStudents(g.id);
-    const act = await activity(sts.map((x) => x.id), weeks[0], addDays(last, 6));
-    const rawSize = (ids) => ids.reduce((t, i) => t + (Q.segments[i]?.size || 0), 0);
-    const students = sts.map((st) => {
+  // صفوف السجل: لكل طالب أسابيعه (startsOf يعطي بدايات أسابيع الطالب، من الأقدم إلى الأحدث)
+  const rawSize = (ids) => ids.reduce((t, i) => t + (Q.segments[i]?.size || 0), 0);
+  async function recordRows(sts, startsOf) {
+    const all_ = sts.flatMap((st) => startsOf(st));
+    if (!sts.length) return [];
+    const act = await activity(sts.map((x) => x.id), all_.reduce((m, d) => (d < m ? d : m)), addDays(all_.reduce((m, d) => (d > m ? d : m)), 6));
+    return sts.map((st) => {
       const memRaw = rawSize(Object.keys(st.memorized || {}).map(Number));
-      const mem = r1(memRaw);
       return {
-        id: st.id, full_name: st.full_name, has_photo: st.has_photo, photo_v: st.photo_v, memorized: mem,
-        weeks: weeks.map((w) => {
+        id: st.id, full_name: st.full_name, has_photo: st.has_photo, photo_v: st.photo_v, memorized: r1(memRaw), group_name: st.group_name,
+        weeks: startsOf(st).map((w) => {
           const e = addDays(w, 6);
           const b = bucket(act, st.id, w, e);
           // التغطية: ما مرّ عليه من محفوظه مرة واحدة على الأقل (دون احتساب التكرار)
@@ -607,14 +601,39 @@ export function registerQuranRoutes({ route, pool, all, one, HttpError, text, da
           const covRaw = rawSize([...seen]);
           const { readRaw, ...rest } = b;
           return {
-            ...rest, covered: r1(covRaw),
+            ...rest, start: w, covered: r1(covRaw),
             ward: memRaw ? Math.round((readRaw / memRaw) * 100) : null,
             cover: memRaw ? Math.min(100, Math.round((covRaw / memRaw) * 100)) : null,
           };
         }),
       };
     });
+  }
+  const recordRange = (query) => {
+    const day = today();
+    const n = Math.min(12, Math.max(1, Number(query.get('weeks')) || 4));
+    const ref = DATE_RE.test(query.get('to') || '') && query.get('to') <= day ? query.get('to') : day;
+    return { day, n, ref };
+  };
+
+  q('GET', '/api/quran/groups/:id/record', STAFF, async ({ user, params, query }) => {
+    const g = await loadGroup(user, params.id);
+    const { day, n, ref } = recordRange(query);
+    const last = weekStartOf(ref, g.meet_day);
+    const weeks = [];
+    for (let i = n - 1; i >= 0; i--) weeks.push(addDays(last, -7 * i));
+    const students = await recordRows(await groupStudents(g.id), () => weeks);
     return { group: g, weeks, target: LESSON_TARGET, students, today: day, has_next: addDays(last, 7) <= day };
+  });
+
+  // سجل كل الطلبة في جدول واحد (كل المجموعات): أسابيع كل طالب تبدأ يوم لقائه
+  q('GET', '/api/quran/record/all', STAFF, async ({ query }) => {
+    const { day, n, ref } = recordRange(query);
+    const refs = [];
+    for (let i = n - 1; i >= 0; i--) refs.push(addDays(ref, -7 * i));
+    const sts = await all(`${STUDENT_SELECT} WHERE qs.active ORDER BY u.full_name`);
+    const students = await recordRows(sts, (st) => refs.map((r) => weekStartOf(r, st.week_start)));
+    return { group: { id: 'all', name: 'كل الطلبة', meet_day: null }, all: true, weeks: refs, target: LESSON_TARGET, students, today: day, has_next: addDays(ref, 7) <= day };
   });
 
   // التحديات: ترتيب طلبة المجموعة في الحضور، وتكرار المقرر، والورد (أسبوعيًا، شهريًا، إجماليًا)

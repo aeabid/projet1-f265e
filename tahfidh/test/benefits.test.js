@@ -188,3 +188,21 @@ test('benefit folders organize benefits by topic', async () => {
   assert.strictEqual((await st('GET', '/api/quran/benefit-folders')).status, 200);
   assert.strictEqual((await st('POST', '/api/quran/benefit-folders', { name: 'x' })).status, 403);
 });
+
+test('record of all students across groups', async () => {
+  const admin = await login('admin', 'admin123');
+  const g1 = (await admin('POST', '/api/quran/groups', { name: 'ع1', meet_day: 6 })).body.group;
+  const g2 = (await admin('POST', '/api/quran/groups', { name: 'ع2', meet_day: 3 })).body.group;
+  const a = (await admin('POST', '/api/quran/students', { username: 'al1', password: 'secret1', first_name: 'أ', group_id: g1.id, week_start: 6 })).body.student;
+  const b = (await admin('POST', '/api/quran/students', { username: 'al2', password: 'secret1', first_name: 'ب', group_id: g2.id, week_start: 3 })).body.student;
+  const r = (await admin('GET', '/api/quran/record/all?weeks=3')).body;
+  assert.strictEqual(r.weeks.length, 3);
+  const ra = r.students.find((x) => x.id === a.id);
+  const rb = r.students.find((x) => x.id === b.id);
+  assert.ok(ra && rb);
+  assert.strictEqual(new Date(ra.weeks[2].start + 'T00:00:00Z').getUTCDay(), 6);
+  assert.strictEqual(new Date(rb.weeks[2].start + 'T00:00:00Z').getUTCDay(), 3);
+  assert.strictEqual(rb.group_name, 'ع2');
+  const st = await login('al1', 'secret1');
+  assert.strictEqual((await st('GET', '/api/quran/record/all')).status, 403);
+});

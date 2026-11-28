@@ -199,12 +199,19 @@ const coverCls = (p) => (p === null || p === undefined ? 'cv-none' : p >= 95 ? '
 const heat = (p) => (p === null || p === undefined ? 'h0' : p <= 0 ? 'h0' : p < 25 ? 'h1' : p < 50 ? 'h2' : p < 75 ? 'h3' : p < 100 ? 'h4' : 'h5');
 
 async function viewQuranRecord(el, gid, n = 4, to = '') {
-  const r = await api('GET', `/api/quran/groups/${gid}/record?weeks=${n}${to ? `&to=${to}` : ''}`);
+  const ALL = gid === 'all';
+  const r = await api('GET', `${ALL ? '/api/quran/record/all' : `/api/quran/groups/${gid}/record`}?weeks=${n}${to ? `&to=${to}` : ''}`);
   const href = (nn, tt) => `#/quran/record/${gid}?w=${nn}${tt ? `&to=${tt}` : ''}`;
   const olderTo = qAddDays(r.weeks[0], -1);
   const newerRef = qAddDays(r.weeks[r.weeks.length - 1], 7 * n);
   const newerTo = newerRef > r.today ? '' : newerRef;
-  const curWeek = sessionOf(r.today, r.group.meet_day);
+  const curWeek = ALL ? r.today : sessionOf(r.today, r.group.meet_day);
+  // في سجل كل الطلبة: لكل طالب يوم لقائه، فالأعمدة أسابيع نسبية (هذا الأسبوع، الماضي…)
+  const weekLabel = (w) => {
+    if (!ALL) return `${qShort(w)}${w === curWeek ? '<small>الآن</small>' : ''}`;
+    const k = Math.round((Date.parse(`${r.today}T00:00:00Z`) - Date.parse(`${w}T00:00:00Z`)) / (7 * 864e5));
+    return k === 0 ? 'هذا<small>الأسبوع</small>' : k === 1 ? 'الأسبوع<br>الماضي' : `قبل ${k}<br>${k === 2 ? 'أسبوعين' : k <= 10 ? 'أسابيع' : 'أسبوعًا'}`;
+  };
   const T = r.target;
   let metric = localStorage.getItem('recMetric') || 'all';
   // الترتيب: الأعلى أولًا افتراضيًا، ويُحفظ اختيار الأستاذ
@@ -267,10 +274,10 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
     const grid = $('#hm-grid');
     grid.style.setProperty('--cols', r.weeks.length);
     grid.innerHTML = `<div class="hm-row hm-head"><span class="hm-name">الطالب</span>
-        ${order.map((i) => `<span class="hm-wk ${r.weeks[i] === curWeek ? 'cur' : ''}">${qShort(r.weeks[i])}${r.weeks[i] === curWeek ? '<small>الآن</small>' : ''}</span>`).join('')}
+        ${order.map((i) => `<span class="hm-wk ${r.weeks[i] === curWeek ? 'cur' : ''} ${ALL ? 'rel' : ''}">${weekLabel(r.weeks[i])}</span>`).join('')}
         <span class="hm-wk hm-totl">المجموع</span></div>
       ${sorted().map((s, row) => `<div class="hm-row" style="--i:${row}">
-        <a class="hm-name" href="#/quran/student/${s.id}" title="${esc(s.full_name)}">${avatar(s, 'xs')}<span>${esc(s.full_name)}</span></a>
+        <a class="hm-name" href="#/quran/student/${s.id}" title="${esc(s.full_name)}">${avatar(s, 'xs')}<span>${esc(s.full_name)}${ALL ? `<i class="hm-grp">${esc(s.group_name || 'بلا مجموعة')}</i>` : ''}</span></a>
         ${order.map((i) => cell(s, s.weeks[i], i)).join('')}
         <span class="hm-tot">${totCell(s)}</span></div>`).join('')}`;
     $('#hm-legend').innerHTML = legend();
@@ -280,7 +287,7 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
 
   el.innerHTML = `<p><a href="#/home">→ الرئيسية</a></p>
     <div class="rec-hero">
-      <div><h2>${esc(r.group.name)}</h2><small>حصة يوم ${Q_DAYS[r.group.meet_day]} · ${r.students.length} طالب</small></div>
+      <div><h2>${ALL ? '👥 كل الطلبة' : esc(r.group.name)}</h2><small>${ALL ? 'كل المجموعات في جدول واحد، مرتّبين من الأعلى' : `حصة يوم ${Q_DAYS[r.group.meet_day]}`} · ${r.students.length} طالب</small></div>
       <div class="rec-kpis">
         <span><b>${avg('att') ?? '—'}%</b><small>الحضور</small></span>
         <span><b>${avg('ward') ?? '—'}%</b><small>الورد</small></span>
@@ -319,8 +326,8 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
     if (!b) return;
     const s = r.students.find((x) => x.id === Number(b.dataset.s));
     const w = s.weeks[Number(b.dataset.w)];
-    const wk = r.weeks[Number(b.dataset.w)];
-    recSheet(`<div class="sh-head">${avatar(s, 'md')}<div><b>${esc(s.full_name)}</b><small>حصة ${qDay(wk)} ${fmtDate(wk)}${wk === curWeek ? ' · هذا الأسبوع' : ''}</small></div></div>
+    const wk = s.weeks[Number(b.dataset.w)].start || r.weeks[Number(b.dataset.w)];
+    recSheet(`<div class="sh-head">${avatar(s, 'md')}<div><b>${esc(s.full_name)}</b><small>${ALL && s.group_name ? `🕌 ${esc(s.group_name)} · ` : ''}حصة ${qDay(wk)} ${fmtDate(wk)}${wk === curWeek ? ' · هذا الأسبوع' : ''}</small></div></div>
       <div class="sh-att">${attChip(w.att)}${w.hifz_eval ? `<span>الحفظ ${starsTxt(w.hifz_eval)}</span>` : ''}${w.ada_eval ? `<span>الأداء ${starsTxt(w.ada_eval)}</span>` : ''}</div>
       <div class="sh-stat"><div><span>📖 الورد</span><b>${w.ward ?? 0}%</b></div>
         <small>قرأ ${num(w.read)} حزب مع التكرار من محفوظه (${hizbTxt(s.memorized)}) في ${w.days} ${w.days === 1 ? 'يوم' : 'أيام'}</small>
@@ -534,6 +541,6 @@ function meetingsList(meetings, staff) {
 }
 
 routes.unshift(
-  [/^#\/quran\/record\/(\d+)(?:\?w=(\d+)(?:&to=(\d{4}-\d{2}-\d{2}))?)?$/, (el, id, w, to) => viewQuranRecord(el, Number(id), Number(w) || 4, to || '')],
+  [/^#\/quran\/record\/(\d+|all)(?:\?w=(\d+)(?:&to=(\d{4}-\d{2}-\d{2}))?)?$/, (el, id, w, to) => viewQuranRecord(el, id === 'all' ? 'all' : Number(id), Number(w) || 4, to || '')],
   [/^#\/challenges(?:\?(.*))?$/, (el, qs) => viewChallenges(el, qs || '')]
 );
