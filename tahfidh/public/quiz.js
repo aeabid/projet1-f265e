@@ -104,7 +104,7 @@ function qzGenerators(pool, seen = {}) {
     }
     for (const list of m.values()) {
       const uniq = [...new Map(list.map((v) => [v.n, v])).values()];
-      if (uniq.length >= 2 && uniq.length <= 12) groups.push({ len, list: uniq });
+      if (uniq.length >= 2 && uniq.length <= 12 && new Set(uniq.map((v) => v.s)).size >= 2) groups.push({ len, list: uniq });
     }
     if (groups.length >= 8) break;
   }
@@ -120,13 +120,27 @@ function qzGenerators(pool, seen = {}) {
     return qzPick(old.slice(0, Math.max(1, Math.ceil(old.length / 3))));
   };
   const src = (v, p) => ({ s: v.s, a: v.a, ...(p !== undefined ? { p } : {}) });
+  // منع الالتباس: لا يكون للسؤال إلا جواب صحيح واحد من محفوظ الطالب
+  const startKey = (x, n) => qzNorm(x.words.slice(0, n).join(' '));
+  // آيات أخرى في نفس السورة تبدأ بنفس الكلمات المعروضة
+  const twins = (v, n) => bySura.get(v.s).filter((x) => x !== v && x.words.length > n && startKey(x, n) === startKey(v, n));
+  // نزيد كلمات حتى تتميّز بداية الآية في سورتها؛ وإن لم تتميّز نترك السؤال
+  const uniqueStart = (v, n) => {
+    while (n < v.words.length - 1 && twins(v, n).length) n++;
+    return twins(v, n).length || n >= v.words.length - 1 ? null : n;
+  };
+  const textCount = new Map();
+  for (const v of pool) textCount.set(v.n, (textCount.get(v.n) || 0) + 1);
+  const poolTexts = new Set(pool.map((v) => v.n));
 
   return {
     complete(want) {
       const v = pickV(pool.filter((x) => x.words.length >= 5), 'complete', want);
       if (!v) return null;
       // موضع القطع يتغيّر في كل مرة (بين 30% و65% من الآية) إلا عند إعادة سؤال أخطأ فيه
-      const k = want?.p >= 2 && want.p < v.words.length - 1 ? want.p : Math.max(2, Math.min(v.words.length - 2, Math.round(v.words.length * (0.3 + Math.random() * 0.35))));
+      const k0 = want?.p >= 2 && want.p < v.words.length - 1 ? want.p : Math.max(2, Math.min(v.words.length - 2, Math.round(v.words.length * (0.3 + Math.random() * 0.35))));
+      const k = uniqueStart(v, k0);
+      if (k === null) return null;
       const rest = qzClip(v.words.slice(k), 9);
       const wrong = distract(rest, near(v), (x) => {
         if (x.words.length < 3) return null;
@@ -137,7 +151,7 @@ function qzGenerators(pool, seen = {}) {
       return opts && { type: 'complete', title: `أكمل الآية (سورة ${QD.suraName(v.s)})`, verse: `${v.words.slice(0, k).join(' ')} …`, opts, ref: ref(v), src: src(v, k) };
     },
     next(want) {
-      const v = pickV(pool.filter((x) => inPool.has(`${x.s}:${x.a + 1}`)), 'next', want);
+      const v = pickV(pool.filter((x) => inPool.has(`${x.s}:${x.a + 1}`) && textCount.get(x.n) === 1), 'next', want);
       if (!v) return null;
       const nx = inPool.get(`${v.s}:${v.a + 1}`);
       const right = qzClip(nx.words, 8);
@@ -168,13 +182,20 @@ function qzGenerators(pool, seen = {}) {
       // أطول بداية مشتركة بين آيات المجموعة
       let common = g.len;
       while (g.list.every((x) => x.words.length > common + 1 && qzNorm(x.words[common]) === qzNorm(v.words[common]))) common++;
-      const tail = (x) => qzClip(x.words.slice(common), 7);
+      // إن شاركتها آية أخرى من نفس السورة هذه البداية نزيد كلمات حتى تتميّز (مثل: قل هو الذي أنشأكم / قل هو الذي ذرأكم)
+      const shown = uniqueStart(v, common);
+      if (shown === null) return null;
+      // المتشابه الحقيقي: آيات من سور أخرى تبدأ بنفس الكلمات المعروضة
+      const alike = pool.filter((x) => x !== v && x.s !== v.s && x.words.length > shown + 1 && startKey(x, shown) === startKey(v, shown));
+      if (!alike.length) return null;
+      const tail = (x) => (x.words.length > shown + 1 ? qzClip(x.words.slice(shown), 7) : null);
       const right = tail(v);
-      const wrong = distract(right, [...qzShuffle(g.list.filter((x) => x !== v)), ...near(v)], tail);
+      const wrong = distract(right, [...qzShuffle(alike), ...near(v).filter((x) => !(x.s === v.s && startKey(x, shown) === startKey(v, shown)))], tail);
       const opts = options(right, wrong);
+      const n = alike.length + 1;
       return opts && {
-        type: 'similar', title: `أكمل في سورة ${QD.suraName(v.s)}`, verse: `${v.words.slice(0, common).join(' ')} …`,
-        hint: `تتشابه هذه البداية في ${g.list.length === 2 ? 'موضعين' : `${g.list.length} ${g.list.length <= 10 ? 'مواضع' : 'موضعًا'}`} من محفوظك`, opts, ref: ref(v), src: src(v),
+        type: 'similar', title: `أكمل في سورة ${QD.suraName(v.s)}`, verse: `${v.words.slice(0, shown).join(' ')} …`,
+        hint: `تتشابه هذه البداية في ${n === 2 ? 'موضعين' : `${n} ${n <= 10 ? 'مواضع' : 'موضعًا'}`} من محفوظك، في سور مختلفة`, opts, ref: ref(v), src: src(v),
       };
     },
     missing(want) {
@@ -186,7 +207,8 @@ function qzGenerators(pool, seen = {}) {
       const right = v.words[i];
       const L = qzNorm(right).length;
       const cands = near(v).flatMap((x) => qzShuffle(x.words)).filter((w) => Math.abs(qzNorm(w).length - L) <= 2);
-      const wrong = distract(right, cands, (w) => w);
+      const fits = (w) => poolTexts.has(qzNorm([...v.words.slice(0, i), w, ...v.words.slice(i + 1)].join(' ')));
+      const wrong = distract(right, cands.filter((w) => !fits(w)), (w) => w);
       const opts = options(right, wrong);
       return opts && {
         type: 'missing', title: `ما الكلمة الناقصة؟ (سورة ${QD.suraName(v.s)})`,
@@ -325,7 +347,8 @@ function qzRun(el, qs, onExit, ctx) {
       <h3 class="qz-q">${esc(q.title)}</h3>
       ${q.hint ? `<p class="qz-hint">💡 ${esc(q.hint)}</p>` : ''}
       <div class="qz-verse qtxt">${q.raw ? q.verse : esc(q.verse)}</div>
-      <div class="qz-opts">${q.opts.map((o, k) => `<button type="button" class="qz-opt ${q.plain ? 'plain' : 'qtxt'}" data-k="${k}" style="--d:${k * 60}ms">${esc(o.t)}</button>`).join('')}</div>
+      <div class="qz-opts">${q.opts.map((o, k) => `<button type="button" class="qz-opt ${q.plain ? 'plain' : ''}" data-k="${k}" style="--d:${k * 60}ms">
+        <span class="qz-k">${'أبجد'[k]}</span><span class="qz-t ${q.plain ? '' : 'qtxt'}">${esc(o.t)}</span></button>`).join('')}</div>
       <button type="button" class="qz-idk" id="qz-idk">لا أعرف</button>
       <div class="qz-after" id="qz-after" hidden></div></div>`;
     $('#qz-x').addEventListener('click', () => {
