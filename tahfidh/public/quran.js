@@ -404,7 +404,8 @@ async function viewQuranStudent(el, id, week = '', part = 'all', recital = false
   const base = me ? '#/home' : `#/quran/student/${st.id}`;
   el.innerHTML = `
     ${me && part === 'records' ? `<div class="page-head"><h2>📜 سجلّي</h2><a class="btn small ghost" href="#/quran/history/${st.id}">السجلّ السنوي</a></div>` : ''}
-    ${me && part === 'records' ? '' : me ? heroBanner({ sub: `${st.group_name ? `🕌 ${esc(st.group_name)} · ` : ''}أسبوعك يبدأ يوم <b>${Q_DAYS[st.week_start]}</b> (يوم اللقاء).`, art: '📖' })
+    ${me && part === 'records' ? '' : me ? heroBanner({ sub: `${st.group_name ? `🕌 ${esc(st.group_name)} · ` : ''}أسبوعك يبدأ يوم <b>${Q_DAYS[st.week_start]}</b> (يوم اللقاء).`, art: '📖' }) +
+      (part === 'home' ? `<a class="qz-cta" href="#/quiz"><span class="qz-cta-ico">🧠</span><span><b>اختبر حفظك</b><small>أسئلة من محفوظك برواية قالون: أكمل الآية، الآية التالية، المتشابهات…</small></span><span class="qz-cta-go">‹</span></a>` : '')
       : `<p><a href="#/quran/students">→ الطلبة</a></p>
       <div class="card q-head">${avatar(st, 'md')}<div><h2>${esc(st.full_name)}</h2>
         <span class="muted small">${[st.group_name && `🕌 ${esc(st.group_name)}`, st.age && `${st.age} سنة`, `الأسبوع يبدأ ${Q_DAYS[st.week_start]}`].filter(Boolean).join(' · ')}</span></div>
