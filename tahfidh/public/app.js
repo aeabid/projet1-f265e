@@ -1,5 +1,5 @@
 'use strict';
-// حلقة التحفيظ: الأدوات المشتركة، الدخول، القائمة والتوجيه. صفحات المتابعة في quran.js
+// رسوخ: الأدوات المشتركة، الدخول، القائمة والتوجيه. صفحات المتابعة في quran.js
 
 const state = { user: null };
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -290,7 +290,7 @@ $('#logout').addEventListener('click', async () => {
 function viewLogin(el) {
   el.innerHTML = `<div class="login">
     <img src="logo.svg" alt="" class="login-logo">
-    <h1>حلقة التحفيظ</h1>
+    <h1>رسوخ</h1>
     <p class="muted">متابعة حفظ القرآن الكريم ومراجعته</p>
     <p class="ayah">﴿وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا﴾</p>
     <form id="login-form" class="card">

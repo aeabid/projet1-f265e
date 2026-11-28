@@ -133,10 +133,26 @@ async function quranStudentsTab(page, d, root) {
     draft = { ...saved };
     render();
   };
-  ['q-search', 'q-group', 'q-sort', 'q-off'].forEach((id) => $(`#${id}`).addEventListener(id === 'q-search' ? 'input' : 'change', render));
-  $('#ses-prev').addEventListener('click', () => ((ref = qAddDays(ref, -7)), load()));
+  // الفلاتر تبقى محفوظة عند الرجوع من صفحة الطالب
+  const FKEY = 'qStudentsFilters';
+  try {
+    const f = JSON.parse(sessionStorage.getItem(FKEY) || '{}');
+    if (f.search) $('#q-search').value = f.search;
+    if (f.group && [...$('#q-group').options].some((o) => o.value === f.group)) $('#q-group').value = f.group;
+    if (f.sort) $('#q-sort').value = f.sort;
+    $('#q-off').checked = !!f.off;
+    if (f.ref && f.ref <= t) ref = f.ref;
+  } catch {}
+  const saveF = () => {
+    try {
+      sessionStorage.setItem(FKEY, JSON.stringify({ search: $('#q-search').value, group: $('#q-group').value, sort: $('#q-sort').value, off: $('#q-off').checked, ref }));
+    } catch {}
+  };
+  ['q-search', 'q-group', 'q-sort', 'q-off'].forEach((id) => $(`#${id}`).addEventListener(id === 'q-search' ? 'input' : 'change', () => (saveF(), render())));
+  $('#ses-prev').addEventListener('click', () => ((ref = qAddDays(ref, -7)), saveF(), load()));
   $('#ses-next').addEventListener('click', () => {
     ref = qAddDays(ref, 7) > t ? t : qAddDays(ref, 7);
+    saveF();
     load();
   });
   $('#ov-body').addEventListener('change', (e) => {
