@@ -599,7 +599,11 @@ async function viewQuranReview(el, id, dayArg = '') {
     return { juz: j, ids: js.map((g) => g.id), suras: suraGroup(js) };
   });
   const suraList = suraGroup(memSegs);
-  const VIEWS = { quarters: 'بالأرباع', juz: 'بالأجزاء', suras: 'بالسور' };
+  const hizbList = [...new Set(memSegs.map((g) => g.hizb))].map((h) => {
+    const hs = memSegs.filter((g) => g.hizb === h);
+    return { hizb: h, ids: hs.map((g) => g.id), suras: suraGroup(hs) };
+  });
+  const VIEWS = { quarters: 'بالأرباع', juz: 'بالأجزاء', hizb: 'بالأحزاب', suras: 'بالسور' };
   let view = (() => {
     try {
       return VIEWS[localStorage.getItem('qReviewView')] ? localStorage.getItem('qReviewView') : 'quarters';
@@ -657,6 +661,10 @@ async function viewQuranReview(el, id, dayArg = '') {
       <summary><span class="q-jname">الجزء ${j.juz} <small class="muted">· ${hizbTxt(QD.sizeOf(j.ids))}</small>${j.ids.some(need) ? ' <span class="q-need">•</span>' : ''}</span>
         <span data-ids="${j.ids.join(',')}">${pick(stateOf(j.ids))}</span></summary>
       <div class="q-tiles">${j.suras.map((s) => chip(s)).join('')}</div></details>`;
+  const hizbBlock = (h, key) => `<details class="q-juz" data-key="${key}">
+      <summary><span class="q-jname">الحزب ${h.hizb} <small class="muted">· ${hizbTxt(QD.sizeOf(h.ids))}</small>${h.ids.some(need) ? ' <span class="q-need">•</span>' : ''}</span>
+        <span data-ids="${h.ids.join(',')}">${pick(stateOf(h.ids))}</span></summary>
+      <div class="q-tiles">${h.suras.map((s) => chip(s)).join('')}</div></details>`;
   function render() {
     const counts = new Map(others);
     for (const i of selected) counts.set(i, (counts.get(i) || 0) + 1);
@@ -668,6 +676,9 @@ async function viewQuranReview(el, id, dayArg = '') {
     } else if (view === 'juz') {
       // بالأجزاء: من الجزء 1 إلى الجزء 30 (ما فيه محفوظ فقط)، وكل جزء يُفتح على سوره
       $('#q-tree').innerHTML = `<div class="card q-quarter q-juz-list">${juzList.map((j) => juzBlock(j, `rj-${j.juz}`)).join('')}</div>`;
+    } else if (view === 'hizb') {
+      // بالأحزاب: من الحزب 1 إلى الحزب 60 (ما فيه محفوظ فقط)
+      $('#q-tree').innerHTML = `<div class="card q-quarter q-juz-list">${hizbList.map((h) => hizbBlock(h, `rh-${h.hizb}`)).join('')}</div>`;
     } else {
       $('#q-tree').innerHTML = tree
         .map((q) => `<details class="card q-quarter" data-key="r${q.n}">
@@ -751,7 +762,11 @@ async function viewQuranHifz(el, id) {
     return { juz: k + 1, ids: js.map((g) => g.id), hizbs: [...new Set(js.map((g) => g.hizb))], suras: suraGroup(js) };
   });
   const suraList = suraGroup(QD.segments);
-  const VIEWS = { quarters: 'بالأرباع', juz: 'بالأجزاء', suras: 'بالسور' };
+  const hizbList = Array.from({ length: 60 }, (_, k) => {
+    const hs = QD.segments.filter((g) => g.hizb === k + 1);
+    return { hizb: k + 1, juz: hs[0]?.juz, ids: hs.map((g) => g.id), suras: suraGroup(hs) };
+  });
+  const VIEWS = { quarters: 'بالأرباع', juz: 'بالأجزاء', hizb: 'بالأحزاب', suras: 'بالسور' };
   let view = (() => {
     try {
       return VIEWS[localStorage.getItem('qHifzView')] ? localStorage.getItem('qHifzView') : 'quarters';
@@ -761,7 +776,7 @@ async function viewQuranHifz(el, id) {
   })();
   el.innerHTML = `<p><a href="${me ? '#/account' : `#/quran/student/${id}`}">→ ${me ? 'حسابي' : esc(st.full_name)}</a></p>
     <div class="card"><h2>📗 تحديد المحفوظ${me ? '' : ` — ${esc(st.full_name)}`}</h2>
-      <p class="muted small">اضغط على ربع أو جزء أو سورة لتحديدها محفوظة، واضغط مرة ثانية لإلغاء التحديد.</p>
+      <p class="muted small">اضغط على ربع أو جزء أو حزب أو سورة لتحديدها محفوظة، واضغط مرة ثانية لإلغاء التحديد.</p>
       <div class="q-seg" role="tablist" aria-label="طريقة العرض">${Object.entries(VIEWS)
         .map(([k, l]) => `<button type="button" role="tab" data-view="${k}" class="${k === view ? 'on' : ''}">${l}</button>`).join('')}</div></div>
     <div id="q-tree"></div>
@@ -798,6 +813,13 @@ async function viewQuranHifz(el, id) {
         ${pick(j.ids, 'كل الجزء')}</summary>
       <div class="q-tiles">${j.suras.map(tile).join('')}</div></details>`;
   };
+  const hizbBlock = (h, key) => {
+    const memIds = h.ids.filter((i) => mem[i]);
+    return `<details class="q-juz" data-key="${key}">
+      <summary><span class="q-jname">الحزب ${h.hizb} <small class="muted">· ${memIds.length ? `${hizbTxt(QD.sizeOf(memIds))} محفوظ` : `الجزء ${h.juz}`}</small></span>
+        ${pick(h.ids, 'كل الحزب')}</summary>
+      <div class="q-tiles">${h.suras.map(tile).join('')}</div></details>`;
+  };
   function render() {
     const ids = Object.keys(mem).map(Number);
     $('#q-sum').innerHTML = `المحفوظ: <b>${hizbTxt(QD.sizeOf(ids))}</b> <small class="muted">من 60</small>`;
@@ -805,6 +827,8 @@ async function viewQuranHifz(el, id) {
       $('#q-tree').innerHTML = `<div class="card"><div class="q-tiles">${suraList.map(tile).join('')}</div></div>`;
     } else if (view === 'juz') {
       $('#q-tree').innerHTML = `<div class="card q-quarter q-juz-list">${juzList.map((j) => juzBlock(j, `hj-${j.juz}`)).join('')}</div>`;
+    } else if (view === 'hizb') {
+      $('#q-tree').innerHTML = `<div class="card q-quarter q-juz-list">${hizbList.map((h) => hizbBlock(h, `hh-${h.hizb}`)).join('')}</div>`;
     } else {
       $('#q-tree').innerHTML = tree
         .map((q) => {
