@@ -1037,3 +1037,5 @@ thead .rc-name { background: var(--soft); }
 .q-seg button { font-size: .88rem; padding-inline: .15rem; }
 .home-sec { margin: 1.2rem .2rem .6rem; }
 .home-sec h3 { margin: 0; }
+.st-total { display: inline-flex; align-items: baseline; gap: .25rem; background: var(--gradient); color: #fff; border-radius: 999px; padding: .1rem .7rem; font-size: 1rem; vertical-align: middle; margin-inline-start: .3rem; }
+.st-total small { font-size: .72rem; opacity: .9; font-weight: 600; }

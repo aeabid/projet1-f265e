@@ -100,7 +100,7 @@ async function viewQuranHome(el, tab = '') {
   if (tab === 'groups') tab = ''; // المجموعات وسجلّاتها صارت في الرئيسية
   if (tab === 'students') {
     const st = true;
-    el.innerHTML = `<div class="page-head"><h2>${st ? '👥 الطلبة' : '📊 السجل'}</h2>
+    el.innerHTML = `<div class="page-head"><h2>👥 الطلبة <span class="st-total" id="st-count">${d.students.filter((x) => x.active).length}</span></h2>
         <button type="button" class="btn small" id="q-add">${st ? '＋ طالب جديد' : '＋ مجموعة'}</button></div>
       <div id="q-page"></div>`;
     $('#q-add').addEventListener('click', () =>

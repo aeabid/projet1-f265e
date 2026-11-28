@@ -123,6 +123,11 @@ async function quranStudentsTab(page, d, root) {
         }
       })
     );
+    // العدد في أعلى الصفحة: كل الطلبة، أو «المعروض من المجموع» عند التصفية
+    const total = d.students.filter((x) => x.active).length;
+    const shown = visible().filter((x) => x.active).length;
+    const cnt = $('#st-count');
+    if (cnt) cnt.innerHTML = shown === total ? `${total} <small>${total === 1 ? 'طالب' : total === 2 ? 'طالبان' : total <= 10 ? 'طلاب' : 'طالبًا'}</small>` : `${shown} <small>من ${total}</small>`;
     header();
     summary();
   };
