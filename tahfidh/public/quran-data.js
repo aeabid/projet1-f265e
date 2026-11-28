@@ -48,9 +48,7 @@
   function runLabel(run) {
     const a = run[0];
     const b = run[run.length - 1];
-    if (a.id === juzIds[a.juz][0] && b.id === juzIds[b.juz][juzIds[b.juz].length - 1]) {
-      return a.juz === b.juz ? `الجزء ${a.juz}` : b.juz === a.juz + 1 ? `الجزء ${a.juz} و${b.juz}` : `من الجزء ${a.juz} إلى الجزء ${b.juz}`;
-    }
+    // دائمًا بالسور (حتى لو كان المقروء جزءًا كاملًا أو ربعًا)
     if (a.sura === b.sura) return a.from === 1 && b.to === AYAT[a.sura - 1] ? suraName(a.sura) : `${suraName(a.sura)} ${a.from}–${b.to}`;
     const start = a.from === 1 ? suraName(a.sura) : `${suraName(a.sura)} ${a.from}`;
     const end = b.to === AYAT[b.sura - 1] ? suraName(b.sura) : `${suraName(b.sura)} ${b.to}`;

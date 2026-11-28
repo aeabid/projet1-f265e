@@ -53,8 +53,9 @@ test('week start and review progress', () => {
 test('short range labels', () => {
   const S = Q().segments;
   const L = (f) => Q().rangeLabel(S.filter(f));
-  assert.strictEqual(L((s) => s.juz === 30), 'الجزء 30');
-  assert.strictEqual(L((s) => s.juz >= 28), 'من الجزء 28 إلى الجزء 30');
+  assert.strictEqual(L((s) => s.juz === 30), 'من النبأ إلى الناس');
+  assert.strictEqual(L((s) => s.juz >= 28), 'من المجادلة إلى الناس');
+  assert.strictEqual(L((s) => s.juz === 20), 'من النمل 56 إلى العنكبوت 45');
   assert.strictEqual(L((s) => s.sura >= 78 && s.sura <= 85), 'من النبأ إلى البروج');
   assert.strictEqual(L((s) => s.sura === 67), 'الملك');
   assert.strictEqual(L((s) => s.sura >= 26 && s.sura <= 35), 'من الشعراء إلى فاطر');
