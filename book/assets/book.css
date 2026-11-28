@@ -250,3 +250,49 @@ table.ws td.on{background:var(--y)}
 .bubble b{color:var(--c)}
 .bubble ul{margin:1mm 0 0;padding-inline-start:5mm}
 .bubble li::marker{color:var(--c)}
+
+/* ═════════ الخرائط الذّهنيّة ═════════ */
+.mm{display:grid;grid-template-columns:1fr 34mm 1fr;align-items:center;gap:0;margin:1mm 0}
+.mm.one{grid-template-columns:1fr 34mm}
+.mm-col{display:flex;flex-direction:column;gap:3mm;position:relative}
+.mm-col.r{padding-left:7mm}.mm-col.l{padding-right:7mm}
+.mm-col.r::before,.mm-col.l::before{content:"";position:absolute;top:9mm;bottom:9mm;width:2.5px;background:var(--y);border-radius:2px}
+.mm-col.r::before{left:0}.mm-col.l::before{right:0}
+.mm-col .br{position:relative}
+.mm-col.r .br::after,.mm-col.l .br::after{content:"";position:absolute;top:5mm;width:7mm;height:2.5px;background:var(--y)}
+.mm-col.r .br::after{left:-7mm}.mm-col.l .br::after{right:-7mm}
+.mm-root{position:relative;display:flex;justify-content:center}
+.mm-root::before{content:"";position:absolute;top:50%;left:0;right:0;height:2.5px;background:var(--y);z-index:0}
+.mm.one .mm-root::before{left:50%}
+.mm-root span{position:relative;z-index:1;background:var(--y);color:var(--pd);font-weight:900;font-size:13.5pt;line-height:1.35;border-radius:50%;width:31mm;height:31mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2mm;box-shadow:0 0 0 2.2mm #fff3d6,0 3px 0 2.2mm #f2d38a}
+.mm-root small{display:block;font-size:8.5pt;font-weight:700;margin-top:.5mm}
+.br{background:#fff;border:2px solid var(--bc);border-radius:13px;overflow:hidden}
+.bh{background:var(--bc);color:#fff;font-weight:900;font-size:11.5pt;padding:.8mm 3mm;display:flex;align-items:center;gap:2mm;line-height:1.5}
+.mi-ic{display:inline-flex;width:6mm;height:6mm;background:#fff;color:var(--bc);border-radius:50%;padding:1mm;flex:none}
+.mi-ic svg{width:100%;height:100%}
+.bk{padding:1mm 3mm 0;font-size:9.8pt;line-height:1.6;color:var(--ink)}
+.bx{display:flex;flex-wrap:wrap;gap:1.2mm;padding:1.2mm 2.5mm 2mm}
+.bx span{background:color-mix(in srgb,var(--bc) 12%,#fff);color:var(--ink);border-radius:8px;padding:0 2mm;font-size:10pt;font-weight:700;line-height:1.8}
+/* شجرة عموديّة */
+.tree2{display:flex;flex-direction:column;align-items:center}
+.t2-root{background:var(--y);color:var(--pd);font-weight:900;font-size:14pt;border-radius:14px;padding:1.2mm 9mm;box-shadow:0 3px 0 #d8920d;position:relative;margin-bottom:9mm;text-align:center;line-height:1.4}
+.t2-root small{display:block;font-size:9pt;font-weight:700}
+.t2-root::after{content:"";position:absolute;left:50%;bottom:-6mm;width:2.5px;height:6mm;background:var(--y)}
+.t2-kids{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:3mm;width:100%;position:relative}
+.t2-kids::before{content:"";position:absolute;top:-3mm;left:calc(50% / var(--n));right:calc(50% / var(--n));height:2.5px;background:var(--y)}
+.t2-kids .br{position:relative;overflow:visible}
+.t2-kids .br::before{content:"";position:absolute;top:-3.2mm;left:50%;width:2.5px;height:3.2mm;background:var(--y)}
+.t2-kids .bh{justify-content:center;border-radius:10px 10px 0 0}
+.t2-kids .bk,.t2-kids .bx{text-align:center;justify-content:center}
+/* تحليل الجملة */
+.parse{display:flex;justify-content:center;gap:2mm;flex-wrap:wrap;margin:.5mm 0 2mm}
+.pw{display:flex;flex-direction:column;align-items:center;min-width:16mm}
+.pw b{background:color-mix(in srgb,var(--bc) 14%,#fff);border:2px solid var(--bc);color:var(--pd);border-radius:10px;padding:.6mm 3.5mm;font-size:15pt;line-height:1.7}
+.pw span{font-size:9pt;font-weight:800;color:var(--bc);margin-top:1mm;position:relative;padding-top:2mm;text-align:center;line-height:1.3}
+.pw span::before{content:"";position:absolute;top:0;left:50%;width:2px;height:1.6mm;background:var(--bc)}
+/* الخطوات */
+.steps-t{font-weight:900;color:var(--c);margin-bottom:1mm;font-size:11.5pt}
+.steps{display:flex;align-items:stretch;gap:1.5mm}
+.stp{flex:1;background:var(--pll);border-radius:12px;padding:1.6mm 2.5mm;display:flex;gap:2mm;align-items:flex-start;font-size:10.2pt;line-height:1.6}
+.sn{background:var(--c);color:#fff;border-radius:50%;width:6.5mm;height:6.5mm;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex:none;font-size:10pt}
+.sa{align-self:center;color:var(--pink);font-style:normal;font-weight:900;font-size:14pt}

@@ -13,7 +13,7 @@ import glob, html, json, os, random, re, subprocess, sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(ROOT, "dist")
 sys.path.insert(0, ROOT)
-from art import OWL, ICONS, SECTION_ART  # noqa: E402
+from art import OWL, ICONS, SECTION_ART, MAPICONS  # noqa: E402
 
 MARJA_PDF = os.environ.get("MARJA_PDF", os.path.join(ROOT, "source", "al-marja1.pdf"))
 READING_PAGES = (5, 113)  # صفحات نصوص المطالعة في الكتاب الأصليّ
@@ -78,10 +78,99 @@ def rich(s):
     return s
 
 
+PALETTE = ["#1f6fd1", "#e3177a", "#0f9a63", "#ee7d12", "#7a3fc4", "#0e9aa7"]
+
+
+def _ic(name):
+    return f'<i class="mi-ic">{MAPICONS[name]}</i>' if name and name in MAPICONS else ""
+
+
+def _items(lines):
+    out = []
+    for l in lines:
+        if l.startswith("-"):
+            f = [x.strip() for x in l[1:].split("|")]
+            f += [""] * (4 - len(f))
+            out.append(f)
+    return out
+
+
+def _chips(ex):
+    if not ex:
+        return ""
+    return '<div class="bx">' + "".join(f"<span>{rich(x.strip())}</span>" for x in re.split(r"\s+·\s+", ex) if x.strip()) + "</div>"
+
+
+def _branch(f, i):
+    title, key, ex, icon = f[:4]
+    return (f'<div class="br" style="--bc:{PALETTE[i % len(PALETTE)]}"><div class="bh">{_ic(icon)}<span>{rich(title)}</span></div>'
+            + (f'<div class="bk">{rich(key)}</div>' if key else "") + _chips(ex) + "</div>")
+
+
+def macro(block):
+    head, _, rest = block.partition("\n")
+    name, _, arg = head[1:].partition(" ")
+    lines = [l.strip() for l in rest.splitlines() if l.strip()]
+    arg = arg.strip()
+    if name == "map":
+        root, _, sub = arg.partition("|")
+        items = _items(lines)
+        br = [_branch(f, i) for i, f in enumerate(items)]
+        k = (len(br) + 1) // 2
+        rc = "".join(br[:k]); lc = "".join(br[k:])
+        sub = f"<small>{rich(sub.strip())}</small>" if sub.strip() else ""
+        cls = "mm" if lc else "mm one"
+        return (f'<div class="{cls}"><div class="mm-col r">{rc}</div><div class="mm-root"><span>{rich(root.strip())}{sub}</span></div>'
+                + (f'<div class="mm-col l">{lc}</div>' if lc else "") + "</div>")
+    if name == "tree":
+        root, _, sub = arg.partition("|")
+        items = _items(lines)
+        kids = "".join(_branch(f, i) for i, f in enumerate(items))
+        sub = f"<small>{rich(sub.strip())}</small>" if sub.strip() else ""
+        return f'<div class="tree2"><div class="t2-root">{rich(root.strip())}{sub}</div><div class="t2-kids" style="--n:{len(items)}">{kids}</div></div>'
+    if name == "steps":
+        items = [l[1:].strip() for l in lines if l.startswith("-")]
+        cells = '<i class="sa">←</i>'.join(f'<div class="stp"><span class="sn">{i}</span><div>{rich(t)}</div></div>' for i, t in enumerate(items, 1))
+        title = f'<div class="steps-t">{rich(arg)}</div>' if arg else ""
+        return f'<div class="steps-w">{title}<div class="steps">{cells}</div></div>'
+    if name == "parse":
+        rows = []
+        for l in ([arg] if arg else []) + lines:
+            parts = [p.strip() for p in l.split(";") if p.strip()]
+            cells = []
+            for j, p in enumerate(parts):
+                w, _, r = p.partition("=")
+                col = PALETTE[j % len(PALETTE)] if r.strip() else "#b9b2cc"
+                cells.append(f'<div class="pw" style="--bc:{col}"><b>{rich(w.strip())}</b>' + (f"<span>{rich(r.strip())}</span>" if r.strip() else "") + "</div>")
+            rows.append('<div class="parse">' + "".join(cells) + "</div>")
+        return "".join(rows)
+    if name == "remember":
+        txt = rich(" ".join([arg] + lines))
+        return f'<div class="remember"><div class="rh"><span class="pti">{ICONS["remember"]}</span>أتذكّرُ</div><p>{txt}</p></div>'
+    if name == "note":
+        return f'<div class="note">{rich(" ".join([arg] + lines))}</div>'
+    if name == "ayah":
+        t, _, src = arg.partition("|")
+        return f'<div class="ayah">{t.strip()}<small>{src.strip()}</small></div>'
+    if name == "poem":
+        parts = [p.strip() for p in arg.split("|")]
+        src = parts.pop() if len(parts) % 2 else ""
+        return '<div class="poem">' + "".join(f"<span>{p}</span>" for p in parts) + (f"<small>{src}</small>" if src else "") + "</div>"
+    if name == "line":
+        return f'<div class="ex-line">{rich(arg)}</div>'
+    raise SystemExit(f"unknown macro @{name}")
+
+
 def split_blocks(body):
-    """كلّ عنصر HTML يبدأ في أوّل السّطر = كتلة مستقلّة في التّرقيم."""
-    chunks = re.split(r"\n(?=<)", "\n" + body.strip())
-    return [rich(c.strip()) for c in chunks if c.strip()]
+    """كلّ عنصر HTML أو ماكرو @ يبدأ في أوّل السّطر = كتلة مستقلّة في التّرقيم."""
+    chunks = re.split(r"\n(?=[<@])", "\n" + body.strip())
+    out = []
+    for c in chunks:
+        c = c.strip()
+        if not c:
+            continue
+        out.append(macro(c) if c.startswith("@") else rich(c))
+    return out
 
 
 def lines_of(body):

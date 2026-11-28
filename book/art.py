@@ -75,3 +75,43 @@ SECTION_ART = {
 <path d="M265 20 l6 14 14 6-14 6-6 14-6-14-14-6 14-6z" fill="#ffd36b"/>
 </svg>""",
 }
+
+# أيقونات صغيرة للخرائط الذّهنيّة (خطّ بسيط، 24×24)
+_S = 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"'
+MAPICONS = {
+    "person": f'<svg viewBox="0 0 24 24" {_S}><circle cx="12" cy="7" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg>',
+    "cat": f'<svg viewBox="0 0 24 24" {_S}><path d="M5 20v-9l-1-6 4 3h8l4-3-1 6v9z"/><path d="M9 13h.01M15 13h.01M10 16h4"/></svg>',
+    "leaf": f'<svg viewBox="0 0 24 24" {_S}><path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15z"/><path d="M5 19l8-8"/></svg>',
+    "box": f'<svg viewBox="0 0 24 24" {_S}><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>',
+    "home": f'<svg viewBox="0 0 24 24" {_S}><path d="M3 11l9-7 9 7v9H3z"/><path d="M10 20v-5h4v5"/></svg>',
+    "clock": f'<svg viewBox="0 0 24 24" {_S}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    "bolt": f'<svg viewBox="0 0 24 24" {_S}><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
+    "link": f'<svg viewBox="0 0 24 24" {_S}><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/></svg>',
+    "question": f'<svg viewBox="0 0 24 24" {_S}><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg>',
+    "eye": f'<svg viewBox="0 0 24 24" {_S}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    "star": f'<svg viewBox="0 0 24 24" {_S}><path d="M12 3l2.7 5.6 6.1.8-4.4 4.2 1.1 6.1L12 16.8 6.5 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg>',
+    "pen": f'<svg viewBox="0 0 24 24" {_S}><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/></svg>',
+    "book": f'<svg viewBox="0 0 24 24" {_S}><path d="M3 5c3-1 6-1 9 1v14c-3-2-6-2-9-1zM21 5c-3-1-6-1-9 1v14c3-2 6-2 9-1z"/></svg>',
+    "pointer": f'<svg viewBox="0 0 24 24" {_S}><path d="M4 12h12M12 6l6 6-6 6"/></svg>',
+    "plus": f'<svg viewBox="0 0 24 24" {_S}><path d="M12 5v14M5 12h14"/></svg>',
+    "check": f'<svg viewBox="0 0 24 24" {_S}><path d="M4 12l5 5L20 6"/></svg>',
+    "cross": f'<svg viewBox="0 0 24 24" {_S}><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    "music": f'<svg viewBox="0 0 24 24" {_S}><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
+    "mirror": f'<svg viewBox="0 0 24 24" {_S}><path d="M12 3v18"/><path d="M9 7L4 12l5 5M15 7l5 5-5 5"/></svg>',
+    "heart": f'<svg viewBox="0 0 24 24" {_S}><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 6-8 11-8 11z"/></svg>',
+    "sun": f'<svg viewBox="0 0 24 24" {_S}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>',
+    "moon": f'<svg viewBox="0 0 24 24" {_S}><path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/></svg>',
+    "tree": f'<svg viewBox="0 0 24 24" {_S}><circle cx="12" cy="9" r="6"/><path d="M12 15v6M9 21h6"/></svg>',
+    "hand": f'<svg viewBox="0 0 24 24" {_S}><path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V6a1.5 1.5 0 0 1 3 0v8c0 4-3 7-6 7s-5-2-6-4l-2-4a1.5 1.5 0 0 1 2.5-1.5L8 13"/></svg>',
+    "group": f'<svg viewBox="0 0 24 24" {_S}><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c.5-4 3-6 6-6s5.5 2 6 6M14 14c3 0 6 2 7 6"/></svg>',
+    "two": f'<svg viewBox="0 0 24 24" {_S}><circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/></svg>',
+    "one": f'<svg viewBox="0 0 24 24" {_S}><circle cx="12" cy="12" r="5"/></svg>',
+    "up": f'<svg viewBox="0 0 24 24" {_S}><path d="M12 20V5M6 11l6-6 6 6"/></svg>',
+    "down": f'<svg viewBox="0 0 24 24" {_S}><path d="M12 4v15M6 13l6 6 6-6"/></svg>',
+    "flat": f'<svg viewBox="0 0 24 24" {_S}><path d="M4 12h16"/><path d="M8 8l-4 4 4 4"/></svg>',
+    "root": f'<svg viewBox="0 0 24 24" {_S}><path d="M12 3v9M12 12c-3 2-5 5-6 9M12 12c3 2 5 5 6 9M12 12v9"/></svg>',
+    "feather": f'<svg viewBox="0 0 24 24" {_S}><path d="M20 4C12 4 6 10 5 19l7-7M20 4c0 8-6 13-13 13"/></svg>',
+    "chain": f'<svg viewBox="0 0 24 24" {_S}><rect x="2" y="9" width="9" height="6" rx="3"/><rect x="13" y="9" width="9" height="6" rx="3"/><path d="M9 12h6"/></svg>',
+    "flag": f'<svg viewBox="0 0 24 24" {_S}><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+    "tag": f'<svg viewBox="0 0 24 24" {_S}><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></svg>',
+}

@@ -32,6 +32,18 @@ goals: هدف ; هدف ; هدف
 `mcq` ({أ | *صحيح | ج}) · `fill` ([الجواب] و ((تلميح)) و bank:) · `order` (ك1 / ك2 / ك3 بالتّرتيب الصّحيح) ·
 `table` (head: … و [الجواب] في الخانات) · `fix` (خطأ => صواب) · `mark` ({{الهدف}}) · `scramble` · `wordsearch` (words:) · `open` · `html` (مع `::answer`).
 
+## الخرائط الذّهنيّة (داخل ::discover و ::rule)
+
+```
+@map الفكرة المركزيّة | عنوان فرعيّ        ← خريطة دائريّة : الفروعُ يمينًا ويسارًا
+- عنوان الفرع | فكرة قصيرة | مثال · مثال | icon
+@tree الجذر | عنوان فرعيّ                  ← شجرة من الأعلى إلى الأسفل (نفس صيغة الفروع)
+@parse كلمة=وظيفة ; كلمة=وظيفة             ← تحليلُ جملة بألوان
+@steps العنوان  ثمّ  - خطوة                 ← خطواتٌ بأسهم
+@remember نصّ قصير  ·  @ayah الآية | المصدر  ·  @poem شطر | شطر | المصدر
+```
+الأيقونات : person, cat, leaf, box, home, clock, bolt, link, question, eye, star, pen, book, pointer, plus, check, cross, music, mirror, heart, sun, moon, tree, hand, group, one, two, up, down, flat, root, feather, chain, flag, tag.
+
 ## البناء
 
 ```bash
