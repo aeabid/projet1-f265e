@@ -1150,3 +1150,8 @@ body.qz-mode #view { padding-bottom: 1.5rem; }
 .hm-grp { display: block; font-style: normal; font-size: .6rem; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hm-name span { -webkit-line-clamp: 3; }
 .hm-wk.rel small { background: none; color: inherit; margin: 0; font-size: inherit; display: block; }
+
+.qz-redo-note { display: inline-block; margin-top: .45rem; background: rgba(255, 255, 255, .16); border-radius: 10px; padding: .2rem .6rem; font-size: .8rem; }
+.qz-pill.redo { background: #fff1e0; color: #a45a00; }
+.qz-redo { margin-top: 1rem; background: #c2741a !important; border-radius: 999px; padding: .85rem; }
+.qz-meta { flex-wrap: wrap; }

@@ -66,7 +66,7 @@ function qzPool(mem, suras) {
 }
 
 // ---------- مولّدات الأسئلة ----------
-function qzGenerators(pool) {
+function qzGenerators(pool, seen = {}) {
   const key = (v) => `${v.s}:${v.a}`;
   const inPool = new Map(pool.map((v) => [key(v), v]));
   const bySura = new Map();
@@ -109,40 +109,62 @@ function qzGenerators(pool) {
     if (groups.length >= 8) break;
   }
 
+  // اختيار الآية: سؤال محدّد (want: لإعادة سؤال أخطأ فيه)، أو آية لم يُسأل عنها في هذا النوع،
+  // فإن سُئل عن الكل نختار من أقدمها سؤالًا — فلا يحسّ الطالب بالتكرار
+  const pickV = (list, type, want) => {
+    if (want) return list.find((x) => x.s === want.s && x.a === want.a) || null;
+    if (!list.length) return null;
+    const fresh = list.filter((x) => !seen[`${type}:${x.s}:${x.a}`]);
+    if (fresh.length) return qzPick(fresh);
+    const old = [...list].sort((a, b) => seen[`${type}:${a.s}:${a.a}`] - seen[`${type}:${b.s}:${b.a}`]);
+    return qzPick(old.slice(0, Math.max(1, Math.ceil(old.length / 3))));
+  };
+  const src = (v, p) => ({ s: v.s, a: v.a, ...(p !== undefined ? { p } : {}) });
+
   return {
-    complete() {
-      const v = qzPick(pool.filter((x) => x.words.length >= 5));
+    complete(want) {
+      const v = pickV(pool.filter((x) => x.words.length >= 5), 'complete', want);
       if (!v) return null;
-      const k = Math.max(2, Math.round(v.words.length * (0.4 + Math.random() * 0.2)));
+      // موضع القطع يتغيّر في كل مرة (بين 30% و65% من الآية) إلا عند إعادة سؤال أخطأ فيه
+      const k = want?.p >= 2 && want.p < v.words.length - 1 ? want.p : Math.max(2, Math.min(v.words.length - 2, Math.round(v.words.length * (0.3 + Math.random() * 0.35))));
       const rest = qzClip(v.words.slice(k), 9);
       const wrong = distract(rest, near(v), (x) => {
         if (x.words.length < 3) return null;
-        return qzClip(x.words.slice(Math.max(1, Math.round(x.words.length / 2))), 9);
+        const c = Math.max(1, Math.round(x.words.length * (0.3 + Math.random() * 0.35)));
+        return qzClip(x.words.slice(c), 9);
       });
       const opts = options(rest, wrong);
-      return opts && { type: 'complete', title: `أكمل الآية (سورة ${QD.suraName(v.s)})`, verse: `${v.words.slice(0, k).join(' ')} …`, opts, ref: ref(v) };
+      return opts && { type: 'complete', title: `أكمل الآية (سورة ${QD.suraName(v.s)})`, verse: `${v.words.slice(0, k).join(' ')} …`, opts, ref: ref(v), src: src(v, k) };
     },
-    next() {
-      const v = qzPick(pool.filter((x) => inPool.has(`${x.s}:${x.a + 1}`)));
+    next(want) {
+      const v = pickV(pool.filter((x) => inPool.has(`${x.s}:${x.a + 1}`)), 'next', want);
       if (!v) return null;
       const nx = inPool.get(`${v.s}:${v.a + 1}`);
       const right = qzClip(nx.words, 8);
       const wrong = distract(right, near(v).filter((x) => x !== nx && x !== v), (x) => qzClip(x.words, 8));
       const opts = options(right, wrong);
-      return opts && { type: 'next', title: `ما الآية التي بعدها؟ (سورة ${QD.suraName(v.s)})`, verse: v.text, opts, ref: ref(nx) };
+      return opts && { type: 'next', title: `ما الآية التي بعدها؟ (سورة ${QD.suraName(v.s)})`, verse: v.text, opts, ref: ref(nx), src: src(v) };
     },
-    sura() {
-      const v = qzPick(pool.filter((x) => x.words.length >= 3 && textSuras.get(x.n).size === 1));
+    sura(want) {
+      const v = pickV(pool.filter((x) => x.words.length >= 3 && textSuras.get(x.n).size === 1), 'sura', want);
       if (!v) return null;
       const others = qzShuffle(suraIds.filter((s) => s !== v.s));
       for (let d = 1; others.length < 3 && d < 114; d++) for (const s of [v.s - d, v.s + d]) if (s >= 1 && s <= 114 && !others.includes(s)) others.push(s);
       const opts = qzShuffle([{ t: QD.suraName(v.s), ok: true }, ...others.slice(0, 3).map((s) => ({ t: QD.suraName(s), ok: false }))]);
-      return { type: 'sura', title: 'في أي سورة هذه الآية؟', verse: v.text, opts, plain: true, ref: ref(v) };
+      return { type: 'sura', title: 'في أي سورة هذه الآية؟', verse: v.text, opts, plain: true, ref: ref(v), src: src(v) };
     },
-    similar() {
+    similar(want) {
       if (!groups.length) return null;
-      const g = qzPick(groups);
-      const v = qzPick(g.list);
+      let g;
+      let v;
+      if (want) {
+        v = pool.find((x) => x.s === want.s && x.a === want.a);
+        g = v && groups.find((x) => x.list.includes(v));
+        if (!g) return null;
+      } else {
+        v = pickV(groups.flatMap((x) => x.list), 'similar');
+        g = qzPick(groups.filter((x) => x.list.includes(v)));
+      }
       // أطول بداية مشتركة بين آيات المجموعة
       let common = g.len;
       while (g.list.every((x) => x.words.length > common + 1 && qzNorm(x.words[common]) === qzNorm(v.words[common]))) common++;
@@ -152,15 +174,15 @@ function qzGenerators(pool) {
       const opts = options(right, wrong);
       return opts && {
         type: 'similar', title: `أكمل في سورة ${QD.suraName(v.s)}`, verse: `${v.words.slice(0, common).join(' ')} …`,
-        hint: `تتشابه هذه البداية في ${g.list.length === 2 ? 'موضعين' : `${g.list.length} ${g.list.length <= 10 ? 'مواضع' : 'موضعًا'}`} من محفوظك`, opts, ref: ref(v),
+        hint: `تتشابه هذه البداية في ${g.list.length === 2 ? 'موضعين' : `${g.list.length} ${g.list.length <= 10 ? 'مواضع' : 'موضعًا'}`} من محفوظك`, opts, ref: ref(v), src: src(v),
       };
     },
-    missing() {
-      const v = qzPick(pool.filter((x) => x.words.length >= 4));
+    missing(want) {
+      const v = pickV(pool.filter((x) => x.words.length >= 4), 'missing', want);
       if (!v) return null;
       const idx = qzShuffle(v.words.map((_, i) => i).filter((i) => i > 0 && qzNorm(v.words[i]).length >= 3));
       if (!idx.length) return null;
-      const i = idx[0];
+      const i = want && idx.includes(want.p) ? want.p : idx[0];
       const right = v.words[i];
       const L = qzNorm(right).length;
       const cands = near(v).flatMap((x) => qzShuffle(x.words)).filter((w) => Math.abs(qzNorm(w).length - L) <= 2);
@@ -168,34 +190,53 @@ function qzGenerators(pool) {
       const opts = options(right, wrong);
       return opts && {
         type: 'missing', title: `ما الكلمة الناقصة؟ (سورة ${QD.suraName(v.s)})`,
-        verse: v.words.map((w, k) => (k === i ? '<span class="qz-gap">⬚</span>' : esc(w))).join(' '), raw: true, opts, ref: ref(v),
+        verse: v.words.map((w, k) => (k === i ? '<span class="qz-gap">⬚</span>' : esc(w))).join(' '), raw: true, opts, ref: ref(v), src: src(v, i),
       };
     },
   };
 }
 
-// توزيع الأسئلة على الأنواع المختارة بالتساوي، بلا تكرار لنفس الآية في نفس النوع
-function qzBuild(pool, types, count) {
-  const gen = qzGenerators(pool);
+// ---------- ذاكرة الطالب: ما سُئل عنه، وما أخطأ فيه (على هذا الجهاز) ----------
+const qzKeyOf = (q) => `${q.type}:${q.src.s}:${q.src.a}`;
+const qzStoreName = () => `qz:${state.user.id}`;
+function qzStore() {
+  try {
+    return { seen: {}, wrong: [], ...JSON.parse(localStorage.getItem(qzStoreName()) || '{}') };
+  } catch {
+    return { seen: {}, wrong: [] };
+  }
+}
+function qzSaveStore(st) {
+  st.seen = Object.fromEntries(Object.entries(st.seen).sort((a, b) => b[1] - a[1]).slice(0, 4000));
+  st.wrong = st.wrong.slice(-200);
+  try { localStorage.setItem(qzStoreName(), JSON.stringify(st)); } catch {}
+}
+
+// بناء الاختبار: الأسئلة التي أخطأ فيها تعود أولًا (حتى نصف الاختبار)، ثم أسئلة جديدة موزّعة على الأنواع
+function qzBuild(pool, types, count, store, only = null) {
+  const gen = qzGenerators(pool, store.seen);
   const out = [];
   const used = new Set();
+  const add = (q, review) => {
+    if (!q || used.has(qzKeyOf(q))) return false;
+    used.add(qzKeyOf(q));
+    out.push(review ? { ...q, review: true } : q);
+    return true;
+  };
+  const redo = (only || store.wrong.filter((w) => types.includes(w.type))).slice(0, only ? count : Math.ceil(count / 2));
+  for (const w of qzShuffle(redo)) add(gen[w.type]?.(w), true);
+  if (only) return out;
   const order = [];
   while (order.length < count) order.push(...qzShuffle(types));
-  for (const t of order.slice(0, count)) {
+  for (const t of order) {
+    if (out.length >= count) break;
     for (const type of [t, ...qzShuffle(types.filter((x) => x !== t))]) {
-      let q = null;
-      for (let k = 0; k < 12 && !q; k++) {
-        const c = gen[type]();
-        if (c && !used.has(`${c.type}:${c.ref.s}:${c.ref.a}`)) q = c;
-      }
-      if (q) {
-        used.add(`${q.type}:${q.ref.s}:${q.ref.a}`);
-        out.push(q);
-        break;
-      }
+      let ok = false;
+      for (let k = 0; k < 12 && !ok; k++) ok = add(gen[type]());
+      if (ok) break;
     }
   }
-  return out;
+  return qzShuffle(out);
 }
 
 // ---------- الواجهة ----------
@@ -227,11 +268,13 @@ async function viewQuiz(el) {
   let last = null;
   try { last = JSON.parse(localStorage.getItem('qzLast') || 'null'); } catch {}
   const suraCount = new Set(pool.map((v) => v.s)).size;
+  const store = qzStore();
   const draw = () => {
     el.innerHTML = `<div class="qz-setup">
       <div class="qz-hero"><div><h2>🧠 اختبر حفظك</h2>
         <p>أسئلة من محفوظك فقط: <b>${pool.length}</b> آية في <b>${suraCount}</b> ${suraCount > 2 && suraCount < 11 ? 'سور' : 'سورة'}</p>
-        <small>برواية قالون عن نافع</small></div>
+        <small>برواية قالون عن نافع</small>
+        ${store.wrong.length ? `<span class="qz-redo-note">🔁 ${store.wrong.length} ${store.wrong.length === 1 ? 'سؤال أخطأت فيه يعود' : store.wrong.length === 2 ? 'سؤالان أخطأت فيهما يعودان' : 'أسئلة أخطأت فيها تعود'} في اختبارك حتى تصحّحها</span>` : ''}</div>
         ${last ? `<span class="qz-last"><b>${last.score}/${last.total}</b><small>آخر نتيجة</small></span>` : ''}</div>
       <h3 class="qz-h">نوع الأسئلة</h3>
       <div class="qz-types">${Object.entries(QZ_TYPES).map(([k, t]) => `<label class="qz-type ${set.types.includes(k) ? 'on' : ''}">
@@ -257,15 +300,15 @@ async function viewQuiz(el) {
     );
     $('#qz-go').addEventListener('click', () => {
       try { localStorage.setItem(QZ_KEY, JSON.stringify(set)); } catch {}
-      const qs = qzBuild(pool, set.types, set.count);
+      const qs = qzBuild(pool, set.types, set.count, store);
       if (!qs.length) return toast('محفوظك قليل لهذا النوع من الأسئلة، اختر نوعًا آخر', true);
-      qzRun(el, qs, () => draw());
+      qzRun(el, qs, () => draw(), { store, pool });
     });
   };
   draw();
 }
 
-function qzRun(el, qs, onExit) {
+function qzRun(el, qs, onExit, ctx) {
   let i = 0;
   const answers = [];
   const refTxt = (r) => `سورة ${QD.suraName(r.s)} · الآية ${r.a}`;
@@ -278,7 +321,7 @@ function qzRun(el, qs, onExit) {
     el.innerHTML = `<div class="qz-run">
       <div class="qz-top"><button type="button" class="qz-x" id="qz-x" aria-label="إنهاء">✕</button>
         <div class="qz-prog"><i style="width:${(i / qs.length) * 100}%"></i></div><span class="qz-n">${i + 1}/${qs.length}</span></div>
-      <div class="qz-meta"><span class="qz-pill">${t.icon} ${t.name}</span></div>
+      <div class="qz-meta"><span class="qz-pill">${t.icon} ${t.name}</span>${q.review ? '<span class="qz-pill redo">🔁 أخطأت فيه سابقًا</span>' : ''}</div>
       <h3 class="qz-q">${esc(q.title)}</h3>
       ${q.hint ? `<p class="qz-hint">💡 ${esc(q.hint)}</p>` : ''}
       <div class="qz-verse qtxt">${q.raw ? q.verse : esc(q.verse)}</div>
@@ -291,6 +334,12 @@ function qzRun(el, qs, onExit) {
     const answer = (k) => {
       const ok = k !== null && q.opts[k].ok;
       answers.push({ q, ok, k });
+      // الذاكرة: ما سُئل عنه لا يتكرر قريبًا، وما أخطأ فيه يعود حتى يصحّحه
+      const key = qzKeyOf(q);
+      ctx.store.seen[key] = Date.now();
+      ctx.store.wrong = ctx.store.wrong.filter((w) => qzKeyOf({ type: w.type, src: w }) !== key);
+      if (!ok) ctx.store.wrong.push({ type: q.type, ...q.src });
+      qzSaveStore(ctx.store);
       el.querySelectorAll('.qz-opt').forEach((b, j) => {
         b.disabled = true;
         if (q.opts[j].ok) b.classList.add('right');
@@ -342,8 +391,13 @@ function qzRun(el, qs, onExit) {
       ${wrong.length ? `<details class="card qz-review" open><summary><h3>مواضع تحتاج مراجعة (${wrong.length})</h3></summary>
         ${wrong.map((a) => `<div class="qz-rv"><small>${refTxt(a.q.ref)} · ${QZ_TYPES[a.q.type].name}</small>
           <p class="qtxt">${esc(QALOON[a.q.ref.s - 1][a.q.ref.a - 1])}</p></div>`).join('')}</details>` : ''}
+      ${wrong.length ? `<button type="button" class="btn block qz-redo" id="qz-redo">🔁 أعد الأسئلة التي أخطأت فيها (${wrong.length})</button>` : ''}
       <div class="qz-res-actions"><button type="button" class="btn" id="qz-again">اختبار جديد</button><a class="btn ghost" href="#/home">الرئيسية</a></div></div>`;
     $('#qz-again').addEventListener('click', onExit);
+    $('#qz-redo')?.addEventListener('click', () => {
+      const again = qzBuild(ctx.pool, [], wrong.length, ctx.store, wrong.map((a) => ({ type: a.q.type, ...a.q.src })));
+      if (again.length) qzRun(el, qzShuffle(again), onExit, ctx);
+    });
     window.scrollTo(0, 0);
   };
   show();
