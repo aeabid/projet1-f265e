@@ -53,15 +53,61 @@ function shrinkImage(file, max = 1280) {
 }
 const ytBox = (id) => `<button type="button" class="yt" data-yt="${esc(id)}" aria-label="تشغيل الفيديو">
     <img src="https://i.ytimg.com/vi/${esc(id)}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span></button>`;
+// ---------- البحث بالكلمات المفتاحية ----------
+// تطبيع النص مع خريطة المواضع (لتلوين الكلمة في النص الأصلي)
+function arNorm(str) {
+  let n = '';
+  const map = [];
+  for (let i = 0; i < str.length; i++) {
+    let c = str[i];
+    if (/[ً-ْٰـ]/.test(c)) continue; // التشكيل والتطويل
+    c = c.replace(/[أإآٱ]/, 'ا').replace('ى', 'ي').replace('ة', 'ه').replace('ؤ', 'و').replace('ئ', 'ي').toLowerCase();
+    n += c;
+    map.push(i);
+  }
+  return { n, map };
+}
+const searchWords = (q) => arNorm(String(q || '').trim()).n.split(/\s+/).filter(Boolean);
+const plainBody = (b) => String(b.body || '').split('\n').map((l) => l.replace(/^\s*(#{1,2}|[-•*]|>)\s+/, '').replace(/\*\*/g, '')).join(' ').replace(/\s+/g, ' ').trim();
+// تلوين الكلمات المطابقة
+function hl(text, words) {
+  const str = String(text || '');
+  if (!words?.length) return esc(str);
+  const { n, map } = arNorm(str);
+  const ranges = [];
+  for (const w of words) for (let i = n.indexOf(w); i !== -1; i = n.indexOf(w, i + 1)) ranges.push([map[i], map[i + w.length - 1] + 1]);
+  if (!ranges.length) return esc(str);
+  ranges.sort((a, b) => a[0] - b[0]);
+  let out = '';
+  let at = 0;
+  for (const [a, z] of ranges) {
+    if (a < at) continue;
+    out += esc(str.slice(at, a)) + `<mark>${esc(str.slice(a, z))}</mark>`;
+    at = z;
+  }
+  return out + esc(str.slice(at));
+}
+// مقتطف من النص حول أول كلمة مطابقة
+function snippet(text, words) {
+  const { n, map } = arNorm(text);
+  const pos = Math.min(...words.map((w) => n.indexOf(w)).filter((i) => i >= 0));
+  if (!Number.isFinite(pos)) return '';
+  const o = map[pos];
+  const a = Math.max(0, o - 45);
+  const z = Math.min(text.length, o + 75);
+  return `${a > 0 ? '…' : ''}${hl(text.slice(a, z), words)}${z < text.length ? '…' : ''}`;
+}
+
 // عنوان الفائدة (أو أول سطر من نصّها إن لم يكن لها عنوان)
 const benTitle = (b) =>
   (b.title || String(b.body || '').split('\n').map((l) => l.replace(/^\s*(#{1,2}|[-•*]|>)\s+/, '').replace(/\*\*/g, '').trim()).find(Boolean) || 'فائدة').slice(0, 100);
-const benefitCard = (b, admin = false, folders = []) => {
+const benefitCard = (b, admin = false, folders = [], words = null) => {
   const f = folders.find((x) => x.id === b.folder_id);
+  const snip = words?.length ? snippet(plainBody(b), words) : '';
   const rx = (b.reactions || []).reduce((t, r) => t + r.count, 0);
   const meta = [f && `${f.icon} ${esc(f.name)}`, b.group_name ? `🕌 ${esc(b.group_name)}` : '👥 للجميع', fmtWhen(b.created_at)].filter(Boolean).join(' · ');
   return `<details class="ben-card ben-fold" data-ben="${b.id}">
-    <summary><span class="bf-main"><b>${esc(benTitle(b))}</b>
+    <summary><span class="bf-main"><b>${hl(benTitle(b), words)}</b>${snip ? `<span class="bf-snip">${snip}</span>` : ''}
         <small>${meta}${b.images?.length ? ' · 🖼' : ''}${b.youtube?.length ? ' · ▶️' : ''}${rx ? ` · ${(b.reactions || []).map((r) => r.emoji).join('')} ${rx}` : ''}</small></span>
       <span class="bf-chev" aria-hidden="true"></span></summary>
     <div class="bf-body">
@@ -82,6 +128,38 @@ function benefitsLibrary(box, benefits, folders, admin, onBind) {
   if (cur && cur !== 'none' && !folders.some((f) => String(f.id) === cur)) cur = '';
   const count = (id) => benefits.filter((b) => (id === 'none' ? !b.folder_id : b.folder_id === id)).length;
   const none = count('none');
+  let q = '';
+  // نص كل فائدة جاهزًا للبحث: العنوان والنص واسم الملف
+  const hay = new Map(benefits.map((b) => [b.id, arNorm(`${b.title || ''} ${plainBody(b)} ${folders.find((f) => f.id === b.folder_id)?.name || ''}`).n]));
+  box.innerHTML = `${benefits.length ? `<div class="bf-search"><span aria-hidden="true">🔍</span>
+      <input type="search" id="bf-q" placeholder="ابحث بكلمة مفتاحية… (مثال: الإخلاص، المدّ)" autocomplete="off">
+      <button type="button" id="bf-x" aria-label="مسح البحث" hidden>✕</button></div>` : ''}<div class="bf-out"></div>`;
+  const out = box.querySelector('.bf-out');
+  const results = () => {
+    const words = searchWords(q);
+    const list = benefits.filter((b) => words.every((w) => hay.get(b.id).includes(w)));
+    out.innerHTML = `<p class="bf-count">${list.length ? `${list.length} ${list.length === 1 ? 'نتيجة' : list.length === 2 ? 'نتيجتان' : list.length <= 10 ? 'نتائج' : 'نتيجة'} لـ «${esc(q.trim())}»` : `لا نتائج لـ «${esc(q.trim())}». جرّب كلمة أخرى.`}</p>
+      <div class="ben-list">${list.map((b) => benefitCard(b, admin, folders, words)).join('')}</div>`;
+    bindBenefitMedia(out);
+    bindReactions(out, benefits);
+    onBind?.(out, cur);
+  };
+  const search = box.querySelector('#bf-q');
+  let timer;
+  search?.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      q = search.value;
+      box.querySelector('#bf-x').hidden = !q;
+      searchWords(q).length ? results() : draw();
+    }, 150);
+  });
+  box.querySelector('#bf-x')?.addEventListener('click', () => {
+    search.value = q = '';
+    box.querySelector('#bf-x').hidden = true;
+    draw();
+    search.focus();
+  });
   const draw = () => {
     const chips = [['', '📚', 'الكل', benefits.length], ...folders.map((f) => [String(f.id), f.icon, f.name, count(f.id)]), ...(none && folders.length ? [['none', '📄', 'بلا ملف', none]] : [])];
     const list = benefits.filter((b) => (!cur ? true : cur === 'none' ? !b.folder_id : String(b.folder_id) === cur));
@@ -89,24 +167,24 @@ function benefitsLibrary(box, benefits, folders, admin, onBind) {
     const sections = !cur && folders.length
       ? [...folders.map((f) => [f, list.filter((b) => b.folder_id === f.id)]), [null, list.filter((b) => !b.folder_id)]].filter(([, l]) => l.length)
       : [[cur && cur !== 'none' ? folders.find((f) => String(f.id) === cur) : null, list]];
-    box.innerHTML = `${folders.length || admin ? `<div class="bf-chips">${chips.map(([k, i, n, c]) => `<button type="button" class="bf-chip ${k === cur ? 'on' : ''}" data-f="${k}"><span>${i}</span>${esc(n)}<b>${c}</b></button>`).join('')}
+    out.innerHTML = `${folders.length || admin ? `<div class="bf-chips">${chips.map(([k, i, n, c]) => `<button type="button" class="bf-chip ${k === cur ? 'on' : ''}" data-f="${k}"><span>${i}</span>${esc(n)}<b>${c}</b></button>`).join('')}
         ${admin ? '<button type="button" class="bf-chip add" id="bf-manage">⚙️ الملفات</button>' : ''}</div>` : ''}
       ${list.length ? sections.map(([f, l]) => `<section class="bf-sec">
           ${!cur && folders.length ? `<h4 class="bf-h">${f ? `${f.icon} ${esc(f.name)}` : '📄 بلا ملف'}<small>${l.length}</small></h4>` : ''}
           <div class="ben-list">${l.map((b) => benefitCard(b, admin, folders)).join('')}</div></section>`).join('')
         : `<div class="card empty-state"><span>📂</span><p>${benefits.length ? 'لا فوائد في هذا الملف بعد.' : admin ? 'لم تُكتب أي فائدة بعد.' : 'لا توجد فوائد بعد. ما يكتبه الشيخ لمجموعتك يظهر هنا.'}</p></div>`}`;
-    box.querySelectorAll('[data-f]').forEach((c) =>
+    out.querySelectorAll('[data-f]').forEach((c) =>
       c.addEventListener('click', () => {
         cur = c.dataset.f;
         try { sessionStorage.setItem(KEY, cur); } catch {}
         draw();
       })
     );
-    const on = box.querySelector('.bf-chip.on');
+    const on = out.querySelector('.bf-chip.on');
     if (on) on.parentElement.scrollLeft = on.offsetLeft - (on.parentElement.clientWidth - on.offsetWidth) / 2;
-    bindBenefitMedia(box);
-    bindReactions(box, benefits);
-    onBind?.(box, cur);
+    bindBenefitMedia(out);
+    bindReactions(out, benefits);
+    onBind?.(out, cur);
   };
   draw();
 }

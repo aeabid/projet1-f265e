@@ -1020,3 +1020,14 @@ thead .rc-name { background: var(--soft); }
 .bf-manage { list-style: none; margin: 0 0 .4rem; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
 .bf-manage li { display: flex; justify-content: space-between; align-items: center; background: var(--soft); border-radius: 12px; padding: .5rem .7rem; }
 .bf-chev::before { border-inline-end: 0; border-right: 2.2px solid var(--accent); border-bottom: 2.2px solid var(--accent); }
+
+/* البحث في الفوائد */
+.bf-search { display: flex; align-items: center; gap: .4rem; background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; padding: .15rem .8rem; margin-bottom: .7rem; transition: border-color .2s, box-shadow .2s; }
+.bf-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(97, 3, 141, .1); }
+.bf-search input { flex: 1; border: 0 !important; background: none !important; box-shadow: none !important; padding: .6rem 0 !important; font: inherit; outline: none; min-width: 0; }
+.bf-search button { border: 0; background: var(--soft); color: var(--muted); width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: .75rem; }
+.bf-count { margin: 0 .2rem .5rem; color: var(--muted); font-size: .85rem; font-weight: 700; }
+.bf-snip { font-size: .82rem; color: var(--text); opacity: .85; line-height: 1.6; }
+.ben-fold mark, .bf-snip mark { background: #ffe58a; color: inherit; border-radius: 4px; padding: 0 .1rem; }
+@media (prefers-color-scheme: dark) { .ben-fold mark, .bf-snip mark { background: #6b5520; } }
+.bf-search input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
