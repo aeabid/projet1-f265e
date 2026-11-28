@@ -216,7 +216,8 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
     return {
       marked, present,
       att: marked ? Math.round((present / marked) * 100) : null,
-      ward: covs.length ? Math.round(covs.reduce((a, b) => a + b, 0) / covs.length) : null,
+      ward: s.memorized ? Math.round((read / (s.memorized * n)) * 100) : null,
+      cover: covs.length ? Math.round(covs.reduce((a, b) => a + b, 0) / covs.length) : null,
       reps: Math.round((reps / (T * n)) * 100),
     };
   };
@@ -229,7 +230,7 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
   const cell = (s, w, k) => {
     const d = `data-s="${s.id}" data-w="${k}"`;
     if (metric === 'att') return `<button type="button" class="hm att-${w.att || 'none'}" ${d}>${w.att ? Q_ATT_ICON[w.att] : '·'}</button>`;
-    if (metric === 'ward') return `<button type="button" class="hm ${coverCls(w.cover)}" ${d}>${w.cover === null ? '<b>—</b>' : `<b>${w.cover}<small>%</small></b><small>${num(w.covered)}/${num(s.memorized)} ح</small>`}</button>`;
+    if (metric === 'ward') return `<button type="button" class="hm ${coverCls(w.cover)}" ${d}><b>${w.ward ?? 0}<small>%</small></b><small>${num(w.read)} ح</small></button>`;
     if (metric === 'reps') return `<button type="button" class="hm ${heat(repsPct(w))}" ${d}><b>${w.reps}</b><small>/${T}</small></button>`;
     return `<button type="button" class="hm hm-all att-${w.att || 'none'}" ${d}>
         <i class="hm-dot"></i>
@@ -239,7 +240,7 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
   const totCell = (s) => {
     const t = totals.get(s.id);
     if (metric === 'att') return `<b>${t.present}<small>/${t.marked || n}</small></b>`;
-    if (metric === 'ward') return `<b class="cv-txt ${coverCls(t.ward)}">${t.ward ?? '—'}${t.ward !== null ? '<small>%</small>' : ''}</b>`;
+    if (metric === 'ward') return `<b class="cv-txt ${coverCls(t.cover)}">${t.ward ?? '—'}${t.ward !== null ? '<small>%</small>' : ''}</b>`;
     if (metric === 'reps') return `<b>${t.reps}<small>%</small></b>`;
     return `<span class="ring" style="--p:${t.att ?? 0}"><b>${t.att ?? '—'}</b></span>`;
   };
@@ -252,7 +253,7 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
   const legend = () =>
     metric === 'att' ? '<span class="lg att-present">✓ حاضر</span><span class="lg att-absent">✗ غائب</span><span class="lg att-excused">! بعذر</span><span class="lg att-none">· لم يُسجَّل</span>'
     : metric === 'all' ? '<span class="lg-i"><i class="dot p"></i>الحضور</span><span class="lg-i"><i class="bar w"></i>الورد</span><span class="lg-i"><i class="bar r"></i>التكرار</span><span class="lg-i">⭕ نسبة الحضور</span>'
-    : metric === 'ward' ? '<span class="lg cv-good">95% فأكثر</span><span class="lg cv-mid">50 – 94%</span><span class="lg cv-low">أقل من 50%</span><span>نسبة ما مرّ عليه من محفوظه</span>'
+    : metric === 'ward' ? '<span>اللون: كم مرّ على محفوظه دون تكرار</span><span class="lg cv-good">95% فأكثر</span><span class="lg cv-mid">50 – 94%</span><span class="lg cv-low">أقل من 50%</span>'
     : `<span class="lg-scale">${['h0', 'h1', 'h2', 'h3', 'h4', 'h5'].map((h) => `<i class="${h}"></i>`).join('')}</span><span>0%</span><span>←</span><span>100%+</span>`;
 
   const draw = () => {
@@ -310,9 +311,11 @@ async function viewQuranRecord(el, gid, n = 4, to = '') {
     const wk = r.weeks[Number(b.dataset.w)];
     recSheet(`<div class="sh-head">${avatar(s, 'md')}<div><b>${esc(s.full_name)}</b><small>حصة ${qDay(wk)} ${fmtDate(wk)}${wk === curWeek ? ' · هذا الأسبوع' : ''}</small></div></div>
       <div class="sh-att">${attChip(w.att)}${w.hifz_eval ? `<span>الحفظ ${starsTxt(w.hifz_eval)}</span>` : ''}${w.ada_eval ? `<span>الأداء ${starsTxt(w.ada_eval)}</span>` : ''}</div>
-      <div class="sh-stat"><div><span>📖 الورد: تغطية المحفوظ</span><b class="cv-txt ${coverCls(w.cover)}">${w.cover ?? '—'}${w.cover !== null ? '%' : ''}</b></div>
+      <div class="sh-stat"><div><span>📖 الورد</span><b>${w.ward ?? 0}%</b></div>
+        <small>قرأ ${num(w.read)} حزب مع التكرار من محفوظه (${hizbTxt(s.memorized)}) في ${w.days} ${w.days === 1 ? 'يوم' : 'أيام'}</small>
+        <div><span>🎨 مرّ على محفوظه دون تكرار</span><b class="cv-txt ${coverCls(w.cover)}">${w.cover ?? '—'}${w.cover !== null ? '%' : ''}</b></div>
         <div class="q-bar cvbar ${coverCls(w.cover)}"><i style="width:${w.cover || 0}%"></i></div>
-        <small>مرّ على ${num(w.covered)} حزب من محفوظه (${hizbTxt(s.memorized)}) ولو مرة واحدة · مجموع ما قرأه مع التكرار ${num(w.read)} حزب في ${w.days} ${w.days === 1 ? 'يوم' : 'أيام'}</small></div>
+        <small>${num(w.covered)} من ${hizbTxt(s.memorized)} ولو مرة واحدة · هذه النسبة هي التي تحدّد لون الخانة</small></div>
       <div class="sh-stat"><div><span>🔁 تكرار المقرر</span><b>${w.reps}/${T}</b></div>
         <div class="q-bar ${w.reps >= T ? 'ok' : ''}"><i style="width:${Math.min(100, repsPct(w))}%"></i></div></div>
       <div class="sh-actions"><a class="btn small ghost" href="#/quran/student/${s.id}">صفحة الطالب</a>

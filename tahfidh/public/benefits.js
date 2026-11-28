@@ -53,17 +53,64 @@ function shrinkImage(file, max = 1280) {
 }
 const ytBox = (id) => `<button type="button" class="yt" data-yt="${esc(id)}" aria-label="تشغيل الفيديو">
     <img src="https://i.ytimg.com/vi/${esc(id)}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span></button>`;
-const benefitCard = (b, admin = false) => `<article class="ben-card">
-    <div class="ben-head"><span class="pill">${b.group_name ? `🕌 ${esc(b.group_name)}` : '👥 لكل الطلبة'}</span>
-      <small class="muted">${fmtWhen(b.created_at)}${b.by_name ? ` · ${esc(b.by_name)}` : ''}</small></div>
-    ${b.title ? `<h3 class="ben-title">${esc(b.title)}</h3>` : ''}
-    ${b.body ? `<div class="rich">${richText(b.body)}</div>` : ''}
-    ${b.images?.length ? `<div class="ben-imgs n${Math.min(b.images.length, 3)}">${b.images.map((i) => `<img src="/api/quran/benefit-images/${i}" alt="" loading="lazy" data-full="/api/quran/benefit-images/${i}">`).join('')}</div>` : ''}
-    ${b.youtube?.length ? `<div class="ben-yts">${b.youtube.map(ytBox).join('')}</div>` : ''}
-    <div class="ben-react" data-rx="${b.id}">${rxBar(b)}</div>
-    ${admin ? `<div class="q-actions"><button type="button" class="btn small ghost" data-ben-edit="${b.id}">تعديل</button>
-      <button type="button" class="btn small ghost danger" data-ben-del="${b.id}">حذف</button></div>` : ''}
-  </article>`;
+// عنوان الفائدة (أو أول سطر من نصّها إن لم يكن لها عنوان)
+const benTitle = (b) =>
+  (b.title || String(b.body || '').split('\n').map((l) => l.replace(/^\s*(#{1,2}|[-•*]|>)\s+/, '').replace(/\*\*/g, '').trim()).find(Boolean) || 'فائدة').slice(0, 100);
+const benefitCard = (b, admin = false, folders = []) => {
+  const f = folders.find((x) => x.id === b.folder_id);
+  const rx = (b.reactions || []).reduce((t, r) => t + r.count, 0);
+  const meta = [f && `${f.icon} ${esc(f.name)}`, b.group_name ? `🕌 ${esc(b.group_name)}` : '👥 للجميع', fmtWhen(b.created_at)].filter(Boolean).join(' · ');
+  return `<details class="ben-card ben-fold" data-ben="${b.id}">
+    <summary><span class="bf-main"><b>${esc(benTitle(b))}</b>
+        <small>${meta}${b.images?.length ? ' · 🖼' : ''}${b.youtube?.length ? ' · ▶️' : ''}${rx ? ` · ${(b.reactions || []).map((r) => r.emoji).join('')} ${rx}` : ''}</small></span>
+      <span class="bf-chev" aria-hidden="true"></span></summary>
+    <div class="bf-body">
+      ${b.body ? `<div class="rich">${richText(b.body)}</div>` : ''}
+      ${b.images?.length ? `<div class="ben-imgs n${Math.min(b.images.length, 3)}">${b.images.map((i) => `<img src="/api/quran/benefit-images/${i}" alt="" loading="lazy" data-full="/api/quran/benefit-images/${i}">`).join('')}</div>` : ''}
+      ${b.youtube?.length ? `<div class="ben-yts">${b.youtube.map(ytBox).join('')}</div>` : ''}
+      ${b.by_name ? `<small class="muted bf-by">— ${esc(b.by_name)}</small>` : ''}
+      <div class="ben-react" data-rx="${b.id}">${rxBar(b)}</div>
+      ${admin ? `<div class="q-actions"><button type="button" class="btn small ghost" data-ben-edit="${b.id}">✏️ تعديل</button>
+        <button type="button" class="btn small ghost danger" data-ben-del="${b.id}">حذف</button></div>` : ''}
+    </div></details>`;
+};
+// مكتبة الفوائد: الملفات (المواضيع) في الأعلى، ثم الفوائد مطويّة
+function benefitsLibrary(box, benefits, folders, admin, onBind) {
+  const KEY = 'benFolder';
+  let cur = '';
+  try { cur = sessionStorage.getItem(KEY) || ''; } catch {}
+  if (cur && cur !== 'none' && !folders.some((f) => String(f.id) === cur)) cur = '';
+  const count = (id) => benefits.filter((b) => (id === 'none' ? !b.folder_id : b.folder_id === id)).length;
+  const none = count('none');
+  const draw = () => {
+    const chips = [['', '📚', 'الكل', benefits.length], ...folders.map((f) => [String(f.id), f.icon, f.name, count(f.id)]), ...(none && folders.length ? [['none', '📄', 'بلا ملف', none]] : [])];
+    const list = benefits.filter((b) => (!cur ? true : cur === 'none' ? !b.folder_id : String(b.folder_id) === cur));
+    // في «الكل»: أقسام حسب الملفات
+    const sections = !cur && folders.length
+      ? [...folders.map((f) => [f, list.filter((b) => b.folder_id === f.id)]), [null, list.filter((b) => !b.folder_id)]].filter(([, l]) => l.length)
+      : [[cur && cur !== 'none' ? folders.find((f) => String(f.id) === cur) : null, list]];
+    box.innerHTML = `${folders.length || admin ? `<div class="bf-chips">${chips.map(([k, i, n, c]) => `<button type="button" class="bf-chip ${k === cur ? 'on' : ''}" data-f="${k}"><span>${i}</span>${esc(n)}<b>${c}</b></button>`).join('')}
+        ${admin ? '<button type="button" class="bf-chip add" id="bf-manage">⚙️ الملفات</button>' : ''}</div>` : ''}
+      ${list.length ? sections.map(([f, l]) => `<section class="bf-sec">
+          ${!cur && folders.length ? `<h4 class="bf-h">${f ? `${f.icon} ${esc(f.name)}` : '📄 بلا ملف'}<small>${l.length}</small></h4>` : ''}
+          <div class="ben-list">${l.map((b) => benefitCard(b, admin, folders)).join('')}</div></section>`).join('')
+        : `<div class="card empty-state"><span>📂</span><p>${benefits.length ? 'لا فوائد في هذا الملف بعد.' : admin ? 'لم تُكتب أي فائدة بعد.' : 'لا توجد فوائد بعد. ما يكتبه الشيخ لمجموعتك يظهر هنا.'}</p></div>`}`;
+    box.querySelectorAll('[data-f]').forEach((c) =>
+      c.addEventListener('click', () => {
+        cur = c.dataset.f;
+        try { sessionStorage.setItem(KEY, cur); } catch {}
+        draw();
+      })
+    );
+    const on = box.querySelector('.bf-chip.on');
+    if (on) on.parentElement.scrollLeft = on.offsetLeft - (on.parentElement.clientWidth - on.offsetWidth) / 2;
+    bindBenefitMedia(box);
+    bindReactions(box, benefits);
+    onBind?.(box, cur);
+  };
+  draw();
+}
+
 // ---------- التفاعل مع الفوائد ----------
 const RX = [['👍', 'أعجبني'], ['❤️', 'أحببته'], ['🤲', 'آمين'], ['👀', 'قرأته'], ['✅', 'سأعمل به']];
 const rxNames = (b) => (b.reactions || []).flatMap((r) => r.names);
@@ -148,12 +195,8 @@ async function viewBenefits(el, tab = '') {
   el.querySelector('.rec-seg span').remove();
   const page = $('#ben-page');
   if (tab === 'sheikh') {
-    const { benefits } = await api('GET', '/api/quran/benefits');
-    page.innerHTML = benefits.length
-      ? `<div class="ben-list">${benefits.map((b) => benefitCard(b)).join('')}</div>`
-      : '<div class="card empty-state"><span>💡</span><p>لا توجد فوائد بعد. ما يكتبه الشيخ لمجموعتك يظهر هنا.</p></div>';
-    bindBenefitMedia(page);
-    bindReactions(page, benefits);
+    const [{ benefits }, { folders }] = await Promise.all([api('GET', '/api/quran/benefits'), api('GET', '/api/quran/benefit-folders')]);
+    benefitsLibrary(page, benefits, folders, false);
     return;
   }
   const load = async () => {
@@ -199,17 +242,19 @@ async function viewBenefits(el, tab = '') {
 
 // ---------- المشرف: كتابة الفوائد ----------
 async function benefitsTab(page, groups) {
-  const { benefits } = await api('GET', '/api/quran/benefits');
-  page.innerHTML = `<div class="card"><div class="section-head"><h3>💡 الفوائد</h3><button type="button" class="btn small" id="ben-add">＋ فائدة جديدة</button></div>
-      <p class="muted small">ما تكتبه هنا يظهر للطلبة في ركن «الفوائد ← من الشيخ»: لمجموعة معيّنة أو لكل الطلبة.</p></div>
-    ${benefits.length ? `<div class="ben-list">${benefits.map((b) => benefitCard(b, true)).join('')}</div>` : '<div class="card empty-state"><span>💡</span><p>لم تُكتب أي فائدة بعد.</p></div>'}`;
+  const [{ benefits }, { folders }] = await Promise.all([api('GET', '/api/quran/benefits'), api('GET', '/api/quran/benefit-folders')]);
+  page.innerHTML = `<div class="page-head"><h2>💡 الفوائد</h2><button type="button" class="btn small" id="ben-add">＋ فائدة جديدة</button></div>
+    <div id="ben-lib"></div>`;
+  let curFolder = '';
   const TOOLS = [['# ', 'عنوان'], ['## ', 'عنوان فرعي'], ['- ', '• نقطة'], ['> ', '❝ اقتباس'], ['**', 'عريض']];
   const form = (b) => {
     let keep = [...(b?.images || [])];
     let fresh = [];
     openModal(
       b ? 'تعديل الفائدة' : '💡 فائدة جديدة',
-      `<label>لمن؟<select name="group_id"><option value="">👥 لكل الطلبة</option>${groups
+      `<label>الملف (الموضوع)<select name="folder_id"><option value="">📄 بلا ملف</option>${folders
+        .map((f) => `<option value="${f.id}" ${(b ? b.folder_id === f.id : curFolder === String(f.id)) ? 'selected' : ''}>${f.icon} ${esc(f.name)}</option>`).join('')}</select></label>
+       <label>لمن؟<select name="group_id"><option value="">👥 لكل الطلبة</option>${groups
         .map((g) => `<option value="${g.id}" ${b?.group_id === g.id ? 'selected' : ''}>🕌 ${esc(g.name)}</option>`).join('')}</select></label>
        <label>العنوان<input name="title" maxlength="150" value="${esc(b?.title || '')}" placeholder="مثال: من آداب حامل القرآن"></label>
        <label>النص</label>
@@ -224,7 +269,7 @@ async function benefitsTab(page, groups) {
       async (data) => {
         const youtube = String(data.youtube || '').split(/\s+/).filter(Boolean);
         await api(b ? 'PUT' : 'POST', b ? `/api/quran/benefits/${b.id}` : '/api/quran/benefits', {
-          group_id: data.group_id, title: data.title, body: data.body, youtube, images: fresh, keep_images: keep,
+          group_id: data.group_id, folder_id: data.folder_id, title: data.title, body: data.body, youtube, images: fresh, keep_images: keep,
         });
         toast('تم الحفظ ✓');
         benefitsTab(page, groups);
@@ -272,14 +317,57 @@ async function benefitsTab(page, groups) {
     });
   };
   $('#ben-add').addEventListener('click', () => form(null));
-  bindBenefitMedia(page);
-  bindReactions(page, benefits);
-  page.querySelectorAll('[data-ben-edit]').forEach((x) => x.addEventListener('click', () => form(benefits.find((b) => b.id === Number(x.dataset.benEdit)))));
-  page.querySelectorAll('[data-ben-del]').forEach((x) =>
+  const reload = () => benefitsTab(page, groups);
+  benefitsLibrary($('#ben-lib'), benefits, folders, true, (box, cur) => {
+    curFolder = cur;
+    $('#bf-manage')?.addEventListener('click', () => manageFolders(folders, reload));
+    box.querySelectorAll('[data-ben-edit]').forEach((x) => x.addEventListener('click', () => form(benefits.find((b) => b.id === Number(x.dataset.benEdit)))));
+    box.querySelectorAll('[data-ben-del]').forEach((x) =>
+      x.addEventListener('click', async () => {
+        if (!confirmAction('حذف هذه الفائدة؟')) return;
+        await api('DELETE', `/api/quran/benefits/${x.dataset.benDel}`).catch((e) => toast(e.message, true));
+        reload();
+      })
+    );
+  });
+}
+
+// إدارة الملفات: إضافة، تغيير الاسم والأيقونة، حذف
+const BF_ICONS = ['📘', '📗', '📙', '📕', '📿', '🕌', '🤲', '⭐', '💎', '🌙', '🧠', '❤️'];
+function manageFolders(folders, onDone) {
+  const iconPick = (name, v) => `<span class="bf-icons">${BF_ICONS.map((i) => `<label><input type="radio" name="${name}" value="${i}" ${i === v ? 'checked' : ''}><span>${i}</span></label>`).join('')}</span>`;
+  openModal(
+    '📁 ملفات الفوائد',
+    `${folders.length ? `<ul class="bf-manage">${folders.map((f) => `<li><span>${f.icon} <b>${esc(f.name)}</b></span>
+        <span class="q-actions"><button type="button" class="link small" data-fe="${f.id}">تعديل</button><button type="button" class="link small danger" data-fd="${f.id}">حذف</button></span></li>`).join('')}</ul>
+      <p class="muted small">حذف الملف لا يحذف فوائده: تبقى «بلا ملف».</p>` : '<p class="muted">لا ملفات بعد. أنشئ ملفًا لكل موضوع (آداب، تجويد، تفسير…).</p>'}
+     <fieldset class="q-fs"><legend>＋ ملف جديد</legend>
+       <label>الاسم<input name="name" maxlength="60" placeholder="مثال: أحكام التجويد"></label>
+       <label>الأيقونة</label>${iconPick('icon', '📘')}</fieldset>`,
+    async (data) => {
+      if (!String(data.name || '').trim()) throw new Error('اكتب اسم الملف');
+      await api('POST', '/api/quran/benefit-folders', { name: data.name, icon: data.icon });
+      toast('تم إنشاء الملف ✓');
+      onDone();
+    }
+  );
+  const f = $('#modal-form');
+  f.querySelectorAll('[data-fd]').forEach((x) =>
     x.addEventListener('click', async () => {
-      if (!confirmAction('حذف هذه الفائدة؟')) return;
-      await api('DELETE', `/api/quran/benefits/${x.dataset.benDel}`).catch((e) => toast(e.message, true));
-      benefitsTab(page, groups);
+      if (!confirmAction('حذف هذا الملف؟ (فوائده تبقى بلا ملف)')) return;
+      await api('DELETE', `/api/quran/benefit-folders/${x.dataset.fd}`).catch((e) => toast(e.message, true));
+      $('#modal').close();
+      onDone();
+    })
+  );
+  f.querySelectorAll('[data-fe]').forEach((x) =>
+    x.addEventListener('click', () => {
+      const fo = folders.find((y) => y.id === Number(x.dataset.fe));
+      openModal('تعديل الملف', `<label>الاسم<input name="name" required maxlength="60" value="${esc(fo.name)}"></label><label>الأيقونة</label>${iconPick('icon', fo.icon)}`, async (d) => {
+        await api('PUT', `/api/quran/benefit-folders/${fo.id}`, d);
+        toast('تم ✓');
+        onDone();
+      });
     })
   );
 }

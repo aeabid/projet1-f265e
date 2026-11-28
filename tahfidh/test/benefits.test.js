@@ -170,3 +170,21 @@ test('record coverage counts each memorized part once, ignoring repetition', asy
   await admin('PUT', `/api/quran/students/${s.id}/review`, { date: t, ids: [150, 151] });
   assert.strictEqual((await admin('GET', `/api/quran/groups/${g.id}/record?weeks=1`)).body.students[0].weeks[0].cover, 100);
 });
+
+test('benefit folders organize benefits by topic', async () => {
+  const admin = await login('admin', 'admin123');
+  const f = (await admin('POST', '/api/quran/benefit-folders', { name: 'آداب طالب العلم', icon: '📘' })).body.folder;
+  assert.ok(f.id);
+  const id = (await admin('POST', '/api/quran/benefits', { title: 'الإخلاص', body: 'نص', folder_id: f.id })).body.id;
+  let b = (await admin('GET', '/api/quran/benefits')).body.benefits.find((x) => x.id === id);
+  assert.strictEqual(b.folder_id, f.id);
+  assert.strictEqual((await admin('POST', '/api/quran/benefits', { body: 'x', folder_id: 99999 })).status, 400);
+  await admin('PUT', `/api/quran/benefit-folders/${f.id}`, { name: 'آداب', icon: '📗' });
+  await admin('DELETE', `/api/quran/benefit-folders/${f.id}`);
+  b = (await admin('GET', '/api/quran/benefits')).body.benefits.find((x) => x.id === id);
+  assert.strictEqual(b.folder_id, null);
+  await admin('POST', '/api/quran/students', { username: 'fl1', password: 'secret1', first_name: 'ف' });
+  const st = await login('fl1', 'secret1');
+  assert.strictEqual((await st('GET', '/api/quran/benefit-folders')).status, 200);
+  assert.strictEqual((await st('POST', '/api/quran/benefit-folders', { name: 'x' })).status, 403);
+});

@@ -39,7 +39,14 @@ export function registerBenefitRoutes({ route, pool, all, one, HttpError, text, 
     if (!g) throw new HttpError(400, 'المجموعة غير موجودة');
     return g.id;
   }
-  const SELECT = `SELECT b.id, b.group_id, g.name AS group_name, b.title, b.body, b.youtube, b.created_at, b.updated_at, u.full_name AS by_name,
+  // الملف (الموضوع): اختياري
+  async function folderOf(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const f = await one('SELECT id FROM quran_benefit_folders WHERE id = $1', [Number(value) || 0]);
+    if (!f) throw new HttpError(400, 'الملف غير موجود');
+    return f.id;
+  }
+  const SELECT = `SELECT b.id, b.group_id, g.name AS group_name, b.folder_id, b.title, b.body, b.youtube, b.created_at, b.updated_at, u.full_name AS by_name,
       COALESCE((SELECT json_agg(i.id ORDER BY i.position, i.id) FROM quran_benefit_images i WHERE i.benefit_id = b.id), '[]') AS images
     FROM quran_benefits b LEFT JOIN quran_groups g ON g.id = b.group_id LEFT JOIN users u ON u.id = b.created_by`;
 
@@ -82,6 +89,31 @@ export function registerBenefitRoutes({ route, pool, all, one, HttpError, text, 
       benefits: await withReactions(await all(`${SELECT} WHERE b.group_id IS NULL OR b.group_id = $1 ORDER BY b.created_at DESC LIMIT 300`, [g?.group_id ?? 0]), user),
     };
   });
+  // ---------- ملفات الفوائد (المواضيع) ----------
+  const folderBody = (b) => [
+    text(b.name, { required: true, max: 60, name: 'اسم الملف' }),
+    String(b.icon || '📁').trim().slice(0, 4) || '📁',
+  ];
+  route('GET', '/api/quran/benefit-folders', ['admin', 'talib'], async () => ({
+    folders: await all('SELECT id, name, icon, position FROM quran_benefit_folders ORDER BY position, name'),
+  }));
+  route('POST', '/api/quran/benefit-folders', ['admin'], async ({ body: b }) => {
+    const [name, icon] = folderBody(b);
+    const pos = (await one('SELECT COALESCE(MAX(position), 0) + 1 AS p FROM quran_benefit_folders')).p;
+    return [201, { folder: await one('INSERT INTO quran_benefit_folders (name, icon, position) VALUES ($1, $2, $3) RETURNING id, name, icon, position', [name, icon, pos]) }];
+  });
+  route('PUT', '/api/quran/benefit-folders/:id', ['admin'], async ({ params, body: b }) => {
+    const [name, icon] = folderBody(b);
+    const f = await one('UPDATE quran_benefit_folders SET name = $1, icon = $2 WHERE id = $3 RETURNING id, name, icon, position', [name, icon, Number(params.id) || 0]);
+    if (!f) throw new HttpError(404, 'الملف غير موجود');
+    return { folder: f };
+  });
+  // حذف الملف لا يحذف فوائده: تبقى بلا ملف
+  route('DELETE', '/api/quran/benefit-folders/:id', ['admin'], async ({ params }) => {
+    await pool.query('DELETE FROM quran_benefit_folders WHERE id = $1', [Number(params.id) || 0]);
+    return { ok: true };
+  });
+
   // تفاعل واحد لكل مستخدم: إرسال نفس التفاعل أو null يزيله
   route('PUT', '/api/quran/benefits/:id/react', ['admin', 'talib'], async ({ user, params, body }) => {
     const b = await canSee(user, params.id);
@@ -101,8 +133,8 @@ export function registerBenefitRoutes({ route, pool, all, one, HttpError, text, 
   });
   route('POST', '/api/quran/benefits', ['admin'], async ({ user, body: b }) => {
     const yt = youtube(b.youtube);
-    const row = await one('INSERT INTO quran_benefits (group_id, title, body, youtube, created_by) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
-      await groupOf(b.group_id), title(b), body({ ...b, youtube: yt }), JSON.stringify(yt), user.id,
+    const row = await one('INSERT INTO quran_benefits (group_id, title, body, youtube, created_by, folder_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id', [
+      await groupOf(b.group_id), title(b), body({ ...b, youtube: yt }), JSON.stringify(yt), user.id, await folderOf(b.folder_id),
     ]);
     try {
       await saveImages(row.id, b);
@@ -122,8 +154,8 @@ export function registerBenefitRoutes({ route, pool, all, one, HttpError, text, 
   route('PUT', '/api/quran/benefits/:id', ['admin'], async ({ params, body: b }) => {
     const yt = youtube(b.youtube);
     const keep = (Array.isArray(b.keep_images) ? b.keep_images : []).map(Number).filter(Number.isInteger);
-    const { rowCount } = await pool.query('UPDATE quran_benefits SET group_id = $1, title = $2, body = $3, youtube = $4, updated_at = now() WHERE id = $5', [
-      await groupOf(b.group_id), title(b), body({ ...b, youtube: yt, keep_images: keep }), JSON.stringify(yt), params.id,
+    const { rowCount } = await pool.query('UPDATE quran_benefits SET group_id = $1, title = $2, body = $3, youtube = $4, folder_id = $6, updated_at = now() WHERE id = $5', [
+      await groupOf(b.group_id), title(b), body({ ...b, youtube: yt, keep_images: keep }), JSON.stringify(yt), params.id, await folderOf(b.folder_id),
     ]);
     if (!rowCount) throw new HttpError(404, 'الفائدة غير موجودة');
     await saveImages(params.id, b, keep);
